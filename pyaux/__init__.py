@@ -222,3 +222,23 @@ class edi(dict):  # "expression_dictionary"...
                 return eval(key, self.globals, self)
             except Exception, e:
                 raise InterpolationEvaluationException(key, e)
+
+
+def split_list(lst, cond):
+    """ Split list items into two into (matching, non_matching) by
+      `cond(item)` callable """
+    res1, res2 = [], []
+    for i in lst:
+        if cond(i):
+            res1.append(i)
+        else:
+            res2.append(i)
+    return res1, res2
+
+
+def use_cdecimal():
+    """ Do a hack-in replacement of `decimal` with `cdecimal` """
+    import sys
+    import decimal  # probably not needed but letitbe
+    import cdecimal
+    sys.modules['decimal'] = cdecimal
