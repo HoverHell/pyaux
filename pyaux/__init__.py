@@ -2,6 +2,8 @@
 """ A collection of useful helpers 
 """
 
+import sys
+
 ## Prettified super()
 ## http://stackoverflow.com/questions/2706623/super-in-python-2-x-without-args/2706703#2706703
 ## Not super-performant but quite prettifying ("Performance is 5 times worse
@@ -80,10 +82,11 @@ def DebugPlug(name, mklogger=None):
     ## The construction with mkClass is for removing the need of
     ##   `__getattr__`ing the name and logger.
     import logging
+    def mklogger_default(name):
+        logger = logging.getLogger(name)
+        return logger.debug
     if mklogger == None:
-        def mklogger(name):
-            logger = logging.getLogger(name)
-            return logger.debug
+        mklogger = mklogger_default
     log = mklogger(name)
     class DebugPlugInternal(object):
         """ An actual internal class of the DebugPlug """
@@ -174,7 +177,7 @@ def dict_fsetdefault(D, k, d):
 
 ## String interpolation
 ## http://rightfootin.blogspot.com/2007/02/string-interpolation-in-python.html
-import sys, re
+import re
 def interp(string):
     """ Inline string interpolation.
     >>> var1 = 213; ff = lambda v: v**2
@@ -238,7 +241,30 @@ def split_list(lst, cond):
 
 def use_cdecimal():
     """ Do a hack-in replacement of `decimal` with `cdecimal` """
-    import sys
-    import decimal  # probably not needed but letitbe
+    import decimal  # maybe not needed
     import cdecimal
     sys.modules['decimal'] = cdecimal
+
+
+def obj2dict(o, add_type=False, add_instance=False, do_lists=True,
+  dict_class=SmartDict):
+    """" Recursive o -> o.__dict__ """
+    kwa = dict(add_type=add_type, add_instance=add_instance,
+      do_lists=do_lists, dict_class=dict_class)
+    if hasattr(o, '__dict__'):
+        res = dict_class()
+        for k, v in o.__dict__.iteritems():
+            res[k] = obj2dict(v, **kwa)
+        if add_type:
+            res['__class__'] = o.__class__
+        if add_instance:
+            res['__instance__'] = o
+        return res
+    ## Recurse through other types too:
+    ## NOTE: There might be subclasses of these that would not be processed
+    ##   here
+    elif isinstance(o, dict):
+        return dict_class((k, obj2dict(v, **kwa)) for k, v in o.iteritems())
+    elif isinstance(o, list):
+        return [obj2dict(v, **kwa) for v in o]
+    return res  # something else - return as-is.
