@@ -2,19 +2,16 @@
 """ Set the exception handler to additionaly log the exception before
 processing it further (e.g. to e-mail it to admins).
 
-Requres `django` module (but does not require django environment)
+Logs local variables at each traceback level when possible
 
-Prints local variables at each traceback level when possible
-
-Replaces sys.excepthook on import.
-Code snippet, to be included in 'sitecustomize.py'
-  (or imported from somewhere)
+Replaces sys.excepthook on `init()`.
+Can be included in 'sitecustomize.py'
 """
 
-
 import sys
+import traceback
 import logging
-_log = logging.getLogger("Unhandled Exception")
+_log = logging.getLogger("unhandled_exception_handler")
 
 
 def info(exc_type, exc_value, tb):
@@ -24,10 +21,28 @@ def info(exc_type, exc_value, tb):
 
 
 ## Extracts from django.views.debug
-## (should not require django settings configured)
-from django.template.defaultfilters import pprint  #, force_escape
+## (should not require django)
+try:  # pretty printing
+    ## That one is a little bit preettier
+    from IPython.lib.pretty import pretty as pformat
+except ImportError:
+    from pprint import pformat
+#from django.template.filters import force_escape
 import re
-from lib.auxiliary import edi
+from pyaux import edi  # 'templating'.
+
+
+def _var_repr(v, ll=356):
+    try:
+        # XXX: not exactly optimized in case of huge datalists
+        r = pformat(v)
+    except Exception, e:
+        return "<un`repr()`able variable>"
+    if len(r) > ll:
+        return r[:ll-4] + '... '
+    return r
+
+
 def _get_lines_from_file(filename, lineno, context_lines, loader=None, module_name=None):
     """ 
     Returns context_lines before and after lineno from file.
@@ -107,9 +122,47 @@ def get_traceback_frames(tb):
     return frames
 
 
-def render_frames_data(frames):
+def _exc_safe_repr(exc_type, exc_value):
+    """ Mildly paranoid extraction of repr of exception """
+    ## NOTE: returns a terminating newline. Strip if a problem
+    return ''.join(traceback.format_exception_only(exc_type, exc_value))
+    #return (
+    #  getattr(exc_type, '__module__', '<unknown module>'),
+    #  getattr(exc_type, '__name__', '<unnamed exception!?>'),
+    #  getattr(exc_value, 'message', '<no message!?>'),
+    #  )
+
+
+def render_exc_repr(exc_type, exc_value):
+    """ A still paranoid but more detailed exception representator """
+    res = ''
+    try:
+        res += "Error:  %s" % _exc_safe_repr(exc_type, exc_value)
+        try:
+            res += "  (repr: '''%r''')\n" % (exc_value,)
+        except Exception, e:
+            try:
+                res += "  (Failure to repr: %r)\n" % (e,)
+            except Exception, e2:
+                res += "  (Failure to repr totally: (%s) (%s)\n" % (
+                  _exc_safe_repr(type(e), e).strip(),
+                  _exc_safe_repr(type(e2), e2).strip())
+    except Exception, e3:
+        try:
+            res += ("Error: Some faulty exception of type %r, failing "
+              "on repr with %s") % (exc_type,
+              _exc_safe_repr(type(e3), e3))
+        except Exception:
+            res += "Error: Some very faulty exception"
+    return res
+
+
+def render_frames_data(frames, exc_type=None, exc_value=None):
     ## A crappy way to do that compared to templates, but w/e really
     res = ""
+    if exc_type or exc_value:
+        ## Also convenient:
+        res += _exc_safe_repr(exc_type, exc_value)
     if frames:
         res += "Traceback details:\n"
         for frame in frames:
@@ -126,6 +179,8 @@ def render_frames_data(frames):
                 for var in sorted(frame['vars'], key=lambda v: v[0]):
                     res += "  %(var[0])s: %(var[1])s;" % edi()
                 res += "\n"
+    if exc_type or exc_value:
+        res += render_exc_repr(exc_type, exc_value)
     return res
 
 
@@ -136,11 +191,11 @@ def advanced_info(exc_type, exc_value, tb):
         if 'vars' in frame:
             frame['vars'] = [(k,
               #force_escape(pprint(v))
-              pprint(v)
+              _var_repr(v)
               ) for k, v in frame['vars']]
         frames[i] = frame  # XX: does this even do something?
 
-    text = render_frames_data(frames)
+    text = render_frames_data(frames, exc_type, exc_value)
     #_log.exception(text)
     _log.error(text)
     #print text
@@ -156,11 +211,13 @@ def advanced_info_safe(exc_type, exc_value, tb):
     except Exception, e:
         try:
             info(exc_type, exc_value, tb)
-        except:
+        except Exception:
             print "Everything is failing! Running the default excepthook."
             sys.__excepthook__(exc_type, exc_value, tb)
         raise e
 
 
-#sys.excepthook = info
-sys.excepthook = advanced_info  #advanced_info_safe
+def init():
+    #sys.excepthook = info
+    sys.excepthook = advanced_info
+    #sys.excepthook = advanced_info_safe

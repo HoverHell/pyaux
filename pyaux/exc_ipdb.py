@@ -1,13 +1,15 @@
 # coding: utf8
 """
 Automatically start the debugger on an exception.
-Replaces sys.excepthook on import.
-Code snippet, to be included in 'sitecustomize.py'
-  (or imported from somewhere)
+
+Replaces sys.excepthook on `init()`.
+Can be included in 'sitecustomize.py'
+
+src: http://code.activestate.com/recipes/65287-automatically-start-the-debugger-on-an-exception/
 """
-## http://code.activestate.com/recipes/65287-automatically-start-the-debugger-on-an-exception/
 
 import sys
+
 
 def info(type, value, tb):
    if hasattr(sys, 'ps1') or not sys.stderr.isatty():
@@ -22,4 +24,6 @@ def info(type, value, tb):
       # ...then start the debugger in post-mortem mode.
       ipdb.pm()
 
-sys.excepthook = info
+
+def init():
+    sys.excepthook = info

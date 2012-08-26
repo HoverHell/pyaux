@@ -1,6 +1,6 @@
 # coding: utf8
-""" A collection of useful helpers 
-"""
+""" A collection of useful helpers """
+
 
 import sys
 
@@ -65,14 +65,13 @@ class SmartDict(dict):
         self[name] = value
 
 
+dbgs = {}   # global object for easier later access of dumped `__call__`s
 def repr_call(ar, kwa):
     """ A helper function for pretty-printing a function call arguments """
     r = ', '.join("%r" % (v,) for v in ar)
     if kwa:
         r += ', ' + ', '.join('%s=%r' % (k, v) for k, v in kwa.iteritems())
     return r
-
-dbgs = {}   # global object for easier later access of dumped `__call__`s
 def DebugPlug(name, mklogger=None):
     """ Create and return a recursive duck-object for plugging in place of
     other objects for debug purposes.
@@ -244,6 +243,25 @@ def use_cdecimal():
     import decimal  # maybe not needed
     import cdecimal
     sys.modules['decimal'] = cdecimal
+
+
+def use_exc_ipdb():
+    """ Set unhandled exception handler to automatically start ipdb """
+    import pyaux.exc_ipdb as exc_ipdb
+    exc_ipdb.init()
+
+
+def use_exc_log():
+    """ Set unhandled exception handler to verbosely log the exception """
+    import pyaux.exc_log as exc_log
+    exc_log.init()
+
+
+def use_colorer():
+    """ Wrap logging's StreamHandler.emit to add colors to the logged
+      messages based on log level """
+    import pyaux.Colorer as Colorer
+    Colorer.init()
 
 
 def obj2dict(o, add_type=False, add_instance=False, do_lists=True,
