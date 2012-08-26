@@ -22,13 +22,14 @@ __all__ = [
 
 import sys
 
-## Prettified super()
-## http://stackoverflow.com/questions/2706623/super-in-python-2-x-without-args/2706703#2706703
-## Not super-performant but quite prettifying ("Performance is 5 times worse
-##   than super() call")
 import inspect
 def bubble(*args, **kwargs):
-    """ Call `super(ThisClass, this_instance).this_method(...)` """
+    """ Prettified super():
+    Call `super(ThisClass, this_instance).this_method(...)`.
+    Not super-performant but quite prettifying ("Performance is 5 times
+      worse than super() call")
+    src: http://stackoverflow.com/questions/2706623/super-in-python-2-x-without-args/2706703#2706703
+    """
     def find_class_by_code_object(back_self, method_name, code):
         for cls in inspect.getmro(type(back_self)):
             if method_name in cls.__dict__:
