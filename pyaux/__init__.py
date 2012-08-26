@@ -1,6 +1,24 @@
 # coding: utf8
 """ A collection of useful helpers """
 
+__all__ = [
+ 'bubble',
+ 'window',
+ 'SmartDict',
+ 'DebugPlug', 'repr_call',
+ 'fxrange', 'frange', 'dxrange', 'drange',
+ 'dict_fget',
+ 'dict_fsetdefault',
+ 'interp',
+ 'edi', 'InterpolationEvaluationException',
+ 'split_list',
+ 'use_cdecimal',
+ 'use_exc_ipdb',
+ 'use_exc_log',
+ 'use_colorer',
+ 'obj2dict',
+]
+
 
 import sys
 
@@ -130,9 +148,10 @@ def frange(start, end=None, inc=None):
     return list(fxrange(start, end, inc))
 
 
-from decimal import Decimal
 def dxrange(start, end=None, inc=None, include_end=False):
     """ The xrange function for Decimal """
+    # Imported here mostly because of use_cdecimal in this module
+    from decimal import Decimal
     assert inc != 0, "inc should not be zero"
     if end == None:
         end = start
@@ -239,7 +258,8 @@ def split_list(lst, cond):
 
 
 def use_cdecimal():
-    """ Do a hack-in replacement of `decimal` with `cdecimal` """
+    """ Do a hack-in replacement of `decimal` with `cdecimal`.
+    Should be done before importing other modules.  """
     import decimal  # maybe not needed
     import cdecimal
     sys.modules['decimal'] = cdecimal
