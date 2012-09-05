@@ -20,12 +20,12 @@ setup(name='pyaux',
   author_email='hoverhell@gmail.com',
   url='https://github.com/HoverHell/pyaux',
   packages=find_packages(),
-  install_requires=['ipdb',]
+  install_requires=['ipdb',],
   extras_require={
     ## Things that are useful to simply have around:
     'recommended': ['atomicfile', 'cdecimal', 'ipython', 'django',
       #'requests', 'pycurl',
-      ]
+      ],
   },
   dependency_links=[
      # 'https://github.com/sashka/atomicfile/tarball/master#egg=atomicfile',  # on pypi
