@@ -17,6 +17,7 @@ __all__ = [
  'use_exc_log',
  'use_colorer',
  'obj2dict',
+ 'mk_logging_property',
 ]
 
 
