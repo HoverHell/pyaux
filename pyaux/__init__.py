@@ -307,3 +307,18 @@ def obj2dict(o, add_type=False, add_instance=False, do_lists=True,
     elif isinstance(o, list):
         return [obj2dict(v, **kwa) for v in o]
     return res  # something else - return as-is.
+
+
+import traceback
+def mk_logging_property(actual_name, logger_name='_log'):
+    """ Creates a property that logs the value and the caller in the
+    setter, using logger under `self`'s logger_name, and stores the value
+    under actual_name on `self` """
+    def do_get(self):
+        return getattr(self, actual_name)
+    def do_set(self, val):
+        tb = traceback.extract_stack(limit=2)[0]
+        setattr(self, actual_name, val)
+        getattr(self, logger_name).debug("%s set to %r from %s:%d, in %s",
+          actual_name, val, tb[0], tb[1], tb[2])
+    return property(do_get, do_set)
