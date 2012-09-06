@@ -11,7 +11,7 @@ Contains:
 
 * **bubble**: syntactic sugar for super(...)
 * **window**: iterator over a 'window' of N adjacent elements
-* **SmartDict**: attr -> item dict subclass (e.g. for `d.key` instead of
+* **SmartDict**: attr→item dict subclass (e.g. for `d.key` instead of
  `d['key']`)
 * **DebugPlug**: recursive duck-object for debug and testing
  purposes
