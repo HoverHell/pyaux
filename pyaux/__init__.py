@@ -307,7 +307,7 @@ def obj2dict(o, add_type=False, add_instance=False, do_lists=True,
         return dict_class((k, obj2dict(v, **kwa)) for k, v in o.iteritems())
     elif isinstance(o, list):
         return [obj2dict(v, **kwa) for v in o]
-    return res  # something else - return as-is.
+    return o  # something else - return as-is.
 
 
 import traceback
@@ -319,6 +319,12 @@ def mk_logging_property(actual_name, logger_name='_log'):
         return getattr(self, actual_name)
     def do_set(self, val):
         tb = traceback.extract_stack(limit=2)[0]
+        ## or:
+        #next((r.f_code.co_filename, r.f_lineno, r.f_code.co_name) for r in (sys._getframe(1),))
+        ## that is,
+        #r = sys._getframe(1)
+        #co = r.f_code
+        #co.co_filename, r.f_lineno, co.co_name
         setattr(self, actual_name, val)
         getattr(self, logger_name).debug("%s set to %r from %s:%d, in %s",
           actual_name, val, tb[0], tb[1], tb[2])
