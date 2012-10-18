@@ -18,6 +18,9 @@ __all__ = [
  'use_colorer',
  'obj2dict',
  'mk_logging_property',
+ 'sign',
+ 'try_parse',
+ 'human_sort_key',
 ]
 
 
@@ -329,3 +332,36 @@ def mk_logging_property(actual_name, logger_name='_log'):
         getattr(self, logger_name).debug("%s set to %r from %s:%d, in %s",
           actual_name, val, tb[0], tb[1], tb[2])
     return property(do_get, do_set)
+
+
+def sign(v):
+    """ Sign of value: `return cmp(v, 0)` """
+    return cmp(v, 0)
+
+
+### "Human" sorting, advanced
+# partially from quodlibet/quodlibet/util/__init__.py
+# partially from comix/src/filehandler.py
+import unicodedata
+def try_parse(v, fn=int):
+    """ 'try parse' (with fn) """
+    try:
+        return fn(v)
+    except Exception, e:
+        return v
+## Note: not localized (i.e. always as dot for decimal separator)
+_re_alphanum_f = re.compile(r'[0-9]+(?:\.[0-9]+)?|[^0-9]+')
+def _split_numeric_f(s):
+    return [try_parse(v, fn=float) for v in _re_alphanum_f.findall(s)]
+## Or to avoid interpreting numbers as float:
+_re_alphanum_int = re.compile(r'\d+|\D+')
+def _split_numeric(s):
+    return [try_parse(v, fn=int) for v in _re_alphanum_int.findall(s)]
+## Primary function:
+def human_sort_key(s, normalize=unicodedata.normalize, floats=True):
+    """ Sorting key for 'human' sorting """
+    if not isinstance(s, unicode):
+        s = s.decode("utf-8")
+    s = normalize("NFD", s.lower())
+    split_fn = _split_numeric_f if floats else _split_numeric
+    return s and split_fn(s)

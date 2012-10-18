@@ -1,7 +1,7 @@
 pyaux
 =====
 
-Collection of helpers and useful things for Python
+Personal collection of helpers and often-useful snippets for Python
 
 Install the latest version with
 `pip install -U -e "git+https://github.com/HoverHell/pyaux.git#egg=pyaux"`
@@ -42,3 +42,15 @@ Also, in separate submodules:
 * **psql**: helpers for saving Django ORM objects into an SQL 'COPY'-like
  file and loading it in one SQL command (for high-performance loading of
  large amounts of data into the database)
+* **lzmah**: lzma compress (as function and as an executable file); also
+ provides a function `unjsllzma` to stream-read (json) lines from a
+ pylzma-compressed file
+* **lzcat**: lzcat for pylzma-specific format (as function and as an
+ executale file)
+* **runlib**: various things for runscripts:
+ * **init_logging**: logging.basicConfig with useful defaults (for
+  development runscripts).
+ * **sigeventer**: list-based signal handler for SIGINT and SIGTERM (for
+  appending handler functions, similarly to `atexit`)
+ * **make_manhole**: init a Twisted SSH manhole with set up locals,
+  key-based auth, etc.
