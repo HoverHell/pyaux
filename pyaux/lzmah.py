@@ -69,6 +69,7 @@ def unjsllzma(fi, fi_close=True, parse_fn=None, handle_fail=None):
             tmp2 += s.flush()
             cont = False
         else:
+            ## XXX: TODO: use bytearray.extend (likely).
             tmp2 = tmp2 + s.decompress(tmp)
         tmp3 = tmp2.split('\n')  # finished and unfinished lines
         for v in tmp3[:-1]:
