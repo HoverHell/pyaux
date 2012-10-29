@@ -365,3 +365,57 @@ def human_sort_key(s, normalize=unicodedata.normalize, floats=True):
     s = normalize("NFD", s.lower())
     split_fn = _split_numeric_f if floats else _split_numeric
     return s and split_fn(s)
+
+
+import time
+class throttled_call(object):
+    """ Decorator for throttling calls to some functions (e.g. logging).
+    Defined as class for various custom attributes and methods.
+    Attributes:
+      `handle_skip`: function(self, *ar, **kwa) to call when a call is
+        skipped. (default: ignore)
+    Methods: `call_something`
+    """
+    #_last_call_time = None
+    _call_time_throttle = None
+    _call_cnt = 0
+    def __init__(self, fn, sec_limit=None, cnt_limit=None):
+        """ `fn`: function to call (can be customized later).
+        `sec_limit`: skip call if less than `sec_limit` seconds since the
+          last call
+        `cnt_limit`: call only once each `cnt_limit` calls
+        """
+        self.fn = fn
+        self.sec_limit = sec_limit
+        self.cnt_limit = cnt_limit
+        doc = "%s (throttled)" % (fn.__doc__,)
+        self.__call__.__func__.__doc__ = self.__doc__ = doc
+        self.handle_skip = lambda self, *ar, **kwa: None
+    def __call__(self, *ar, **kwa):
+        return self.call_something(self.fn, *ar, **kwa)
+    def call_something(self, fn, *ar, **kwa):
+        """ Call some (other) function with the same throttling """
+        now = time.time()
+        #do_call = True
+        ## NOTE: `throttle_cnt(throttle_sec(fn))` is emulated if both are
+        ##   set.
+        if self.cnt_limit is not None:
+            self._call_cnt += 1
+            if self._call_cnt >= self.cnt_limit:
+                self._call_cnt -= self.cnt_limit
+            else:
+                return self.handle_skip(*ar, **kwa)
+        if self.sec_limit is not None:
+            if now > self._call_time_throttle:
+                self._call_time_throttle = now + self.sec_limit
+            else:
+                return self.handle_skip(*ar, **kwa)
+        res = fn(*ar, **kwa)
+        return res
+    def __repr__(self):
+        return "<throttled_call(%r)>" % (self.fn,)
+    ## Optional: mimickry
+    #def __repr__(self):
+    #    return repr(self.fn)
+    #def __getattr__(self, v):
+    #    return getattr(self.fn, v)
