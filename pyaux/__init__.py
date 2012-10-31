@@ -368,24 +368,28 @@ def human_sort_key(s, normalize=unicodedata.normalize, floats=True):
 
 
 import time
-class throttled_call(object):
+import functools
+class ThrottledCall(object):
     """ Decorator for throttling calls to some functions (e.g. logging).
     Defined as class for various custom attributes and methods.
     Attributes:
       `handle_skip`: function(self, *ar, **kwa) to call when a call is
-        skipped. (default: ignore)
+        skipped. (default: return None)
     Methods: `call_something`
     """
     #_last_call_time = None
     _call_time_throttle = None
-    _call_cnt = 0
-    def __init__(self, fn, sec_limit=None, cnt_limit=None):
+    _call_cnt = 0  # (kept accurate; but can become ineffectively large)
+    _call_cnt_throttle = 0  # next _call_cnt to call at
+    def __init__(self, fn=None, sec_limit=None, cnt_limit=None):
         """ `fn`: function to call (can be customized later).
         `sec_limit`: skip call if less than `sec_limit` seconds since the
           last call
         `cnt_limit`: call only once each `cnt_limit` calls
         """
         self.fn = fn
+        # mimickry, v2
+        #self.__call__ = wraps(fn)(self.__call__)
         self.sec_limit = sec_limit
         self.cnt_limit = cnt_limit
         doc = "%s (throttled)" % (fn.__doc__,)
@@ -401,17 +405,22 @@ class throttled_call(object):
         ##   set.
         if self.cnt_limit is not None:
             self._call_cnt += 1
-            if self._call_cnt >= self.cnt_limit:
-                self._call_cnt -= self.cnt_limit
+            if self._call_cnt >= self._call_cnt_throttle:
+                self._call_cnt_throttle += self.cnt_limit
             else:
-                return self.handle_skip(*ar, **kwa)
+                return self.handle_skip(self, *ar, **kwa)
         if self.sec_limit is not None:
             if now > self._call_time_throttle:
                 self._call_time_throttle = now + self.sec_limit
             else:
-                return self.handle_skip(*ar, **kwa)
+                return self.handle_skip(self, *ar, **kwa)
         res = fn(*ar, **kwa)
         return res
+    def call_value(self, val, fn, *ar, **kwa):
+        """ Call if the value hasn't changed (applying the other throttling parameters as well) """
+        if not hasattr(self, '_call_val') or self._call_val != val:
+            self._call_val = val
+            return self.call_something(fn, *ar, **kwa)
     def __repr__(self):
         return "<throttled_call(%r)>" % (self.fn,)
     ## Optional: mimickry
@@ -419,3 +428,14 @@ class throttled_call(object):
     #    return repr(self.fn)
     #def __getattr__(self, v):
     #    return getattr(self.fn, v)
+def throttled_call(fn=None, *ar, **kwa):
+    """ Wraps the supplied function with ThrottledCall (or generates a
+    wrapper with the supplied parameters """
+    if fn is not None:
+        if callable(fn):
+            # mimickry, v3
+            return functools.wraps(fn)(ThrottledCall(fn, *ar, **kwa))
+        else:  # supplied some arguments as positional?
+            ## XX: make a warning?
+            ar = (fn,) + ar
+    return (lambda fn: functools.wraps(fn)(ThrottledCall(fn, *ar, **kwa)))
