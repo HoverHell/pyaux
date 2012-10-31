@@ -21,6 +21,10 @@ __all__ = [
  'sign',
  'try_parse',
  'human_sort_key',
+ 'runlib',
+ 'lzmah',
+ 'lzcat',
+ 'psql',
 ]
 
 
@@ -439,3 +443,7 @@ def throttled_call(fn=None, *ar, **kwa):
             ## XX: make a warning?
             ar = (fn,) + ar
     return (lambda fn: functools.wraps(fn)(ThrottledCall(fn, *ar, **kwa)))
+
+
+## Put the other primary modules in the main module namespace
+from . import runlib, lzmah, lzcat, psql

@@ -1,6 +1,7 @@
 """ Various postgres-specific helpers, mostly dependent on django orm setup
 """
 
+
 def do_sql_load_file(copy_sql, the_file, commit=True):
     if isinstance(the_file, str):
         f = open(the_file)
