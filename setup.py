@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-version = '1.1'
+version = '1.2'
 
 LONG_DESCRIPTION = """
 Collection of helpers and useful things for Python
