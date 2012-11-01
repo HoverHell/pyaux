@@ -421,9 +421,13 @@ class ThrottledCall(object):
         res = fn(*ar, **kwa)
         return res
     def call_value(self, val, fn, *ar, **kwa):
-        """ Call if the value hasn't changed (applying the other throttling parameters as well) """
+        """ Call if the value hasn't changed (applying the other
+        throttling parameters as well). Contains undocumented feature
+        """
         if not hasattr(self, '_call_val') or self._call_val != val:
             self._call_val = val
+            if fn is None:
+                fn = self.fn
             return self.call_something(fn, *ar, **kwa)
     def __repr__(self):
         return "<throttled_call(%r)>" % (self.fn,)
@@ -432,9 +436,10 @@ class ThrottledCall(object):
     #    return repr(self.fn)
     #def __getattr__(self, v):
     #    return getattr(self.fn, v)
+@functools.wraps(ThrottledCall)
 def throttled_call(fn=None, *ar, **kwa):
     """ Wraps the supplied function with ThrottledCall (or generates a
-    wrapper with the supplied parameters """
+    wrapper with the supplied parameters). """
     if fn is not None:
         if callable(fn):
             # mimickry, v3
