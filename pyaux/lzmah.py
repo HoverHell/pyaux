@@ -34,7 +34,7 @@ class _IgnoreTheError(Exception):
 def _handle_fail_default(v, e):
     raise _IgnoreTheError
     ## supposedly can do simple `raise` to re-raise the original (parse) excetion
-def unjsllzma(fi, fi_close=True, parse_fn=None, handle_fail=None):
+def unjsllzma(fi, fi_close=True, parse_fn=None, handle_fail=None, bufs=655350):
     """ Make a generator for reading an lzma-compressed file with
     json(or something else) in lines.
     `parse_fn` is th function(v) to process lines with (defaults to
@@ -61,16 +61,17 @@ def unjsllzma(fi, fi_close=True, parse_fn=None, handle_fail=None):
     if isinstance(fi, str):
         fi = open(fi, 'rb')
     tmp2 = ''  # buffer for unfunushed lines
+    in_bufs = int(bufs/100)  # XXX: see lzcat.py note around in_bufs
     s = pylzma.decompressobj()
     cont = True
     while cont:
-        tmp = fi.read(65535)
+        tmp = fi.read(in_bufs)
         if not tmp:  # nothing more can be read
             tmp2 += s.flush()
             cont = False
         else:
             ## XXX: TODO: use bytearray.extend (likely).
-            tmp2 = tmp2 + s.decompress(tmp)
+            tmp2 = tmp2 + s.decompress(tmp, bufs)
         tmp3 = tmp2.split('\n')  # finished and unfinished lines
         for v in tmp3[:-1]:
             try:
