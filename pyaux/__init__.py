@@ -1,6 +1,7 @@
 # coding: utf8
 """ A collection of useful helpers """
 
+
 __all__ = [
  'bubble',
  'window',
@@ -29,8 +30,17 @@ __all__ = [
 
 
 import sys
-
 import inspect
+
+
+try:
+    import pyximport; pyximport.install()
+    from .datadeque import datadeque
+except:
+    print 'WARNING: Cython not found, datadeque was not imported'
+
+
+
 def bubble(*args, **kwargs):
     """ Prettified super():
     Call `super(ThisClass, this_instance).this_method(...)`.
