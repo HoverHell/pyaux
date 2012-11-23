@@ -1,9 +1,18 @@
+# coding: utf8
+
 from collections import deque
 import pandas
+
+
+__all__ = [
+  'datadeque',
+]
+
 
 class datadeque(deque):
     ''' Pandas Dataframe-convertible deque of dicts with fixed fields.
     '''
+    ## TODO: use cases and usage examples
 
     def todataframe(self):
         ''' Convert dataqueue into pandas.DataFrame '''

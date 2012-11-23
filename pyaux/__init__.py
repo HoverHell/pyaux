@@ -31,14 +31,7 @@ __all__ = [
 
 import sys
 import inspect
-
-
-try:
-    import pyximport; pyximport.install()
-    from .datadeque import datadeque
-except:
-    print 'WARNING: Cython not found, datadeque was not imported'
-
+import warnings
 
 
 def bubble(*args, **kwargs):
@@ -434,7 +427,8 @@ class ThrottledCall(object):
         """ Call if the value hasn't changed (applying the other
         throttling parameters as well). Contains undocumented feature
         """
-        if not hasattr(self, '_call_val') or self._call_val != val:
+        if (not hasattr(self, '_call_val')
+          or self._call_val != val):  # pylint: disable=E0203
             self._call_val = val
             if fn is None:
                 fn = self.fn
