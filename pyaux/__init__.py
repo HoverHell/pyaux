@@ -374,6 +374,31 @@ def human_sort_key(s, normalize=unicodedata.normalize, floats=True):
     return s and split_fn(s)
 
 
+## http://stackoverflow.com/a/260433/62821
+def reversed_blocks(fileobj, blocksize=4096):
+    """ Generate blocks of file's contents in reverse order.  """
+    fileobj.seek(0, os.SEEK_END)
+    here = fileobj.tell()
+    while 0 < here:
+        delta = min(blocksize, here)
+        fileobj.seek(here - delta, os.SEEK_SET)
+        yield fileobj.read(delta)
+        here -= delta
+def reversed_lines(fileobj):
+    """ Generate the lines of file in reverse order.  """
+    tail = []           # Tail of the line whose head is not yet read.
+    for block in reversed_blocks(fileobj):
+        # A line is a list of strings to avoid quadratic concatenation.
+        # (And trying to avoid 1-element lists would complicate the code.)
+        linelists = [[line] for line in block.splitlines()]
+        linelists[-1].extend(tail)
+        for linelist in reversed(linelists[1:]):
+            yield ''.join(linelist)
+        tail = linelists[0]
+    if tail:
+        yield ''.join(tail)
+
+
 import time
 import functools
 class ThrottledCall(object):
