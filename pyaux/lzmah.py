@@ -6,7 +6,7 @@ Also can be used as a script for compressing a file.
 import pylzma
 
 
-def lzma_compress(fi, fo, fi_close=True, fo_close=True):
+def lzma_compress(fi, fo, fi_close=True, fo_close=True, bufs=65535):
     """ Compress `fi` into `fo` (`file` or filename) """
     if isinstance(fi, str):
         fi, fi_n = open(fi, 'rb'), fi
@@ -17,7 +17,7 @@ def lzma_compress(fi, fo, fi_close=True, fo_close=True):
     #fi.seek(0)
     s = pylzma.compressfile(fi)
     while True:
-        tmp = s.read(1)  # (10)
+        tmp = s.read(bufs)
         if not tmp:
             break
         fo.write(tmp)
