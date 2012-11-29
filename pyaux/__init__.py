@@ -22,6 +22,9 @@ __all__ = [
  'sign',
  'try_parse',
  'human_sort_key',
+ 'reversed_blocks',
+ 'reversed_lines',
+ 'lazystr',
  'runlib',
  'lzmah',
  'lzcat',
@@ -480,5 +483,28 @@ def throttled_call(fn=None, *ar, **kwa):
     return (lambda fn: functools.wraps(fn)(ThrottledCall(fn, *ar, **kwa)))
 
 
+class lazystr(object):
+    """ A simple class for lazy-computed processing into string,
+      e.g. for use in logging.
+    Example: `log(13, "stuff is %r",
+      lazystr(lambda: ', '.join(stuff)))`
+    Note: no caching.
+    """
+    def __init__(self, fn):
+        self.fn = fn
+    def __str__(self):
+        return str(self.fn())
+    def __repr__(self):
+        return repr(self.fn())
+
+
 ## Put the other primary modules in the main module namespace
-from . import runlib, lzmah, lzcat, psql
+from . import runlib
+try:
+    from . import lzmah, lzcat
+except ImportError as e:
+    warnings.warn("Unable to import lzma helpers: %r" % (e,))
+try:
+    from . import psql
+except ImportError as e:
+    warnings.warn("Unable to import psql helpers: %r" % (e,))
