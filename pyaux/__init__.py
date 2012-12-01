@@ -508,3 +508,7 @@ try:
     from . import psql
 except ImportError as e:
     warnings.warn("Unable to import psql helpers: %r" % (e,))
+try:
+    from . import twisted_aux
+except ImportError as e:
+    warnings.warn("Unable to import twisted helpers: %r" % (e,))

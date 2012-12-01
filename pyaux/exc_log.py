@@ -10,8 +10,27 @@ Can be included in 'sitecustomize.py'
 
 import sys
 import traceback
+import types
 import logging
+import repr as reprlib  # ...named `reprlib` already in py3
+
+
+
 _log = logging.getLogger("unhandled_exception_handler")
+_lrepr_params = dict(maxlevel=8, maxtuple=64, maxlist=64, maxarray=48,
+  maxdict=64, maxset=64, maxfrozenset=64, maxdeque=64, maxstring=80,
+  maxlong=128, maxother=32)
+def make_lrepr():
+    lrepr = reprlib.Repr()
+    for k, v in _lrepr_params.iteritems():
+        setattr(lrepr, k, v)
+    return lrepr
+## The singleton:
+lrepr = make_lrepr()
+## Monkeypatch convenience addition:
+#reprlib.Repr.__call__ = (lambda self, x: self.repr(x))
+## ... or let's not to that and patch own instance only instead.
+lrepr.__call__ = types.MethodType(lambda self, x: self.repr(x), lrepr)
 
 
 def info(exc_type, exc_value, tb):
@@ -34,12 +53,16 @@ from pyaux import edi  # 'templating'.
 
 def _var_repr(v, ll=356):
     try:
-        # XXX: not exactly optimized in case of huge datalists
-        r = pformat(v)
+        ## not exactly optimized in case of huge datalists
+        #r = pformat(v)
+        ## not exactly... pretty
+        r = lrepr(v)
+        ## XXX: combine those two somehow?
+        ## (also, make it print last value of `list`/`deque`/... always, too)
     except Exception, e:
         return "<un`repr()`able variable>"
-    if len(r) > ll:
-        return r[:ll-4] + '... '
+    #if len(r) > ll:  # handled by the lrepr, somewhat; `ll` is ignored
+    #    return r[:ll-4] + '... '
     return r
 
 
