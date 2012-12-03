@@ -54,3 +54,5 @@ Also, in separate submodules:
   appending handler functions, similarly to `atexit`)
  * **make_manhole**: init a Twisted SSH manhole with set up locals,
   key-based auth, etc.
+* **twisted_aux**: use_exc_log-equivalent for twisted (and a helper to
+  remove the default logger).
