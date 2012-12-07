@@ -79,8 +79,8 @@ def sigeventer(add_defaults=True, do_sysexit=True, try_argless=True,
     return the_handler
 
 
-def make_manhole_telnet(port=2000, username='hell', password=None, ns1=None,
-  ns2=None, run=False):
+def make_manhole_telnet(port=2000, username='hell', password=None,
+  ns1=None, ns2=None, run=False, run_reactor=False):
     """ Creates a manhole telnet server and returns a callable run-function
       for it (or runs it if `run`)
     `password` will be auto-generated and printed if not specified.
@@ -105,10 +105,10 @@ def make_manhole_telnet(port=2000, username='hell', password=None, ns1=None,
         factory.password = zpassword
         #print 'Listening on port 2000'
         return lport
-    def run_manhole(reactor_run=True):
+    def run_manhole(run_reactor=run_reactor):
         """ RTFS """
         reactor.callWhenRunning(createShellServer)
-        if reactor_run:
+        if run_reactor:
             reactor.run()
     if run:
         return run_manhole()
@@ -117,10 +117,13 @@ def make_manhole_telnet(port=2000, username='hell', password=None, ns1=None,
 
 
 def make_manhole(port=2000, auth_passwords=None,
-  auth_keys_files='~/.ssh/authorized_keys_manhole',
-  ns1=None, ns2=None, auto_ns=True, verbose=False, run=False):
+  auth_keys_files='~/.ssh/authorized_keys_manhole', ns1=None, ns2=None,
+  auto_ns=True, verbose=False, run=False, run_reactor=False):
     """ Creates a manhole server and returns a callable run-function for it
-    (or runs it if `run`).
+    (or runs it if `run`, which binds the socket).
+    `port`: tcp port (int) or a unix socket name (str).
+      To connect to a unix socket, use
+      `ssh -o ProxyCommand='/bin/nc.openbsd -U %h' filename ...`
     `auth_passwords` is list or dict of (username, password);
       password will be auto-generated and printed if set to `None`.
     `auth_keys_files` is list of filenames with 'authorized_keys'-like files
@@ -157,7 +160,8 @@ def make_manhole(port=2000, auth_passwords=None,
             if not isinstance(authorized_keys_files, (list, tuple)):
                 authorized_keys_files = [authorized_keys_files]
             ## The horror? Relative path in params are relative to the __main__
-            basebasepath = os.path.dirname(os.path.abspath(sys.modules['__main__'].__file__))
+            basebasepath = os.path.dirname(os.path.abspath(
+              sys.modules['__main__'].__file__))
             def process_filepath(path):
                 if os.path.isabs(path):  # `path.startswith('/'):` - non-crossplatform
                     return path  # already absolute
@@ -199,17 +203,19 @@ def make_manhole(port=2000, auth_passwords=None,
         mhfactory = manhole_ssh.ConchFactory(mhportal)
         if isinstance(port, int):
             lport = reactor.listenTCP(port, mhfactory)
-        elif isinstance(port, str):
+        elif isinstance(port, (bytes, str)):
             lport = reactor.listenUNIX(port, mhfactory)
+        else:
+            raise Exception("`port` is of unknown type")
         if verbose:
-            print 'Listening on port %r' % (port,)
+            print 'Listening on %r' % (port,)
         return lport
-    def run_manhole(reactor_run=True):
+    def run_manhole(run_reactor=run_reactor):
         """ RTFS """
         if verbose:
             print 'Registering Manhole server with the reactor'
         reactor.callWhenRunning(createShellServer)
-        if reactor_run:
+        if run_reactor:
             if verbose:
                 print 'Running Twisted Reactor'
             reactor.run()
