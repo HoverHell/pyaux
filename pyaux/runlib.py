@@ -197,7 +197,10 @@ def make_manhole(port=2000, auth_passwords=None,
         ## pubkeys from parameters... not very needed.
         #mhportal.registerChecker(PubKeysChecker(zauthorizedKeys))
         mhfactory = manhole_ssh.ConchFactory(mhportal)
-        lport = reactor.listenTCP(port, mhfactory)
+        if isinstance(port, int):
+            lport = reactor.listenTCP(port, mhfactory)
+        elif isinstance(port, str):
+            lport = reactor.listenUNIX(port, mhfactory)
         if verbose:
             print 'Listening on port %r' % (port,)
         return lport

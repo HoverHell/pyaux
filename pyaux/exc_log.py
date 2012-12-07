@@ -200,7 +200,11 @@ def render_frames_data(frames, exc_type=None, exc_value=None):
             if frame['vars']:
                 res += "  Local vars:"
                 for var in sorted(frame['vars'], key=lambda v: v[0]):
-                    res += "  %(var[0])s: %(var[1])s;" % edi()
+                    ## Note: 13 spaces to visually separate the
+                    ##   variables at the same time taking less vertical
+                    ##   space than printing each from a new line (and
+                    ##   then adding spaces anyway).
+                    res += "             %(var[0])s: %(var[1])s;" % edi()
                 res += "\n"
     if exc_type or exc_value:
         res += render_exc_repr(exc_type, exc_value)
