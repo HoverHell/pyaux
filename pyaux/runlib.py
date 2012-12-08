@@ -3,6 +3,7 @@
 import os
 import sys
 import random
+import warnings
 
 
 __all__ = [
@@ -79,52 +80,90 @@ def sigeventer(add_defaults=True, do_sysexit=True, try_argless=True,
     return the_handler
 
 
-def make_manhole_telnet(port=2000, username='hell', password=None,
-  ns1=None, ns2=None, run=False, run_reactor=False):
-    """ Creates a manhole telnet server and returns a callable run-function
-      for it (or runs it if `run`)
-    `password` will be auto-generated and printed if not specified.
+## XXX: move this to twisted_aux?
+def make_manhole_telnet(socket="./manhole.sock", socket_kwa=None,
+  ns1=None, ns2=None, auto_ns=True,
+  verbose=False, run=True, run_reactor=False):
+    """ Creates a manhole telnet server over unix socket and returns a
+      callable that adds it to the reactor (or runs it if `run`, which
+      is default). It needs a running Twisted reactor to work (which is
+      started and blocks if `run_reactor`).
+    NOTE: authentication is not supported: use either socket file
+      permissions or use SSH manhole `make_manhole` instead.
+    `socket_kwa` are additional arguments for `reactor.listenUNIX`.
     `ns1` will be available (if set) under `ns1`,
     `ns2` contents will be available in the namespace itself.
+    `auto_ns`: use full namespace (and also `self.__dict__` if present) of
+      the caller.
     """
+    ## ... though I don't even completely know how to add auth in here anyway >.>
     from twisted.internet import reactor
-    from twisted.manhole import telnet
+    from twisted.conch import telnet, manhole
+    from twisted.conch.insults import insults
+    from twisted.internet import protocol
+
+    ## Namespace stuff
+    ns_b = {}
+    if auto_ns:
+        ns_b.update(sys._getframe(1).f_globals)
+        caller_locals = sys._getframe(1).f_locals
+        selfdict = getattr(caller_locals.get('self'), '__dict__', None)
+        if isinstance(selfdict, dict):
+            ns_b.update(selfdict)
+        ns_b.update(caller_locals)
+
     def createShellServer():
-        #print 'Creating shell server instance'
-        factory = telnet.ShellFactory()
-        lport = reactor.listenTCP(port, factory)
+        if verbose:
+            print 'Creating telnet server instance'
+        ### Namespace stuff
+        ns = ns_b
         if ns1 != None:
-            factory.namespace['ns1'] = ns1
+            ns['ns1'] = ns1
         if ns2 != None:
-            factory.namespace.update(ns2)
-        factory.username = username
-        zpassword = password
-        if zpassword == None:
-            zpassword = "%x" % random.getrandbits(128)
-            print "Manhole password: %r" % (zpassword,)
-        factory.password = zpassword
-        #print 'Listening on port 2000'
+            ns.update(ns2)
+
+        factory = protocol.ServerFactory()
+        ### This does:
+        ### f.protocol = lambda: ProtoA(ProtoB, ProtoC, ProtoD, ProtoD_args)
+        ##  (A instantiates B(...) who instantiates C(...) who instantiates D(ProtoD_args))
+        factory.protocol = lambda: (
+          telnet.TelnetTransport(
+            telnet.TelnetBootstrapProtocol,
+            insults.ServerProtocol,  # NOTE: need better terminal (likely)
+            manhole.ColoredManhole,
+            ns))
+        if verbose:
+            print 'Listening on %r' % (socket,)
+        lport = reactor.listenUNIX(  # pylint: disable=E1101
+          socket, factory, **(socket_kwa or {}))
         return lport
+
     def run_manhole(run_reactor=run_reactor):
         """ RTFS """
-        reactor.callWhenRunning(createShellServer)
+        reactor.callWhenRunning(  # pylint: disable=E1101
+          createShellServer)
         if run_reactor:
-            reactor.run()
+            return reactor.run()  # pylint: disable=E1101
+        else:
+            return reactor.run  # pylint: disable=E1101
+
     if run:
         return run_manhole()
     else:
         return run_manhole
 
 
-def make_manhole(port=2000, auth_passwords=None,
+def make_manhole(port=2000, auth_data=None,
   auth_keys_files='~/.ssh/authorized_keys_manhole', ns1=None, ns2=None,
-  auto_ns=True, verbose=False, run=False, run_reactor=False):
-    """ Creates a manhole server and returns a callable run-function for it
-    (or runs it if `run`, which binds the socket).
-    `port`: tcp port (int) or a unix socket name (str).
-      To connect to a unix socket, use
+  auto_ns=True, verbose=False, run=True, run_reactor=False):
+    """ Creates a manhole SSH server and returns a callable that adds
+      it to the reactor (or runs it if `run`, which is default). It needs
+      a running Twisted reactor to work (which is started and blocks if
+      `run_reactor`).
+    Port is TCP port if int or unix socket if str.
+    To connect to a unix socket, use
       `ssh -o ProxyCommand='/bin/nc.openbsd -U %h' filename ...`
-    `auth_passwords` is list or dict of (username, password);
+    `auth_data` is list or dict of (username, password);
       password will be auto-generated and printed if set to `None`.
     `auth_keys_files` is list of filenames with 'authorized_keys'-like files
       ('~' is expanded, relative path are relative to the __main__).
@@ -136,11 +175,17 @@ def make_manhole(port=2000, auth_passwords=None,
     ## Everything is cramped in this one function for simplicity. Uncramp
     ##  and put into a separate module if needs be.
     from twisted.internet import reactor
-    #from twisted.manhole import telnet
     from twisted.cred import portal, checkers
     from twisted.conch import manhole, manhole_ssh 
     from twisted.conch.checkers import SSHPublicKeyDatabase
     from twisted.python.filepath import FilePath
+
+    if isinstance(port, (bytes, str)):
+        use_unix_sock = True
+    elif isinstance(port, int):
+        use_unix_sock = False
+    else:
+        raise Exception("`port` is of unknown type")
 
     ns_b = {}
     if auto_ns:
@@ -165,10 +210,10 @@ def make_manhole(port=2000, auth_passwords=None,
             def process_filepath(path):
                 if os.path.isabs(path):  # `path.startswith('/'):` - non-crossplatform
                     return path  # already absolute
-                if path.startswith('~'):
+                elif path.startswith('~'):
                     return os.path.expanduser(path)
-                ## Expand relative otherwise.
-                return os.path.join(basebasepath, path)
+                else:  ## Expand relative otherwise.
+                    return os.path.join(basebasepath, path)
             self.authorized_keys_files = [
               FilePath(process_filepath(v)) for v in authorized_keys_files]
         def getAuthorizedKeysFiles(self, credentials):
@@ -178,11 +223,11 @@ def make_manhole(port=2000, auth_passwords=None,
     def createShellServer():
         if verbose:
             print 'Creating shell server instance'
-        z_auth_passwords = dict(auth_passwords or {})
-        for k, v in z_auth_passwords:
+        z_auth_data = dict(auth_data or {})
+        for k, v in z_auth_data.iteritems():
             if v == None:
                 rndpwd = "%x" % random.getrandbits(128)
-                z_auth_passwords[k] = rndpwd
+                z_auth_data[k] = rndpwd
                 print "Manhole password for %r: %r" % (k, rndpwd)
         ## Namespace stuff
         ns = ns_b
@@ -196,29 +241,32 @@ def make_manhole(port=2000, auth_passwords=None,
           lambda v: manhole.Manhole(ns))
         mhportal = portal.Portal(mhrealm)
         mhportal.registerChecker(
-          checkers.InMemoryUsernamePasswordDatabaseDontUse(**z_auth_passwords))
+          checkers.InMemoryUsernamePasswordDatabaseDontUse(**z_auth_data))
         mhportal.registerChecker(AuthorizedKeysChecker(auth_keys_files))
         ## pubkeys from parameters... not very needed.
         #mhportal.registerChecker(PubKeysChecker(zauthorizedKeys))
         mhfactory = manhole_ssh.ConchFactory(mhportal)
-        if isinstance(port, int):
-            lport = reactor.listenTCP(port, mhfactory)
-        elif isinstance(port, (bytes, str)):
-            lport = reactor.listenUNIX(port, mhfactory)
-        else:
-            raise Exception("`port` is of unknown type")
         if verbose:
             print 'Listening on %r' % (port,)
+        if use_unix_sock:
+            lport = reactor.listenUNIX(  # pylint: disable=E1101
+              port, mhfactory)
+        else:
+            lport = reactor.listenTCP(  # pylint: disable=E1101
+              port, mhfactory)
         return lport
     def run_manhole(run_reactor=run_reactor):
         """ RTFS """
         if verbose:
             print 'Registering Manhole server with the reactor'
-        reactor.callWhenRunning(createShellServer)
+        reactor.callWhenRunning(  # pylint: disable=E1101
+          createShellServer)
         if run_reactor:
             if verbose:
                 print 'Running Twisted Reactor'
-            reactor.run()
+            return reactor.run()  # pylint: disable=E1101
+        else:
+            return reactor.run  # pylint: disable=E1101
     if run:
         return run_manhole()
     else:
