@@ -25,11 +25,58 @@ def init_logging(*ar, **kwa):
     logging.basicConfig(*ar, **kwa)
 
 
-def sigeventer(add_defaults=True, do_sysexit=True, try_argless=True,
-  ignore_exc=True, verbose=False):
+import signal
+import atexit
+import traceback
+def argless_wrap(fn):
+    """ Wrap function to re-try calling it if calling it with arguments
+    failed """
+    def argless_internal(*ar, **kwa):
+        try:
+            return fn(*ar, **kwa)
+        except TypeError as e:
+            try:
+                return fn()
+            except TypeError as e2:
+                #raise e  # - traceback-inconvenient
+                raise  # - error-inconvenient
+    return argless_internal
+## convenience wrappers:
+def _sysexit_wrap(n=None, f=None):
+    return sys.exit()
+def _atexit_wrap(n=None, f=None):
+    return atexit._run_exitfuncs()
+class ListSigHandler(list):
+    def __init__(self, try_argless, ignore_exc, verbose):
+        self.try_argless = try_argless
+        self.ignore_exc = ignore_exc
+        self.verbose = verbose
+    def __call__(self, n, f):
+        for func in reversed(self):
+            try:
+                if self.verbose:
+                    print "ListSigHandler: running %r" % (func,)
+                if self.try_argless:
+                    func = argless_wrap(func)
+                func(n, f)
+            except Exception, e:
+                if self.ignore_exc:
+                    if self.verbose:
+                        traceback.print_exc()
+                    else:
+                        ## Still print something
+                        print "Exception ignored: %r" % (e,)
+                else:
+                    raise
+def sigeventer(add_defaults=True, add_previous=True, do_sysexit=True,
+  try_argless=True, ignore_exc=True, verbose=False):
     """
-    Puts list-based handler for SIGINT and SIGTERM that can be appended to.
+    Puts one list-based handler for SIGINT and SIGTERM that can be
+      `append`ed to.
+    NOTE: arguments are ignored if it was called previously.
     `add_defaults`: add the `atexit` handler.
+    `add_previous`: add the previously-set handlers (NOTE: will mix
+      sigterm/sigint handlers if different).
     `try_argless`: re-call handled function without parameters if they raise
       TypeError.
     `do_sysexit`: do `sys.exit()` at the end of handler.
@@ -37,46 +84,30 @@ def sigeventer(add_defaults=True, do_sysexit=True, try_argless=True,
     Use `signal.getsignal(signal.SIGINT).append(some_func)` to add a handler.
     Handlers are called in reverse order (first in, last out).
     """
-    import signal
-    import atexit
-    import traceback
     ## Check if already done something like this:
-    ## TODO: make a more elaborate handling of currently set sighandlers.
-    curhandler = signal.getsignal(signal.SIGINT)
-    if isinstance(curhandler, list):
-        return curhandler
-    class ListHandler(list):
-        def __call__(self, n, f):
-            for func in reversed(self):
-                try:
-                    if verbose:
-                        print "ListSigHandler: running %r" % (func,)
-                    try:
-                        func(n, f)
-                    except TypeError, ee:
-                        if try_argless:
-                            try:
-                                func()
-                            except TypeError:
-                                raise ee
-                        else:
-                            raise
-                except Exception, e:
-                    if ignore_exc:
-                        if verbose:
-                            traceback.print_exc()
-                        else:
-                            ## Still print something
-                            print "Exception ignored: %r" % (e,)
-                    else:
-                        raise
-            if do_sysexit:
-                sys.exit()
-    the_handler = ListHandler()
+    curhandler_int = signal.getsignal(signal.SIGINT)
+    curhandler_term = signal.getsignal(signal.SIGTERM)
+    if isinstance(curhandler_int, list) and isinstance(curhandler_term, list):
+        # probaby us already; just return
+        assert curhandler_int is curhandler_term, "unexpected: different list-based term/int handlers"
+        return curhandler_term
+    the_handler = ListSigHandler(try_argless=try_argless, ignore_exc=ignore_exc, verbose=verbose)
     signal.signal(signal.SIGINT, the_handler)
     signal.signal(signal.SIGTERM, the_handler)
+    ## Useful since this all will only be done once.
+    if do_sysexit:
+        the_handler.append(_sysexit_wrap)
+    if add_previous:
+        ## Note that signal.SIG_DFL will be basically ignored.
+        if callable(curhandler_term):
+            the_handler.append(curhandler_term)
+        if (callable(curhandler_int)
+          and curhandler_int != curhandler_term):
+            ## (Note that same previous handler still can be called
+            ##   twice)
+            the_handler.append(curhandler_int)
     if add_defaults:
-        the_handler.append(lambda n, f: atexit._run_exitfuncs())
+        the_handler.append(_atexit_wrap)
     return the_handler
 
 
