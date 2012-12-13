@@ -40,7 +40,7 @@ def unlzma(fi, fo, fi_close=True, fo_close=True, bufs=6553500):
     return fi, fo
 
 
-if __name__ == '__main__':
+def _lzcat_main():
     import sys
     if len(sys.argv) > 1:
         fi_a = sys.argv[1]
@@ -58,3 +58,7 @@ if __name__ == '__main__':
     if fo_a == '-':
         fo_a = sys.stdout
     unlzma(fi_a, fo_a)
+
+
+if __name__ == '__main__':
+    _lzcat_main()

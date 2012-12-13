@@ -85,8 +85,7 @@ def unjsllzma(fi, fi_close=True, parse_fn=None, handle_fail=None, bufs=655350):
 
     
 
-
-if __name__ == '__main__':
+def _lzma_main():
     import sys
     fi_a = sys.argv[1]
     fo_a = sys.argv[2]
@@ -96,3 +95,7 @@ if __name__ == '__main__':
     if fo_a == '-':
         fo_a = sys.stdout
     lzma_compress(fi_a, fo_a)
+
+
+if __name__ == '__main__':
+    _lzma_main()

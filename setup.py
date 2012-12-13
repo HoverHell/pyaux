@@ -10,7 +10,8 @@ Collection of helpers and useful things for Python
 #from distutils.core import setup
 from setuptools import setup, find_packages
 
-setup(name='pyaux',
+setup(
+  name='pyaux',
   version=version,
   description='pyaux',  ## XX
   long_description=LONG_DESCRIPTION,
@@ -19,7 +20,13 @@ setup(name='pyaux',
   author='HoverHell',
   author_email='hoverhell@gmail.com',
   url='https://github.com/HoverHell/pyaux',
-  packages=find_packages(),
+  packages=['pyaux'],  #find_packages(),
+  entry_points={
+    'console_scripts': [
+      'lzcat.py = pyaux.lzcat:_lzcat_main',
+      'lzma.py = pyaux.lzmah:_lzma_main',
+      ],
+    },
   install_requires=['ipdb',],
   extras_require={
     ## Things that are useful to simply have around:
