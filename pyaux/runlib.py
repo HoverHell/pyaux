@@ -19,9 +19,20 @@ def init_logging(*ar, **kwa):
     if colored:
         from . import use_colorer
         use_colorer()
+    short_levelnames = kwa.pop('short_levelnames', True)
+    if short_levelnames:
+        _names = [
+          (logging.DEBUG, 'DBG'),
+          (logging.INFO, 'INFO'),  # d'uh
+          (logging.WARN, 'WARN'),
+          (logging.ERROR, 'ERR'),
+          (logging.CRITICAL, 'CRIT'),
+          ]
+        for lvl, name in _names:
+            logging.addLevelName(lvl, str(name))
     kwa.setdefault('level', logging.DEBUG)
     kwa.setdefault('format',
-      '%(asctime)s | %(levelname)-16s | %(name)s | %(message)s')
+      '%(asctime)s | %(levelname)-13s | %(name)s | %(message)s')
     logging.basicConfig(*ar, **kwa)
 
 
