@@ -48,7 +48,9 @@ import os
 import signal
 import struct
 import sys
+import traceback
 import __builtin__
+
 
 def map(function, *sequence):
     """map(function, sequence[, sequence, ...]) -> list
@@ -63,7 +65,7 @@ def map(function, *sequence):
     """
     
     # IPC stuff
-    structformat = 'H'
+    structformat = 'L'  #'H'  #not everything there is short enough.
     structlen = struct.calcsize(structformat)
 
     def sendmessage(myend, message):
@@ -135,6 +137,13 @@ def map(function, *sequence):
                     index, value = message 
                     sendmessage(toparent, (childnum, index, function(*value)))
                 except Exception, excvalue:
+                    try:
+                        excvalue.tb = traceback.extract_tb(sys.exc_info()[2])
+                    except Exception, e2:
+                        try:
+                            excvalue.e2 = e2
+                        except Exception, e3:
+                            pass
                     sendmessage(toparent, (childnum, index, excvalue))
                 finally:
                     signal.signal(signal.SIGALRM, oldsignal)
@@ -144,6 +153,11 @@ def map(function, *sequence):
     while finished < len(arglist):
         returnchild, returnindex, value = recvmessage(fromchild)
         if isinstance(value, Exception):
+            try:
+                print "Child traceback:"
+                print ''.join(traceback.format_list(value.tb))
+            except Exception as e2:
+                pass
             raise value
         outlist[returnindex] = value
         finished += 1
@@ -161,11 +175,11 @@ def map(function, *sequence):
     return outlist
 
 def parallelizable(maxchildren=2, perproc=None):
-    """Mark a function as eligible for parallelized execution.  The
+    """ Mark a function as eligible for parallelized execution.  The
     function will run across a number of processes equal to
     maxchildren, perproc times the number of processors installed on
     the system, or the number of times the function needs to be run to
-    process all data passed to it - whichever is least."""
+    process all data passed to it - whichever is least. """
     if perproc is not None:
         processors = 4 # hand-waving
         maxchildren = min(maxchildren, perproc * processors)
