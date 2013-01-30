@@ -143,6 +143,7 @@ def make_manhole_telnet(socket="./manhole.sock", socket_kwa=None,
     from twisted.conch import telnet, manhole
     from twisted.conch.insults import insults
     from twisted.internet import protocol
+    from twisted.internet import error
 
     ## Namespace stuff
     ns_b = {}
@@ -168,8 +169,16 @@ def make_manhole_telnet(socket="./manhole.sock", socket_kwa=None,
         ### This does:
         ### f.protocol = lambda: ProtoA(ProtoB, ProtoC, ProtoD, ProtoD_args)
         ##  (A instantiates B(...) who instantiates C(...) who instantiates D(ProtoD_args))
+        class TT_LogFix(telnet.TelnetTransport):
+            """ A semi-hax-fix protocol that filters out ConnectionDone errors """
+            def connectionLost(self, reason):
+                if reason.check(error.ConnectionDone):
+                    # `or reason.check(error.ConnectionLost)`?
+                    return
+                return telnet.TelnetTransport.connectionLost(self, reason)
+
         factory.protocol = lambda: (
-          telnet.TelnetTransport(
+          TT_LogFix(  #telnet.TelnetTransport(
             telnet.TelnetBootstrapProtocol,
             insults.ServerProtocol,  # NOTE: need better terminal (likely)
             manhole.ColoredManhole,
