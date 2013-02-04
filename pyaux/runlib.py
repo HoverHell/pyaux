@@ -172,8 +172,8 @@ def make_manhole_telnet(socket="./manhole.sock", socket_kwa=None,
         class TT_LogFix(telnet.TelnetTransport):
             """ A semi-hax-fix protocol that filters out ConnectionDone errors """
             def connectionLost(self, reason):
-                if reason.check(error.ConnectionDone):
-                    # `or reason.check(error.ConnectionLost)`?
+                if (reason.check(error.ConnectionDone)
+                  or reason.check(error.ConnectionLost)):
                     return
                 return telnet.TelnetTransport.connectionLost(self, reason)
 
