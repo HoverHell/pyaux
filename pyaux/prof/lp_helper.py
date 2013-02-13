@@ -67,13 +67,16 @@ def _wrap_class_stuff(the_class, wrapf):
     ## Note: this, still, executes the class properties; hopefully, that
     ##   won't be a problem (they are damn rare after all)
     for i_name, i_val in inspect.getmembers(the_class, predicate=inspect.ismethod):
-        if getattr(i_val, '__prof_wrapped__', False):
-            continue  # do not wrap wrapped wrapstuff.
-        ## XXX: do the sourcefilename check too?
-        print "    Method wrapping: %s" % (i_name,)
-        wrapped_val = wrapf(i_val)
-        wrapped_val.__prof_wrapped__ = True
-        setattr(the_class, i_name, wrapped_val)
+        try:
+            if getattr(i_val, '__prof_wrapped__', False):
+                continue  # do not wrap wrapped wrapstuff.
+            ## XXX: do the sourcefilename check too?
+            print "    Method wrapping: %s" % (i_name,)
+            wrapped_val = wrapf(i_val)
+            setattr(wrapped_val, '__prof_wrapped__', True)
+            setattr(the_class, i_name, wrapped_val)
+        except Exception as e:
+            print "     ... Failed (%r). %r" % (i_name, e)
 def _wrap_module_stuff(module, wrapf):
     """ Wrap each function and method in the module with the specified
     function (e.g. LineProfiler) """
@@ -87,27 +90,30 @@ def _wrap_module_stuff(module, wrapf):
     module_filename = inspect.getsourcefile(module)
     ## ...
     for i_name in dir(module):
-        i_val = getattr(module, i_name)
-        if getattr(i_val, '__prof_wrapped__', False):
-            continue  # do not wrap wrapped wrapstuff.
         try:
-            i_filename = inspect.getsourcefile(i_val)
+            i_val = getattr(module, i_name)
+            if getattr(i_val, '__prof_wrapped__', False):
+                continue  # do not wrap wrapped wrapstuff.
+            try:
+                i_filename = inspect.getsourcefile(i_val)
+            except Exception as e:
+                i_filename = None
+            if i_filename is not None and i_filename != module_filename:
+                ## Skip stuff that we know isn't from that module
+                continue
+            elif i_filename is None:
+                ## ... and skip, too, all the built-ins, non-(module/class/function/...)
+                continue
+            if inspect.isclass(i_val):
+                print "  Class wrapping: %s" % (i_name,)
+                _wrap_class_stuff(i_val, wrapf=wrapf)
+            elif callable(i_val):
+                print "  Wrapping: %s" % (i_name,)
+                wrapped_val = wrapf(i_val)
+                setattr(wrapped_val, '__prof_wrapped__', True)
+                setattr(module, i_name, wrapped_val)
         except Exception as e:
-            i_filename = None
-        if i_filename is not None and i_filename != module_filename:
-            ## Skip stuff that we know isn't from that module
-            continue
-        elif i_filename is None:
-            ## ... and skip, too, all the built-ins, non-(module/class/function/...)
-            continue
-        if inspect.isclass(i_val):
-            print "  Class wrapping: %s" % (i_name,)
-            _wrap_class_stuff(i_val, wrapf=wrapf)
-        elif callable(i_val):
-            print "  Wrapping: %s" % (i_name,)
-            wrapped_val = wrapf(i_val)
-            wrapped_val.__prof_wrapped__ = True
-            setattr(module, i_name, wrapped_val)
+            print "  ... Failed (%r). %r" % (i_name, e)
 ## TODO: make it possible to specify down to particular objects to wrap.
 def wrap_packages(packages, wrapf=None, verbose=True):
     """ Wraps all the currently imported modules within any package of
@@ -124,8 +130,13 @@ def wrap_packages(packages, wrapf=None, verbose=True):
             if pkg_name.startswith(pkg_to_wrap):
                 if verbose:
                     print "Module-wrapping: %s" % (pkg_name,)
-                _wrap_module_stuff(pkg, wrapf)
+                try:
+                    _wrap_module_stuff(pkg, wrapf)
+                except Exception as e:
+                    print " ... Failed.", e
                 break  # make sure not to wrap it many times.
+    if verbose:
+        print "Wrapping done."
 
 
 def stgrab(sig, frame):
