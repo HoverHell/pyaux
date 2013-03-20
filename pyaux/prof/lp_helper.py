@@ -139,6 +139,7 @@ def wrap_packages(packages, wrapf=None, verbose=True):
         print "Wrapping done."
 
 
+## TODO?: put into the main prof module
 def stgrab(sig, frame):
     """ function that is supposed to be addd as a signal handler
     (e.g. on USR2) and prints the stack trace when called """
