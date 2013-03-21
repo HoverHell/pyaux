@@ -4,6 +4,7 @@ import os
 import sys
 import random
 import warnings
+import logging
 
 
 __all__ = [
@@ -12,23 +13,31 @@ __all__ = [
 ]
 
 
+def _make_short_levelnames(shortnum=True):
+    """ Return a dict (levelnum -> levelname) with short names for logging.
+    `shortnum`: also shorten all 'Level #' names to 'L##'.
+    """
+    _names = dict([
+      (logging.DEBUG, 'DBG'),
+      (logging.INFO, 'INFO'),  # d'uh
+      (logging.WARN, 'WARN'),
+      (logging.ERROR, 'ERR'),
+      (logging.CRITICAL, 'CRIT'),
+      ])
+    if shortnum:
+        for i in xrange(1, 100):
+            _names.setdefault(i, "L%02d" % (i,))
+    return _names
 def init_logging(*ar, **kwa):
     """ Simple shorthand for neat and customizable logging init """
-    import logging
     colored = kwa.pop('colored', True)
     if colored:
         from . import use_colorer
         use_colorer()
     short_levelnames = kwa.pop('short_levelnames', True)
     if short_levelnames:
-        _names = [
-          (logging.DEBUG, 'DBG'),
-          (logging.INFO, 'INFO'),  # d'uh
-          (logging.WARN, 'WARN'),
-          (logging.ERROR, 'ERR'),
-          (logging.CRITICAL, 'CRIT'),
-          ]
-        for lvl, name in _names:
+        _names = _make_short_levelnames()
+        for lvl, name in _names.iteritems():
             logging.addLevelName(lvl, str(name))
     kwa.setdefault('level', logging.DEBUG)
     kwa.setdefault('format',
