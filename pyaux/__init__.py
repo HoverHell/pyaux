@@ -1,6 +1,7 @@
 # coding: utf8
 """ A collection of useful helpers """
-
+## NOTE: no modules imported here should import `decimal` (otherwise
+##   `use_cdecimal` might become problematic for them)
 
 __all__ = [
  'bubble',
@@ -25,6 +26,7 @@ __all__ = [
  'reversed_blocks',
  'reversed_lines',
  'lazystr',
+ 'list_uniq',
  'runlib',
  'lzmah',
  'lzcat',
@@ -417,6 +419,7 @@ class ThrottledCall(object):
     _call_time_throttle = None
     _call_cnt = 0  # (kept accurate; but can become ineffectively large)
     _call_cnt_throttle = 0  # next _call_cnt to call at
+    _call_val = object()  # (some unique value at start)
     def __init__(self, fn=None, sec_limit=None, cnt_limit=None):
         """ `fn`: function to call (can be customized later).
         `sec_limit`: skip call if less than `sec_limit` seconds since the
@@ -456,8 +459,7 @@ class ThrottledCall(object):
         """ Call if the value hasn't changed (applying the other
         throttling parameters as well). Contains undocumented feature
         """
-        if (not hasattr(self, '_call_val')
-          or self._call_val != val):  # pylint: disable=E0203
+        if self._call_val != val:
             self._call_val = val
             if fn is None:
                 fn = self.fn
@@ -498,7 +500,21 @@ class lazystr(object):
         return repr(self.fn())
 
 
+def list_uniq(l, key=None):
+    """ Returns a generator with only unique values (as returned by key)
+    of a list, maintaining their order """
+    if key is None:
+        key = lambda v: v
+    keys = set()
+    for v in l:
+        v_key = key(v)
+        if v_key not in keys:
+            yield v
+        keys.add(v_key)
+
+
 ## Put the other primary modules in the main module namespace
+## ... but do not fail
 from . import runlib
 try:
     from . import lzmah, lzcat
