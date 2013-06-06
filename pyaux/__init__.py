@@ -27,6 +27,7 @@ __all__ = [
  'reversed_lines',
  'lazystr',
  'list_uniq',
+ 'o_repr',
  'runlib',
  'lzmah',
  'lzcat',
@@ -511,6 +512,41 @@ def list_uniq(l, key=None):
         if v_key not in keys:
             yield v
         keys.add(v_key)
+
+
+### Helper for o_repr that displays '???'
+_err_obj = type('ErrObj', (object,), dict(__repr__=lambda self: '???'))()
+## It is similar to using self.__dict__ in repr() but works over dir()
+def o_repr(o):
+    """ Represent (most of) data on a python object in readable
+    way. Useful default for a __repr__.
+    WARN: does not handle recursive structures; use carefully.  """
+    attrs = []
+    #o_type = type(o)  # V3: check type for properties
+    for n in sorted(dir(o)):
+        if n.startswith('_'):  # skip 'private' stuff
+            continue
+        ## V2: try but fail
+        try:
+            v = getattr(o, n)
+            if callable(v):  # skip functions (... and other callables)
+                continue
+        except Exception as e:
+            v = _err_obj
+        ## V3: check type for properties
+        #v_m = getattr(o_type, n, None)
+        #if v_m is not None and isinstance(v_m, property):
+        #    continue  # skip properties
+        #v = getattr(o, n)
+        #if callable(v):  # skip functions (... and other callables)
+        #    continue
+        ### XXX: *might* be better to write into a 'stream'
+        attrs.append("%s=%r" % (n, v))
+    return "<%s(%s)>" % (o.__class__.__name__,
+      ", ".join(attrs))
+class OReprMixin(object):
+    def __repr__(self):
+        return o_repr(self)
 
 
 ## Put the other primary modules in the main module namespace
