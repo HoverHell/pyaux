@@ -515,17 +515,51 @@ def list_uniq(l, key=None):
 
 
 ### Helper for o_repr that displays '???'
-_err_obj = type('ErrObj', (object,), dict(__repr__=lambda self: '???'))()
+class ReprObj(object):
+    """ A class for inserting specific text in __repr__ outputs.  """
+    def __init__(self, txt):
+        self.txt = txt
+    def __repr__(self):
+        return self.txt
+#_err_obj = type('ErrObj', (object,), dict(__repr__=lambda self: '???'))()
+_err_obj = ReprObj('???')
 ## It is similar to using self.__dict__ in repr() but works over dir()
-def o_repr(o):
+def o_repr_g(o, _colors=False, _colors256=False, _colorvs=None):
     """ Represent (most of) data on a python object in readable
     way. Useful default for a __repr__.
     WARN: does not handle recursive structures; use carefully.  """
-    attrs = []
+    def _color(x16, x256=None):
+        if not _colors:
+            return ''
+        if _colors256 and x256:
+            return '\x1b[38;5;' + str(x256) + 'm'
+        return '\x1b[0' + str(x16) + 'm'
+    _colorvs = _colorvs or dict(
+      base=('1;37', '230'),  ## Base (punctuation)  # white / pink-white
+      clsn=('1;36', '123'),  ## Class name  # cyan / purple-white
+      attr=('0;32', '120'),  ## Attribute name  # dark-green / green-white
+      val=('0;37', '252'),  ## Value data  # light-gray / light-light-gray
+    )
+    def _colorv(n):
+        return _color(*_colorvs[n])
+    yield _colorv("base")
+    yield '<'
+    yield _colorv("clsn")
+    yield str(o.__class__.__name__)
+    yield _colorv("base")
+    yield '('
     #o_type = type(o)  # V3: check type for properties
+    first = True
     for n in sorted(dir(o)):
         if n.startswith('_'):  # skip 'private' stuff
             continue
+        if first:
+            first = False
+        else:
+            yield _colorv("base")
+            yield ', '
+        yield _colorv("attr")
+        yield str(n)  ## NOTE: some cases (e.g. functions) will remain just names
         ## V2: try but fail
         try:
             v = getattr(o, n)
@@ -540,10 +574,18 @@ def o_repr(o):
         #v = getattr(o, n)
         #if callable(v):  # skip functions (... and other callables)
         #    continue
-        ### XXX: *might* be better to write into a 'stream'
-        attrs.append("%s=%r" % (n, v))
-    return "<%s(%s)>" % (o.__class__.__name__,
-      ", ".join(attrs))
+        yield _colorv("base")
+        yield '='
+        yield _colorv("val")
+        yield repr(v)
+    yield _colorv("base")
+    yield ')>'
+    yield '\x1b[00m'  # color clear
+def o_repr(o, **kwa):
+    return ''.join(o_repr_g(o, **kwa))
+def p_o_repr(o, **kwa):
+    kwa = dict(dict(_colors=True, _colors256=True), **kwa)
+    print o_repr(o, **kwa)
 class OReprMixin(object):
     def __repr__(self):
         return o_repr(self)
