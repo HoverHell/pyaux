@@ -591,6 +591,26 @@ class OReprMixin(object):
         return o_repr(self)
 
 
+def stdin_lines(strip_newlines=True):
+    """ Iterate over stdin lines in a 'line-buffered' way """
+    while True:
+        try:
+            l = sys.stdin.readline()
+        except KeyboardInterrupt:
+            return
+        if not l:
+            break
+        ## This might not be the case if the stream terminates with a non-newline at the end.
+        if strip_newlines and l[-1] == '\n':
+            l = l[:-1]
+        yield l
+def stdout_lines(gen):
+    """ Send lines from a generator / iterable to stdout in a line-buffered way. """
+    for l in gen:
+        sys.stdout.write("%s\n" % (l,))
+        sys.stdout.flush()
+
+
 ## Put the other primary modules in the main module namespace
 ## ... but do not fail
 from . import runlib

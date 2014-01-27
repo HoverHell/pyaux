@@ -119,7 +119,9 @@ def _uprint(o):
 
 ## For _into_builtin
 __all_stuff = locals()
-__all_stuff_e = dict(_try2=_try2, _try=_try, _iter_ar=_iter_ar, _filter=_filter, _filter_n=_filter_n, _print=_print, _ipdbg=_ipdbg, _uprint=_uprint)
+__all_stuff_e = dict(_try2=_try2, _try=_try, _iter_ar=_iter_ar,
+  _filter=_filter, _filter_n=_filter_n, _print=_print, _ipdbg=_ipdbg,
+  _uprint=_uprint)
 
 
 try:
