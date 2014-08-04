@@ -611,6 +611,29 @@ def stdout_lines(gen):
         sys.stdout.flush()
 
 
+def dict_merge(target, source, instancecheck=None, dictclass=dict):
+    """ do update() on 'dict of dicts of di...' structure recursively.
+    Also, see sources for details.
+    NOTE: does not keep target's specific tree structure (forces source's)
+    """
+    if instancecheck is None:  # funhorrible ducktypings
+        #instancecheck = lambda iv: isinstance(iv, dict)
+        instancecheck = lambda iv: hasattr(iv, 'iteritems')
+    ## Recursive parameters shorthand
+    kwa = dict(instancecheck=instancecheck, dictclass=dictclass)
+
+    for k, v in source.iteritems():
+        if instancecheck(v):  # (v -> source -> iteritems())
+            ## NOTE: if target[k] wasn't a dict - it will be, now.
+            target[k] = dict_merge(
+                dict_fget(target, k, dictclass), v, **kwa)
+        else:  # nowhere to recurse into - just replace
+            ## NOTE: if target[k] was a dict - it won't be, anymore.
+            target[k] = v
+
+    return target
+
+
 ## Put the other primary modules in the main module namespace
 ## ... but do not fail
 from . import runlib
