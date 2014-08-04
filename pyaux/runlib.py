@@ -3,6 +3,7 @@
 import os
 import sys
 import random
+import time
 import warnings
 import logging
 
@@ -28,8 +29,30 @@ def _make_short_levelnames(shortnum=True):
         for i in xrange(1, 100):
             _names.setdefault(i, "L%02d" % (i,))
     return _names
+
+
+class LoggingStreamHandlerTD(logging.StreamHandler):
+    """ A logging.StreamHandler variery that adds time-difference with the previous log line to the data """
+
+    def __init__(self, *ar, **kwa):
+        logging.StreamHandler.__init__(self, *ar, **kwa)
+        self.last_ts = time.time()
+
+    def emit(self, record):
+        now = time.time()
+        prev = self.last_ts
+        record.time_diff = (now - prev)
+        self.last_ts = now
+        return logging.StreamHandler.emit(self, record)
+
+
+BASIC_LOG_FORMAT = '%(asctime)s: %(levelname)-13s: %(name)s: %(message)s'
+BASIC_LOG_FORMAT_TD = '%(asctime)s(+%(time_diff)5.3fs): %(levelname)-13s: %(name)s: %(message)s'
+
 def init_logging(*ar, **kwa):
     """ Simple shorthand for neat and customizable logging init """
+    _td = kwa.pop('_td', False)
+
     colored = kwa.pop('colored', True)
     if colored:
         from . import use_colorer
@@ -40,9 +63,19 @@ def init_logging(*ar, **kwa):
         for lvl, name in _names.iteritems():
             logging.addLevelName(lvl, str(name))
     kwa.setdefault('level', logging.DEBUG)
-    kwa.setdefault('format',
-      '%(asctime)s | %(levelname)-13s | %(name)s | %(message)s')
-    logging.basicConfig(*ar, **kwa)
+    logformat = BASIC_LOG_FORMAT if not _td else BASIC_LOG_FORMAT_TD
+    kwa.setdefault('format', logformat)
+
+    if _td:
+        ## can't give it a custom handler class
+        # logging.basicConfig(*ar, **kwa)
+        hdlr = LoggingStreamHandlerTD(kwa.get('stream'))
+        fmt = logging.Formatter(kwa.get('format'), kwa.get('datefmt'))
+        hdlr.setFormatter(fmt)
+        logging.root.addHandler(hdlr)
+        logging.root.setLevel(kwa.get('level', logging.INFO))
+    else:
+        logging.basicConfig(*ar, **kwa)
 
 
 import signal

@@ -23,6 +23,9 @@ __all__ = [
 ]
 
 
+import re
+
+
 class GenReprWrap(object):
     """ Generator proxy-wrapper that prints part of the child generator
     on __repr__ (saving it in a list).  """
@@ -283,6 +286,7 @@ def IPNBDFDisplay(df, *ar, **kwa):
     pandas.options.display.max_colwidth = 2000
     H = IPNBDFDisplay
     """
+    from IPython.display import display, HTML
     kwa.setdefault('max_rows', 300)
     kwa.setdefault('float_format', lambda v: '%.6f' % (v,))
     tail = kwa.pop('tail', 200)
