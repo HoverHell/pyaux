@@ -699,19 +699,34 @@ def stdout_lines(gen):
         sys.stdout.flush()
 
 
-def dict_merge(target, source, instancecheck=None, dictclass=dict):
+def dict_merge(target, source, instancecheck=None, dictclass=dict, del_obj=object()):
     """ do update() on 'dict of dicts of di...' structure recursively.
     Also, see sources for details.
     NOTE: does not keep target's specific tree structure (forces source's)
+    :param del_obj: allows for deletion of keys if the key in the `source` is set to this.
+
+    >>> from sbdutils.aux import dict_merge
+    >>> data = {}
+    >>> data = dict_merge(data, {'open_folders': {'my_folder_a': False}})
+    >>> data
+    {'open_folders': {'my_folder_a': False}}
+    >>> data = dict_merge(data, {'open_folders': {'my_folder_b': True}})
+    >>> data
+    {'open_folders': {'my_folder_b': True, 'my_folder_a': False}}
+    >>> _del = object(); data = dict_merge(data, {'open_folders': {'my_folder_b': _del}}, del_obj=_del)
+    >>> data
+    {'open_folders': {'my_folder_a': False}}
     """
     if instancecheck is None:  # funhorrible ducktypings
         #instancecheck = lambda iv: isinstance(iv, dict)
         instancecheck = lambda iv: hasattr(iv, 'iteritems')
     ## Recursive parameters shorthand
-    kwa = dict(instancecheck=instancecheck, dictclass=dictclass)
+    kwa = dict(instancecheck=instancecheck, dictclass=dictclass, del_obj=del_obj)
 
     for k, v in source.iteritems():
-        if instancecheck(v):  # (v -> source -> iteritems())
+        if v is del_obj:
+            target.pop(k, None)
+        elif instancecheck(v):  # (v -> source -> iteritems())
             ## NOTE: if target[k] wasn't a dict - it will be, now.
             target[k] = dict_merge(
                 dict_fget(target, k, dictclass), v, **kwa)
