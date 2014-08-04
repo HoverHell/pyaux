@@ -4,34 +4,35 @@
 ##   `use_cdecimal` might become problematic for them)
 
 __all__ = [
- 'bubble',
- 'window',
- 'SmartDict',
- 'DebugPlug', 'repr_call',
- 'fxrange', 'frange', 'dxrange', 'drange',
- 'dict_fget',
- 'dict_fsetdefault',
- 'interp',
- 'edi', 'InterpolationEvaluationException',
- 'split_list',
- 'use_cdecimal',
- 'use_exc_ipdb',
- 'use_exc_log',
- 'use_colorer',
- 'obj2dict',
- 'mk_logging_property',
- 'sign',
- 'try_parse',
- 'human_sort_key',
- 'reversed_blocks',
- 'reversed_lines',
- 'lazystr',
- 'list_uniq',
- 'o_repr',
- 'runlib',
- 'lzmah',
- 'lzcat',
- 'psql',
+    'bubble',
+    'window',
+    'dotdict',
+    'SmartDict',
+    'DebugPlug', 'repr_call',
+    'fxrange', 'frange', 'dxrange', 'drange',
+    'dict_fget',
+    'dict_fsetdefault',
+    'interp',
+    'edi', 'InterpolationEvaluationException',
+    'split_list',
+    'use_cdecimal',
+    'use_exc_ipdb',
+    'use_exc_log',
+    'use_colorer',
+    'obj2dict',
+    'mk_logging_property',
+    'sign',
+    'try_parse',
+    'human_sort_key',
+    'reversed_blocks',
+    'reversed_lines',
+    'lazystr',
+    'list_uniq',
+    'o_repr',
+    # 'runlib',
+    # 'lzmah',
+    # 'lzcat',
+    # 'psql',
 ]
 
 
@@ -39,6 +40,11 @@ import os
 import sys
 import inspect
 import warnings
+
+import time
+import functools
+import traceback
+import re
 
 
 def bubble(*args, **kwargs):
@@ -80,9 +86,9 @@ def window(seq, size=2, fill=0, fill_left=False, fill_right=False):
     """
     ssize = size - 1
     it = chain(
-      repeat(fill, ssize * fill_left),
-      iter(seq),
-      repeat(fill, ssize * fill_right))
+        repeat(fill, ssize * fill_left),
+        iter(seq),
+        repeat(fill, ssize * fill_right))
     result = tuple(islice(it, size))
     if len(result) == size:  # `<=` if okay to return seq if len(seq) < size
         yield result
@@ -91,7 +97,7 @@ def window(seq, size=2, fill=0, fill_left=False, fill_right=False):
         yield result
 
 
-class SmartDict(dict):
+class dotdict(dict):
     """ A simple dict subclass with items also available over attributes """
     def __getattr__(self, name):
         try:
@@ -102,13 +108,19 @@ class SmartDict(dict):
         self[name] = value
 
 
-dbgs = {}   # global object for easier later access of dumped `__call__`s
+## Compat alias
+SmartDict = dotdict
+
+
 def repr_call(ar, kwa):
     """ A helper function for pretty-printing a function call arguments """
     r = ', '.join("%r" % (v,) for v in ar)
     if kwa:
         r += ', ' + ', '.join('%s=%r' % (k, v) for k, v in kwa.iteritems())
     return r
+
+
+dbgs = {}   # global object for easier later access of dumped `__call__`s
 def DebugPlug(name, mklogger=None):
     """ Create and return a recursive duck-object for plugging in place of
     other objects for debug purposes.
@@ -147,6 +159,8 @@ def DebugPlug(name, mklogger=None):
     return DebugPlugInternal()
 
 
+####### `range`-like things
+
 def fxrange(start, end=None, inc=None):
     """ The xrange function for float """
     assert inc != 0, "inc should not be zero"
@@ -159,10 +173,12 @@ def fxrange(start, end=None, inc=None):
     while True:
         nextv = start + i * inc
         if (inc > 0 and nextv >= end
-         or inc < 0 and nextv <= end):
+                or inc < 0 and nextv <= end):
             break
         yield nextv
         i += 1
+
+
 def frange(start, end=None, inc=None):
     return list(fxrange(start, end, inc))
 
@@ -183,13 +199,17 @@ def dxrange(start, end=None, inc=None, include_end=False):
     nextv = start
     while True:
         if ((inc > 0) and (not include_end and nextv == end or nextv > end)
-         or (inc < 0) and (not include_end and nextv == end or nextv < end)):
+                or (inc < 0) and (not include_end and nextv == end or nextv < end)):
             break
         yield nextv
         nextv += inc
+
+
 def drange(*ar, **kwa):
     return list(dxrange(*ar, **kwa))
 
+
+####### dict-lazies
 
 def dict_fget(D, k, d):
     """ dict_get(D, k, d) -> D[k] if k in D, else d().
@@ -212,10 +232,10 @@ def dict_fsetdefault(D, k, d):
     return v
 
 
-## String interpolation
+####### String interpolation
+
 ## http://rightfootin.blogspot.com/2007/02/string-interpolation-in-python.html
-import re
-def interp(string):
+def interp(string, _regexp=r'(#\{([^}]*)\})'):
     """ Inline string interpolation.
     >>> var1 = 213; ff = lambda v: v**2
     >>> interp("var1 is #{var1}")
@@ -223,23 +243,30 @@ def interp(string):
     >>> interp("var1 is #{ff(var1)}; also #{ff(12)}")
     'var1 is 45369; also 144'
     """
-    flocals = sys._getframe(1).f_locals
-    fglobals = sys._getframe(1).f_globals
-    for item in re.findall(r'#\{([^}]*)\}', string):
-        string = string.replace('#{%s}' % item,
-          str(eval(item, fglobals, flocals)))
+    fframe = sys._getframe(1)
+    flocals = fframe.f_locals
+    fglobals = fframe.f_globals
+    items = re.findall(_regexp, string)
+    item_to_str = {}
+    ## Do eval and replacement separately and replacement in one regex
+    ## go to avoid interpolating already interpolated values.
+    for item_outer, item in items:
+        item_to_str[item] = str(eval(item, fglobals, flocals))
+    string = re.sub(_regexp, lambda match: item_to_str[match.group(2)], string)
     return string
 
 
 ## Yet another string-interpolation helper
 class InterpolationEvaluationException(KeyError):
     pass
+
+
 class edi(dict):  # "expression_dictionary"...
     """ Yet another string interpolation helper.
 
     >>> var1 = 313; f = lambda x: x*2
-    >>> print "1 is %(var1)5d, f1 is %(f(var1))d, f is %(f)r, 1/2 is %(float(var1)/2)5.3f." % edi()
-    1 is   313, f1 is 626, f is <function <lambda> at 0x9ab917c>, 1/2 is 156.500.
+    >>> print "1 is %(var1)5d, f1 is %(f(var1))d, f is %(f)r, 1/2 is %(float(var1)/2)5.3f." % edi()  #doctest: +ELLIPSIS
+    1 is   313, f1 is 626, f is <function <lambda> at 0x...>, 1/2 is 156.500.
 
     """
     ## No idea for what sake this is subclassed from dictionary, actually. A
@@ -249,7 +276,7 @@ class edi(dict):  # "expression_dictionary"...
 
     def __init__(self, d=None):
         if d == None:  # Grab parent's locals forcible
-            self.locals  = sys._getframe(1).f_locals
+            self.locals = sys._getframe(1).f_locals
             self.globals = sys._getframe(1).f_globals
             d = self.locals
         super(edi, self).__init__(d)
@@ -264,6 +291,8 @@ class edi(dict):  # "expression_dictionary"...
                 raise InterpolationEvaluationException(key, e)
 
 
+####### ...
+
 def split_list(lst, cond):
     """ Split list items into two into (matching, non_matching) by
       `cond(item)` callable """
@@ -275,6 +304,8 @@ def split_list(lst, cond):
             res2.append(i)
     return res1, res2
 
+
+####### Monkey-patching of various things:
 
 def use_cdecimal():
     """ Do a hack-in replacement of `decimal` with `cdecimal`.
@@ -304,10 +335,11 @@ def use_colorer():
 
 
 def obj2dict(o, add_type=False, add_instance=False, do_lists=True,
-  dict_class=SmartDict):
+             dict_class=dotdict):
     """" Recursive o -> o.__dict__ """
     kwa = dict(add_type=add_type, add_instance=add_instance,
-      do_lists=do_lists, dict_class=dict_class)
+               do_lists=do_lists, dict_class=dict_class)
+
     if hasattr(o, '__dict__'):
         res = dict_class()
         for k, v in o.__dict__.iteritems():
@@ -324,16 +356,18 @@ def obj2dict(o, add_type=False, add_instance=False, do_lists=True,
         return dict_class((k, obj2dict(v, **kwa)) for k, v in o.iteritems())
     elif isinstance(o, list):
         return [obj2dict(v, **kwa) for v in o]
+
     return o  # something else - return as-is.
 
 
-import traceback
 def mk_logging_property(actual_name, logger_name='_log'):
     """ Creates a property that logs the value and the caller in the
     setter, using logger under `self`'s logger_name, and stores the value
     under actual_name on `self` """
+
     def do_get(self):
         return getattr(self, actual_name)
+
     def do_set(self, val):
         tb = traceback.extract_stack(limit=2)[0]
         ## or:
@@ -343,8 +377,10 @@ def mk_logging_property(actual_name, logger_name='_log'):
         #co = r.f_code
         #co.co_filename, r.f_lineno, co.co_name
         setattr(self, actual_name, val)
-        getattr(self, logger_name).debug("%s set to %r from %s:%d, in %s",
-          actual_name, val, tb[0], tb[1], tb[2])
+        getattr(self, logger_name).debug(
+            "%s set to %r from %s:%d, in %s",
+            actual_name, val, tb[0], tb[1], tb[2])
+
     return property(do_get, do_set)
 
 
@@ -353,24 +389,37 @@ def sign(v):
     return cmp(v, 0)
 
 
-### "Human" sorting, advanced
+#######  "Human" sorting, advanced
 # partially from quodlibet/quodlibet/util/__init__.py
 # partially from comix/src/filehandler.py
+
 import unicodedata
+
+
 def try_parse(v, fn=int):
     """ 'try parse' (with fn) """
     try:
         return fn(v)
     except Exception, e:
         return v
+
+
 ## Note: not localized (i.e. always as dot for decimal separator)
 _re_alphanum_f = re.compile(r'[0-9]+(?:\.[0-9]+)?|[^0-9]+')
+
+
 def _split_numeric_f(s):
     return [try_parse(v, fn=float) for v in _re_alphanum_f.findall(s)]
+
+
 ## Or to avoid interpreting numbers as float:
 _re_alphanum_int = re.compile(r'\d+|\D+')
+
+
 def _split_numeric(s):
     return [try_parse(v, fn=int) for v in _re_alphanum_int.findall(s)]
+
+
 ## Primary function:
 def human_sort_key(s, normalize=unicodedata.normalize, floats=True):
     """ Sorting key for 'human' sorting """
@@ -381,7 +430,9 @@ def human_sort_key(s, normalize=unicodedata.normalize, floats=True):
     return s and split_fn(s)
 
 
+####### Reading files backwards
 ## http://stackoverflow.com/a/260433/62821
+
 def reversed_blocks(fileobj, blocksize=4096):
     """ Generate blocks of file's contents in reverse order.  """
     fileobj.seek(0, os.SEEK_END)
@@ -391,6 +442,8 @@ def reversed_blocks(fileobj, blocksize=4096):
         fileobj.seek(here - delta, os.SEEK_SET)
         yield fileobj.read(delta)
         here -= delta
+
+
 def reversed_lines(fileobj):
     """ Generate the lines of file in reverse order.  """
     tail = []           # Tail of the line whose head is not yet read.
@@ -406,8 +459,8 @@ def reversed_lines(fileobj):
         yield ''.join(tail)
 
 
-import time
-import functools
+######## ...
+
 class ThrottledCall(object):
     """ Decorator for throttling calls to some functions (e.g. logging).
     Defined as class for various custom attributes and methods.
@@ -416,11 +469,13 @@ class ThrottledCall(object):
         skipped. (default: return None)
     Methods: `call_something`
     """
+
     #_last_call_time = None
     _call_time_throttle = None
     _call_cnt = 0  # (kept accurate; but can become ineffectively large)
     _call_cnt_throttle = 0  # next _call_cnt to call at
     _call_val = object()  # (some unique value at start)
+
     def __init__(self, fn=None, sec_limit=None, cnt_limit=None):
         """ `fn`: function to call (can be customized later).
         `sec_limit`: skip call if less than `sec_limit` seconds since the
@@ -435,8 +490,10 @@ class ThrottledCall(object):
         doc = "%s (throttled)" % (fn.__doc__,)
         self.__call__.__func__.__doc__ = self.__doc__ = doc
         self.handle_skip = lambda self, *ar, **kwa: None
+
     def __call__(self, *ar, **kwa):
         return self.call_something(self.fn, *ar, **kwa)
+
     def call_something(self, fn, *ar, **kwa):
         """ Call some (other) function with the same throttling """
         now = time.time()
@@ -456,6 +513,7 @@ class ThrottledCall(object):
                 return self.handle_skip(self, *ar, **kwa)
         res = fn(*ar, **kwa)
         return res
+
     def call_value(self, val, fn, *ar, **kwa):
         """ Call if the value hasn't changed (applying the other
         throttling parameters as well). Contains undocumented feature
@@ -465,13 +523,17 @@ class ThrottledCall(object):
             if fn is None:
                 fn = self.fn
             return self.call_something(fn, *ar, **kwa)
+
     def __repr__(self):
         return "<throttled_call(%r)>" % (self.fn,)
+
     ## Optional: mimickry
     #def __repr__(self):
     #    return repr(self.fn)
     #def __getattr__(self, v):
     #    return getattr(self.fn, v)
+
+
 @functools.wraps(ThrottledCall)
 def throttled_call(fn=None, *ar, **kwa):
     """ Wraps the supplied function with ThrottledCall (or generates a
@@ -483,7 +545,7 @@ def throttled_call(fn=None, *ar, **kwa):
         else:  # supplied some arguments as positional?
             ## XX: make a warning?
             ar = (fn,) + ar
-    return (lambda fn: functools.wraps(fn)(ThrottledCall(fn, *ar, **kwa)))
+    return lambda fn: functools.wraps(fn)(ThrottledCall(fn, *ar, **kwa))
 
 
 class lazystr(object):
@@ -493,10 +555,13 @@ class lazystr(object):
       lazystr(lambda: ', '.join(stuff)))`
     Note: no caching.
     """
+
     def __init__(self, fn):
         self.fn = fn
+
     def __str__(self):
         return str(self.fn())
+
     def __repr__(self):
         return repr(self.fn())
 
@@ -521,35 +586,48 @@ class ReprObj(object):
         self.txt = txt
     def __repr__(self):
         return self.txt
+
+
 #_err_obj = type('ErrObj', (object,), dict(__repr__=lambda self: '???'))()
 _err_obj = ReprObj('???')
+
+
 ## It is similar to using self.__dict__ in repr() but works over dir()
 def o_repr_g(o, _colors=False, _colors256=False, _colorvs=None):
     """ Represent (most of) data on a python object in readable
     way. Useful default for a __repr__.
     WARN: does not handle recursive structures; use carefully.  """
+
+    ## TODO: handle recursive structures (similar to dict.__repr__)
+    ## TODO: process base types (dict / list / ...) in a special way
+
     def _color(x16, x256=None):
         if not _colors:
             return ''
         if _colors256 and x256:
             return '\x1b[38;5;' + str(x256) + 'm'
         return '\x1b[0' + str(x16) + 'm'
+
     _colorvs = _colorvs or dict(
-      base=('1;37', '230'),  ## Base (punctuation)  # white / pink-white
-      clsn=('1;36', '123'),  ## Class name  # cyan / purple-white
-      attr=('0;32', '120'),  ## Attribute name  # dark-green / green-white
-      val=('0;37', '252'),  ## Value data  # light-gray / light-light-gray
+        base=('1;37', '230'),  ## Base (punctuation)  # white / pink-white
+        clsn=('1;36', '123'),  ## Class name  # cyan / purple-white
+        attr=('0;32', '120'),  ## Attribute name  # dark-green / green-white
+        val=('0;37', '252'),  ## Value data  # light-gray / light-light-gray
     )
+
     def _colorv(n):
         return _color(*_colorvs[n])
+
     yield _colorv("base")
     yield '<'
     yield _colorv("clsn")
     yield str(o.__class__.__name__)
     yield _colorv("base")
     yield '('
+
     #o_type = type(o)  # V3: check type for properties
     first = True
+
     for n in sorted(dir(o)):
         if n.startswith('_'):  # skip 'private' stuff
             continue
@@ -560,6 +638,7 @@ def o_repr_g(o, _colors=False, _colors256=False, _colorvs=None):
             yield ', '
         yield _colorv("attr")
         yield str(n)  ## NOTE: some cases (e.g. functions) will remain just names
+
         ## V2: try but fail
         try:
             v = getattr(o, n)
@@ -567,6 +646,7 @@ def o_repr_g(o, _colors=False, _colors256=False, _colorvs=None):
                 continue
         except Exception as e:
             v = _err_obj
+
         ## V3: check type for properties
         #v_m = getattr(o_type, n, None)
         #if v_m is not None and isinstance(v_m, property):
@@ -578,14 +658,21 @@ def o_repr_g(o, _colors=False, _colors256=False, _colorvs=None):
         yield '='
         yield _colorv("val")
         yield repr(v)
+
     yield _colorv("base")
     yield ')>'
     yield '\x1b[00m'  # color clear
+
+
 def o_repr(o, **kwa):
     return ''.join(o_repr_g(o, **kwa))
+
+
 def p_o_repr(o, **kwa):
     kwa = dict(dict(_colors=True, _colors256=True), **kwa)
     print o_repr(o, **kwa)
+
+
 class OReprMixin(object):
     def __repr__(self):
         return o_repr(self)
@@ -604,6 +691,8 @@ def stdin_lines(strip_newlines=True):
         if strip_newlines and l[-1] == '\n':
             l = l[:-1]
         yield l
+
+
 def stdout_lines(gen):
     """ Send lines from a generator / iterable to stdout in a line-buffered way. """
     for l in gen:
@@ -636,16 +725,17 @@ def dict_merge(target, source, instancecheck=None, dictclass=dict):
 
 ## Put the other primary modules in the main module namespace
 ## ... but do not fail
-from . import runlib
-try:
-    from . import lzmah, lzcat
-except ImportError as e:
-    warnings.warn("Unable to import lzma helpers: %r" % (e,))
-try:
-    from . import psql
-except ImportError as e:
-    warnings.warn("Unable to import psql helpers: %r" % (e,))
-try:
-    from . import twisted_aux
-except ImportError as e:
-    warnings.warn("Unable to import twisted helpers: %r" % (e,))
+## Conclusion: this is generally a bad idea.
+# from . import runlib
+# try:
+#     from . import lzmah, lzcat
+# except ImportError as e:
+#     warnings.warn("Unable to import lzma helpers: %r" % (e,))
+# try:
+#     from . import psql
+# except ImportError as e:
+#     warnings.warn("Unable to import psql helpers: %r" % (e,))
+# try:
+#     from . import twisted_aux
+# except ImportError as e:
+#     warnings.warn("Unable to import twisted helpers: %r" % (e,))
