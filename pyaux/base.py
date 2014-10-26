@@ -782,3 +782,10 @@ class IterStat(object):
     @property
     def std(self):
         return _sqrt(self.variance)
+
+
+def chunks(lst, size):
+    """ Yield successive chunks from lst. No padding.  """
+    for i in xrange(0, len(lst), size):
+        yield lst[i:i + size]
+
