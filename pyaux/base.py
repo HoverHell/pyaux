@@ -735,3 +735,50 @@ def dict_merge(target, source, instancecheck=None, dictclass=dict, del_obj=objec
             target[k] = v
 
     return target
+
+
+def _sqrt(var):
+    """ Duck-compatible sqrt(), needed to support classes like Decimal.
+
+    Approximately the same as in the python3's `statistics`. """
+    try:
+        return var.sqrt()
+    except AttributeError:
+        return math.sqrt(var)
+
+
+class IterStat(object):
+    """ Iterative single-pass computing of mean and variance.
+
+    Error is on the rate of 1e-08 for 1e6 values in the range of
+    0..1e6, both for mean and for stddev. """
+    ## http://www.johndcook.com/standard_deviation.html
+
+    def __init__(self, vals=None, start=0):
+        self.start = start
+        self.old_mean = None
+        self.mean = self.stdx = start
+        self.cnt = 0
+
+        if vals:
+            for val in vals:
+                self.send(val)
+
+    def send(self, val):
+        self.cnt += 1
+        if self.cnt == 1:
+            self.mean = val
+        else:
+            self.mean = self.mean + (val - self.mean) / float(self.cnt)
+            self.stdx = self.stdx + (val - self.old_mean) * (val - self.mean)
+        self.old_mean = self.mean
+
+    @property
+    def variance(self):
+        if self.cnt <= 1:
+            return self.start
+        return self.stdx / (self.cnt)
+
+    @property
+    def std(self):
+        return _sqrt(self.variance)
