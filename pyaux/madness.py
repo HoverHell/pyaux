@@ -24,6 +24,7 @@ __all__ = [
 
 
 import re
+import sys
 
 
 class GenReprWrap(object):
@@ -329,7 +330,7 @@ __all_stuff_e.update((k, globals().get(k)) for k in __all__)
 
 try:
     from IPython.lib.pretty import pprint, pretty
-    print "IPytoo"
+    # sys.stderr.write("IPytoo\n")
     __all_stuff.update(pprint=pprint, pretty=pretty, pformat=pretty)
     __all_stuff_e.update(pprint=pprint, pretty=pretty, pformat=pretty)
 except ImportError as __e:
