@@ -290,10 +290,13 @@ def IPNBDFDisplay(df, *ar, **kwa):
     from IPython.display import display, HTML
     kwa.setdefault('max_rows', 300)
     kwa.setdefault('float_format', lambda v: '%.6f' % (v,))
-    tail = kwa.pop('tail', 200)
+    tail = kwa.pop('tail', None)
+    head = kwa.pop('head', 200)
     cutlinks = kwa.pop('cutlinks', True)
     do_display = kwa.pop('display', True)
 
+    if head:
+        df = df.head(head)
     if tail:
         df = df.tail(tail)
 
@@ -301,6 +304,7 @@ def IPNBDFDisplay(df, *ar, **kwa):
 
     if cutlinks:
         cutlinks = 80 if cutlinks is True else cutlinks
+
         def cutlink(link):
             return '<a href="%s">%s</a>' % (link, _cut(link, cutlinks))
         html = re.sub(
@@ -314,6 +318,9 @@ def IPNBDFDisplay(df, *ar, **kwa):
         display(HTML(html))
     else:
         return HTML(html)
+
+
+# pd.options.display.max_colwidth = 9000
 
 
 ###
