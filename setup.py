@@ -22,11 +22,12 @@ setup(
   url='https://github.com/HoverHell/pyaux',
   packages=['pyaux'],  #find_packages(),
   entry_points={
-    'console_scripts': [
-      'lzcat.py = pyaux.lzcat:_lzcat_main',
-      'lzma.py = pyaux.lzmah:_lzma_main',
+      'console_scripts': [
+          'lzcat.py = pyaux.lzcat:_lzcat_main',
+          'lzma.py = pyaux.lzmah:_lzma_main',
+          'fjson_yaml = pyaux.bin.fjson_yaml:main',
       ],
-    },
+  },
   install_requires=['ipdb',],
   extras_require={
     ## Things that are useful to simply have around:
