@@ -97,6 +97,7 @@ def _try2(_function_thingie, *ar, **kwa):
     """ Returns (res, None) on success or (None, exception) """
     ## The weird names are to minimize kwa collision
     _exc_clss = kwa.pop('_exc_clss', Exception)
+    ## TODO?: return namedtuple?
     try:
         return (_function_thingie(*ar, **kwa), None)
     except _exc_clss as e:
