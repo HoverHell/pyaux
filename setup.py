@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-version = '1.2'
+version = '1.3'
 
 LONG_DESCRIPTION = """
 Collection of helpers and useful things for Python
@@ -30,9 +30,10 @@ setup(
   },
   install_requires=['ipdb',],
   extras_require={
-    ## Things that are useful to simply have around:
-    'recommended': ['atomicfile', 'cdecimal', 'ipython', 'django',
-      #'requests', 'pycurl',
+      ## Things that are useful to simply have around:
+      'recommended': [
+          'atomicfile', 'cdecimal', 'ipython', 'django',
+          #'requests', 'pycurl',
       ],
   },
   dependency_links=[
