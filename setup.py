@@ -1,22 +1,25 @@
 #!/usr/bin/env python
 
-<<<<<<< HEAD
-version = '1.3'
-=======
 try:
     from pyaux import __version__ as version
 except Exception as _exc:
     print "Pkg-version error:",_exc
-    version = '1.3.0'
+    version = '1.3.1'
 
 import os
 
->>>>>>> Release 1.3.0
 
 LONG_DESCRIPTION = """
 Collection of helpers and useful things for Python
 
-""" + open(os.path.join(os.path.dirname(__file__), 'README.rst')).read()
+"""
+
+try:
+    LONG_DESCRIPTION = (
+        LONG_DESCRIPTION
+        + open(os.path.join(os.path.dirname(__file__), 'README.rst')).read())
+except Exception as _exc:
+    print "Pkg-description error:", _exc
 
 
 #from distutils.core import setup
