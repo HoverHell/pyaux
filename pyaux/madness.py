@@ -242,6 +242,7 @@ def datadiff(val1, val2, **kwa):
 
 def p_datadiff(val1, val2, **kwa):
     """ Print the values diff """
+    ## TODO: yaml coloring, diff coloring?
     print datadiff(val1, val2, **kwa)
 
 
