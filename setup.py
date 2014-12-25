@@ -3,7 +3,7 @@
 try:
     from pyaux import __version__ as version
 except Exception as _exc:
-    print "Pkg-version error:",_exc
+    print "Pkg-version error:", _exc
     version = '1.3.1'
 
 import os
@@ -22,8 +22,7 @@ except Exception as _exc:
     print "Pkg-description error:", _exc
 
 
-#from distutils.core import setup
-from setuptools import setup, find_packages
+from setuptools import setup
 
 setup_kwargs = dict(
     name='pyaux',
@@ -36,7 +35,7 @@ setup_kwargs = dict(
     author_email='hoverhell@gmail.com',
     url='https://github.com/HoverHell/pyaux',
     download_url='https://github.com/HoverHell/pyaux/tarball/%s' % (version,),
-    packages=['pyaux'],  # find_packages(),
+    packages=['pyaux'],
     entry_points={
         'console_scripts': [
             'lzcat.py = pyaux.lzcat:_lzcat_main',
@@ -44,17 +43,31 @@ setup_kwargs = dict(
             'fjson_yaml = pyaux.bin.fjson_yaml:main',
         ],
     },
-    install_requires=[],
+    install_requires=['six'],
     extras_require={
         ## Things that are useful to simply have around:
         'recommended': [
-            'ipdb',
-            'atomicfile', 'cdecimal', 'ipython', 'django',
+            'ipython', 'ipdb', 'PyYAML',
+            'atomicfile', 'cdecimal',
             #'requests', 'pycurl',
+        ],
+        ## All things that are known to be used in some part of this
+        ## library or another.
+        'known': [
+            'django',  # in the psql helper
+            'Twisted',  # bunch of twisted stuff here
+            'Cython',  # at least one pyx module
+            'pandas',  # here and there
+            'Pygments',  # json / yaml coloring
+            'pylzma',  # helpers for it
+            'simplejson',  # optional, for speed
+            # 'pp',  # so special I won't even include it here
+            'line_profiler',
+            # 'pyzmq',  # also too rare
         ],
     },
     dependency_links=[
-       # 'https://github.com/sashka/atomicfile/tarball/master#egg=atomicfile',  # on pypi
+        # 'https://github.com/sashka/atomicfile/tarball/master#egg=atomicfile',  # on pypi now
     ],
     #package_data={},
     #include_package_data=True,

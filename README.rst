@@ -35,7 +35,7 @@ Contains:
   tree-structure of dicts, e.g. for pretty-printing the result
 * **mk_logging_property**: make a property that debug-logs the value and
   caller info when set
-
+* Some other things that are too minor to be listed here.
 
 Also, in separate submodules:
 
