@@ -589,17 +589,24 @@ class lazystr(object):
         return repr(self.fn())
 
 
-def list_uniq(l, key=None):
-    """ Returns a generator with only unique values (as returned by key)
-    of a list, maintaining their order """
-    if key is None:
-        key = lambda v: v
-    keys = set()
-    for v in l:
-        v_key = key(v)
-        if v_key not in keys:
+def uniq_g(lst, key=lambda v: v):
+    """ Get unique elements of an iterable preserving its order and optionally
+    determining uniqueness by hash of a key """
+    known = set()
+    for v in lst:
+        k = key(v)
+        if k not in known:
             yield v
-        keys.add(v_key)
+            known.add(k)
+    ## ...
+
+
+def uniq(lst, key=lambda v: v):
+    """ RTFS """
+    return list(uniq_g(lst, key=key))
+
+
+list_uniq = uniq_g
 
 
 ### Helper for o_repr that displays '???'

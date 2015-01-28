@@ -4,13 +4,13 @@ Various dict-related special classes.
 
 >>> mod = remvdodd([(1, 1), (2, 1.4), (1, 2)])
 >>> mod
-remvdodd(1: 1, 2: 1.3999999999999999, 1: 2)
+remvdodd(1: 1, 2: 1.4, 1: 2)
 >>> mod['mod'] = mod
 >>> mod
-remvdodd(1: 1, 2: 1.3999999999999999, 1: 2, 'mod': ...)
+remvdodd(1: 1, 2: 1.4, 1: 2, 'mod': ...)
 >>> mod.modmod = mod['mod']
 >>> mod
-remvdodd(1: 1, 2: 1.3999999999999999, 1: 2, 'mod': ..., 'modmod': ...)
+remvdodd(1: 1, 2: 1.4, 1: 2, 'mod': ..., 'modmod': ...)
 >>> import copy
 >>> mc = copy.deepcopy(mod)
 >>> mod.mod is mod.mod, mc.mod is not mod.mod
@@ -22,41 +22,41 @@ True
 >>> mcc
 remvdodd()
 >>> mod
-remvdodd(1: 1, 2: 1.3999999999999999, 1: 2, 'mod': ..., 'modmod': ...)
+remvdodd(1: 1, 2: 1.4, 1: 2, 'mod': ..., 'modmod': ...)
 >>> mod.mod is mod
 True
 >>> mod.update(u1='y')
 >>> mod
-remvdodd(1: 1, 2: 1.3999999999999999, 1: 2, 'mod': ..., 'modmod': ..., 'u1': 'y')
+remvdodd(1: 1, 2: 1.4, 1: 2, 'mod': ..., 'modmod': ..., 'u1': 'y')
 >>> mod.update_inplace([(2, 2.6), (3, 3.6)])
 >>> mod
-remvdodd(1: 1, 2: 2.6000000000000001, 1: 2, 'mod': ..., 'modmod': ..., 'u1': 'y', 3: 3.6000000000000001)
+remvdodd(1: 1, 2: 2.6, 1: 2, 'mod': ..., 'modmod': ..., 'u1': 'y', 3: 3.6)
 >>> mod.pop(3)
-3.6000000000000001
+3.6
 >>> mod.update_replace([(1, -1)])
 >>> mod
-remvdodd(2: 2.6000000000000001, 'mod': ..., 'modmod': ..., 'u1': 'y', 1: -1)
+remvdodd(2: 2.6, 'mod': ..., 'modmod': ..., 'u1': 'y', 1: -1)
 >>> del mod['modmod']
 >>> mod
-remvdodd(2: 2.6000000000000001, 'mod': ..., 'u1': 'y', 1: -1)
+remvdodd(2: 2.6, 'mod': ..., 'u1': 'y', 1: -1)
 >>> mod._data
-((2, 2.6000000000000001), ('mod', remvdodd(2: 2.6000000000000001, 'mod': ..., 'u1': 'y', 1: -1)), ('u1', 'y'), (1, -1))
+((2, 2.6), ('mod', remvdodd(2: 2.6, 'mod': ..., 'u1': 'y', 1: -1)), ('u1', 'y'), (1, -1))
 >>> mod._data is not mod.items(), mod._data == tuple(mod.items())
 (True, True)
 >>> mod[1] = 3
 >>> mod
-remvdodd(2: 2.6000000000000001, 'mod': ..., 'u1': 'y', 1: -1, 1: 3)
+remvdodd(2: 2.6, 'mod': ..., 'u1': 'y', 1: -1, 1: 3)
 >>> mod.update(u1='n')
 >>> mod
-remvdodd(2: 2.6000000000000001, 'mod': ..., 'u1': 'y', 1: -1, 1: 3, 'u1': 'n')
+remvdodd(2: 2.6, 'mod': ..., 'u1': 'y', 1: -1, 1: 3, 'u1': 'n')
 >>> mod
-remvdodd(2: 2.6000000000000001, 'mod': ..., 'u1': 'y', 1: -1, 1: 3, 'u1': 'n')
+remvdodd(2: 2.6, 'mod': ..., 'u1': 'y', 1: -1, 1: 3, 'u1': 'n')
 >>> mod.lists()
-[(2, [2.6000000000000001]), ('mod', [remvdodd(2: 2.6000000000000001, 'mod': ..., 'u1': 'y', 1: -1, 1: 3, 'u1': 'n')]), ('u1', ['y', 'n']), (1, [-1, 3])]
+[(2, [2.6]), ('mod', [remvdodd(2: 2.6, 'mod': ..., 'u1': 'y', 1: -1, 1: 3, 'u1': 'n')]), ('u1', ['y', 'n']), (1, [-1, 3])]
 >>> mod.popitem()
 ('u1', 'n')
 >>> mod.popitem(last=False)
-(2, 2.6000000000000001)
+(2, 2.6)
 >>> mod
 remvdodd('mod': ..., 'u1': 'y', 1: -1, 1: 3)
 >>> mod.deduplicate()
@@ -83,13 +83,13 @@ remvdodd('mod': ..., 'u1': 'y', 1: 3, 5: 2)
 """
 ## not tested:  [iter](keys|values|lists), pop, fromkeys, eq
 ## ipy to doctest:  sed -r 's/^In[^:]+: />>> /; s/^Out[^:]+: //; /^ *$/ d'
-## test to locals:  from sbdutils import dicts; reload(dicts); from sbdutils.dicts import *; exec '\n'.join(v[4:] for v in dicts.__doc__.split('\n\n')[-1].splitlines() if v.startswith('>>> '))
+## test to locals:  from pyaux import dicts; reload(dicts); from pyaux.dicts import *; exec '\n'.join(v[4:] for v in dicts.__doc__.split('\n\n')[-1].splitlines() if v.startswith('>>> '))
 
 import copy
 import itertools
 
-from .base import uniq_g
-from .base import dotdict
+from pyaux.base import uniq_g
+from pyaux.base import dotdict
 
 
 class ODReprMixin(object):
@@ -100,11 +100,13 @@ class ODReprMixin(object):
         if not self:
             return '%s()' % (self.__class__.__name__,)
         return '%s(%r)' % (self.__class__.__name__, self.items())
+
     def __drepr__(self):
         """ A slightly more visual-oriented representation of an ordereddict """
         if not self:
             return '%s()' % (self.__class__.__name__,)
         return '%s(%s)' % (self.__class__.__name__, ', '.join('%r: %r' % (k, v) for k, v in self.iteritems()))
+
     def __repr__(self, _repr_running={}, fn=__drepr__):
         """ Wrapped around __drepr__ that makes it possible to represent infinitely-recursive dictionaries of this type. """
         from thread import get_ident as _get_ident  ## NOTE: version variety; might be a _get_ident or something else.
@@ -448,7 +450,7 @@ class MVOD(ODReprMixin, dict):
     ## XXX: some other methods?
 
 
-## A simpler form is available in the sbdutils itself
+## A simpler form is available in the `base`
 class dotdictx(dict):
     """ A dict subclass with items also available over attributes. Skips the
     attributes starting with '_' (for mixinability) """
