@@ -1,7 +1,7 @@
 # coding: utf8
 """ A collection of useful helpers """
 
-__version__ = "1.3.1"
+__version__ = "1.3.2"
 
 ## NOTE: no modules imported here should import `decimal` (otherwise
 ##   `use_cdecimal` might become problematic for them)

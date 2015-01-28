@@ -3,8 +3,9 @@
 try:
     from pyaux import __version__ as version
 except Exception as _exc:
+    ## Will likely happen on python3
     print "Pkg-version error:", _exc
-    version = '1.3.1'
+    version = '1.3.2'
 
 import os
 
