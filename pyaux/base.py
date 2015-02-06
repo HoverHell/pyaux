@@ -42,6 +42,7 @@ import os
 import sys
 import inspect
 import six
+from copy import deepcopy
 
 import math
 import time
@@ -847,7 +848,8 @@ def stdout_lines(gen):
         sys.stdout.flush()
 
 
-def dict_merge(target, source, instancecheck=None, dictclass=dict, del_obj=object()):
+def dict_merge(target, source, instancecheck=None, dictclass=dict,
+               del_obj=object(), _copy=True):
     """ do update() on 'dict of dicts of di...' structure recursively.
     Also, see sources for details.
     NOTE: does not keep target's specific tree structure (forces source's)
@@ -870,6 +872,9 @@ def dict_merge(target, source, instancecheck=None, dictclass=dict, del_obj=objec
         instancecheck = lambda iv: hasattr(iv, 'iteritems')
     ## Recursive parameters shorthand
     kwa = dict(instancecheck=instancecheck, dictclass=dictclass, del_obj=del_obj)
+
+    if _copy:
+        target = deepcopy(target)
 
     for k, v in source.iteritems():
         if v is del_obj:
