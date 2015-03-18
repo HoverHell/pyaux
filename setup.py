@@ -1,14 +1,9 @@
 #!/usr/bin/env python
 
-try:
-    from pyaux import __version__ as version
-except Exception as _exc:
-    ## Will likely happen on python3
-    print "Pkg-version error:", _exc
-    version = '1.3.2'
-
 import os
+from setuptools import setup
 
+version = '1.3.2'  # should be the same as pyaux.__version__
 
 LONG_DESCRIPTION = """
 Collection of helpers and useful things for Python
@@ -17,13 +12,11 @@ Collection of helpers and useful things for Python
 
 try:
     LONG_DESCRIPTION = (
-        LONG_DESCRIPTION
-        + open(os.path.join(os.path.dirname(__file__), 'README.rst')).read())
+        LONG_DESCRIPTION +
+        open(os.path.join(os.path.dirname(__file__), 'README.rst')).read())
 except Exception as _exc:
     print "Pkg-description error:", _exc
 
-
-from setuptools import setup
 
 setup_kwargs = dict(
     name='pyaux',
@@ -46,14 +39,14 @@ setup_kwargs = dict(
     },
     install_requires=['six'],
     extras_require={
-        ## Things that are useful to simply have around:
+        # Things that are useful to simply have around:
         'recommended': [
             'ipython', 'ipdb', 'PyYAML',
             'atomicfile', 'cdecimal',
             #'requests', 'pycurl',
         ],
-        ## All things that are known to be used in some part of this
-        ## library or another.
+        # All things that are known to be used in some part of this
+        # library or another.
         'known': [
             'django',  # in the psql helper
             'Twisted',  # bunch of twisted stuff here
