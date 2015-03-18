@@ -958,3 +958,22 @@ def chunks_g(iterable, size):
         if not chunk:
             return
         yield chunk
+
+
+def group(lst, cls=dict):
+    """ RTFS.
+
+    Similar to dict(MultiValueDict(lst).lists())
+
+    >>> group([(1, 1), (2, 2), (1, 3)])
+    {1: [1, 3], 2: [2]}
+    """
+    res = cls()
+    for key, val in lst:
+        try:
+            group_list = res[key]
+        except KeyError:
+            group_list = []
+            res[key] = group_list
+        group_list.append(val)
+    return res
