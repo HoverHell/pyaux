@@ -1,7 +1,7 @@
-Unfortunately, this code is licensed under multiple, often unspecified,
-licenses, e.g. stackoverflow comments.
+The sotware is released under the MIT License [1] except as noted
+below.
 
-In all the probability none of the authors are going to care beyond
-attribution (provided in comments and docstrings).
+This software contains contributions made by many individuals. The
+exact contribution sources are specified in comments in the code.
 
-The same unclearness applies to my own code (hoverhell).
+ [1] http://www.opensource.org/licenses/MIT
