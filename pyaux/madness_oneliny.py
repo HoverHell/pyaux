@@ -4,11 +4,13 @@
 import sys
 import traceback
 from .madness_reprstuff import GenReprWrapWrap
+from .madness_datadiff import _dumprepr
 
 
 __all__ = (
     '_try', '_try2', '_iter_ar', '_filter',
     '_filter_n', '_print', '_ipdbg', '_uprint',
+    '_yprint',
 )
 
 
@@ -78,10 +80,19 @@ def _ipdbg(_a_function_thingie, *ar, **kwa):
         return None
 
 
-def _uprint(o):
+def _uprint(obj, ret=False):
     try:
         from IPython.lib.pretty import pretty
     except Exception:
         from pprint import pformat as pretty
-    print pretty(o).decode('unicode-escape')
-    return o
+    print pretty(obj).decode('unicode-escape')
+    if ret:
+        return obj
+
+
+def _yprint(obj, ret=False, **kwa):
+    kwa.setdefault('colorize', True)
+    kwa.setdefault('no_anchors', False)
+    print _dumprepr(obj, **kwa)
+    if ret:
+        return obj

@@ -4,6 +4,7 @@
 import yaml
 import difflib
 import itertools
+from pyaux.base import colorize_yaml
 
 
 __all__ = (
@@ -12,7 +13,7 @@ __all__ = (
 )
 
 
-def _dumprepr(val, no_anchors=True, **kwa):
+def _dumprepr(val, no_anchors=True, colorize=False, try_ujson=True, **kwa):
     """ Advanced-ish representation of an object (using YAML) """
     dumper = yaml.SafeDumper
 
@@ -25,16 +26,23 @@ def _dumprepr(val, no_anchors=True, **kwa):
     params = dict(default_flow_style=False, Dumper=dumper)
     params.update(kwa.get('yaml_kwa', {}))
 
+    def do_colorize(text):
+        if not colorize:
+            return text
+        return colorize_yaml(text)
+
     res = ''
     try:
-        res += yaml.dump(val, **params)
+        res += do_colorize(yaml.dump(val, **params))
     except Exception:
+        if not try_ujson:
+            raise
         # ujson can handle many objects somewhat-successfully. But can
         # segfault while doing that.
         import ujson
         res += "# Unable to serialize directly!\n"
         prepared_value = ujson.loads(ujson.dumps(val))
-        res += yaml.dump(prepared_value, **params)
+        res += do_colorize(yaml.dump(prepared_value, **params))
 
     return res
 
@@ -74,5 +82,5 @@ def datadiff(val1, val2, **kwa):
 
 def p_datadiff(val1, val2, **kwa):
     """ Print the values diff """
-    # TODO: yaml coloring, diff coloring? Using pygments. Example in pyaux.bin.fjson_yaml
+    # TODO: yaml coloring *and* diff coloring?
     print datadiff(val1, val2, **kwa)

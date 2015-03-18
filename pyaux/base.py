@@ -977,3 +977,11 @@ def group(lst, cls=dict):
             res[key] = group_list
         group_list.append(val)
     return res
+
+
+def colorize_yaml(text):
+    """ Attempt to colorize the yaml text using pygments (for console output) """
+    from pygments import highlight
+    from pygments.lexers import YamlLexer
+    from pygments.formatters import TerminalFormatter
+    return highlight(text, YamlLexer(), TerminalFormatter())
