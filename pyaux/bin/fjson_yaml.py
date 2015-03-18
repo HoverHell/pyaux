@@ -4,16 +4,8 @@
 import sys
 import json
 import yaml
-import re
 import argparse
-
-
-def colorize(text):
-    """ Attempt to colorize the yaml text using pygments """
-    from pygments import highlight
-    from pygments.lexers import YamlLexer
-    from pygments.formatters import TerminalFormatter
-    return highlight(text, YamlLexer(), TerminalFormatter())
+from pyaux.base import colorize_yaml as colorize
 
 
 def cmd_make_parser(**kwa):

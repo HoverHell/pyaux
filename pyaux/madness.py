@@ -17,6 +17,7 @@ __all__ = (
     # the oneliners and debug-useful stuff
     '_try', '_try2', '_iter_ar', '_filter',
     '_filter_n', '_print', '_ipdbg', '_uprint',
+    '_yprint',
     # diff stuff
     '_dumprepr',
     '_diff_pre_diff', '_diff_datadiff_data', 'datadiff', 'p_datadiff',
