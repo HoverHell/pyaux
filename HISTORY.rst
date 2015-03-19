@@ -3,6 +3,13 @@
 Release History
 ---------------
 
+1.5.0 (2015-03-19)
+++++++++++++++++++
+
+ - _yprint: print data over colored yaml
+ - madness reorganised
+
+
 1.4.0 (2015-03-18)
 ++++++++++++++++++
 
