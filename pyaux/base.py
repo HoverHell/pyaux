@@ -979,9 +979,62 @@ def group(lst, cls=dict):
     return res
 
 
-def colorize_yaml(text):
-    """ Attempt to colorize the yaml text using pygments (for console output) """
-    from pygments import highlight
-    from pygments.lexers import YamlLexer
-    from pygments.formatters import TerminalFormatter
-    return highlight(text, YamlLexer(), TerminalFormatter())
+def mangle_dict(input_dict, include=None, exclude=None, add=None, _return_list=False):
+    res = []
+    include = set(include) if include is not None else None
+    exclude = set(exclude) if exclude is not None else None
+    if include:
+        assert not exclude
+    # TODO?: make a clever one-liner of all this stuff.
+    for key, val in input_dict.iteritems():
+        if include is not None:
+            if key in include:
+                res.append((key, val))
+        elif exclude is not None:
+            if key not in exclude:
+                res.append((key, val))
+        else:  # no includes/excludes
+            res.append((key, val))
+    # ... functional-style `update`.
+    if add is not None:
+        if isinstance(add, dict):
+            add = add.iteritems()
+        for key, val in add:
+            res.append((key, val))
+    if _return_list:
+        return res
+    return dict(res)
+
+
+def colorize(text, fmt, outfmt='term', lexer_kwa=None, formatter_kwa=None, **kwa):
+    """ Convenience method for running pygments """
+    from pygments import highlight, lexers, formatters
+    _colorize_lexers = dict(
+        yaml='YamlLexer', diff='DiffLexer',
+        py='PythonLexer', py2='PythonLexer', py3='Python3Lexer',
+    )
+    _colorize_formatters = dict(
+        term='TerminalFormatter', term256='Terminal256Formatter',
+        html='HtmlFormatter',
+    )
+    fmt = _colorize_lexers.get(fmt, fmt)
+    outfmt = _colorize_formatters.get(outfmt, outfmt)
+
+    lexer_cls = getattr(lexers, fmt)
+    formatter_cls = getattr(formatters, outfmt)
+    return highlight(
+        text, lexer_cls(**(lexer_kwa or {})),
+        formatter_cls(**(formatter_kwa or {})))
+
+
+def colorize_yaml(text, **kwa):
+    """ Attempt to colorize the yaml text using pygments (for console
+    output) """
+    return colorize(text, 'yaml', **kwa)
+
+
+def colorize_diff(text, **kwa):
+    """ Attempt to colorize the [unified] diff text using pygments
+    (for console output) """
+    return colorize(text, 'diff', **kwa)
+
