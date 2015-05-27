@@ -3,6 +3,7 @@
 
 import sys
 import traceback
+from .base import o_repr
 from .madness_reprstuff import GenReprWrapWrap
 from .madness_datadiff import _dumprepr
 
@@ -10,7 +11,7 @@ from .madness_datadiff import _dumprepr
 __all__ = (
     '_try', '_try2', '_iter_ar', '_filter',
     '_filter_n', '_print', '_ipdbg', '_uprint',
-    '_yprint',
+    '_yprint', '_mrosources', 'p_o_repr',
 )
 
 
@@ -106,7 +107,14 @@ def _mrosources(cls, attname, raw=False, colorize=False):
     meths = [dotdict(cls=mrocls, meth=getattr(mrocls, attname, None))
              for mrocls in cls.__mro__]
     meths = [val for val in meths if val.meth]
-    meths = [dotdict(val, src=inspect.getsource(val.meth))
+
+    def getsrc(val):
+        try:
+            return inspect.getsource(val)
+        except Exception:
+            return '<???>'
+
+    meths = [dotdict(val, src=getsrc(val.meth))
              for val in meths]
 
     if colorize:
@@ -123,3 +131,8 @@ def _mrosources(cls, attname, raw=False, colorize=False):
             val.cls.__name__, val.src)
         for val in meths)
     return res
+
+
+def p_o_repr(o, **kwa):
+    kwa = dict(dict(_colors=True, _colors256=True), **kwa)
+    print o_repr(o, **kwa)
