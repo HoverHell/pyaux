@@ -96,3 +96,30 @@ def _yprint(obj, ret=False, **kwa):
     print _dumprepr(obj, **kwa)
     if ret:
         return obj
+
+
+def _mrosources(cls, attname, raw=False, colorize=False):
+    """ Return a (prettified) source code of a class method in its
+    MRO. For figuring out where does the super() actually go. """
+    import inspect
+    from pyaux import dotdict
+    meths = [dotdict(cls=mrocls, meth=getattr(mrocls, attname, None))
+             for mrocls in cls.__mro__]
+    meths = [val for val in meths if val.meth]
+    meths = [dotdict(val, src=inspect.getsource(val.meth))
+             for val in meths]
+
+    if colorize:
+        from pyaux.base import colorize as colorfunc
+        colorfunc_kwa = dict(fmt='py')
+        if isinstance(colorize, dict):
+            colorfunc_kwa.update(colorize)
+        meths = [dotdict(val, src=colorfunc(val.src, **colorfunc_kwa))
+                 for val in meths]
+    if raw:
+        return meths
+    res = '\n\n'.join(
+        ' ======= %s =======\n%s' % (
+            val.cls.__name__, val.src)
+        for val in meths)
+    return res
