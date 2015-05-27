@@ -1,9 +1,23 @@
 # coding: utf8
-## NOTE: no modules imported here should import `decimal` (otherwise
-##   `use_cdecimal` might become problematic for them)
+# NOTE: no modules imported here should import `decimal` (otherwise
+#   `use_cdecimal` might become problematic for them)
+
+import os
+import sys
+import inspect
+import six
+from copy import deepcopy
+
+import math
+import time
+import functools
+from itertools import chain, repeat, islice
+import traceback
+import re
+import unicodedata
 
 
-__all__ = [
+__all__ = (
     'bubble',
     'window',
     'dotdict',
@@ -35,29 +49,16 @@ __all__ = [
     # 'lzmah',
     # 'lzcat',
     # 'psql',
-]
-
-
-import os
-import sys
-import inspect
-import six
-from copy import deepcopy
-
-import math
-import time
-import functools
-from itertools import chain, repeat, islice
-import traceback
-import re
+)
 
 
 def bubble(*args, **kwargs):
     """ Prettified super():
     Call `super(ThisClass, this_instance).this_method(...)`.
     Not super-performant but quite prettifying ("Performance is 5 times
-      worse than super() call")
-    src: http://stackoverflow.com/questions/2706623/super-in-python-2-x-without-args/2706703#2706703
+      worse than super() call").
+    src:
+    http://stackoverflow.com/questions/2706623/super-in-python-2-x-without-args/2706703#2706703
     """
     def find_class_by_code_object(back_self, method_name, code):
         for cls in inspect.getmro(type(back_self)):
@@ -82,8 +83,8 @@ def bubble(*args, **kwargs):
             return
 
 
-## Iterate over a 'window' of adjacent elements
-## http://stackoverflow.com/questions/6998245/iterate-over-a-window-of-adjacent-elements-in-python
+# Iterate over a 'window' of adjacent elements
+# http://stackoverflow.com/questions/6998245/iterate-over-a-window-of-adjacent-elements-in-python
 def window(seq, size=2, fill=0, fill_left=False, fill_right=False):
     """ Returns a sliding window (of width n) over data from the iterable:
       s -> (s0,s1,...s[n-1]), (s1,s2,...,sn), ...
@@ -108,7 +109,7 @@ class dotdict(dict):
         try:
             return self[name]
         except KeyError:
-            ## A little less confusing way:
+            # A little less confusing way:
             _et, _ev, _tb = sys.exc_info()
             six.reraise(AttributeError, _ev, _tb)
 
@@ -116,7 +117,7 @@ class dotdict(dict):
         self[name] = value
 
 
-## Compat alias
+# Compat alias
 SmartDict = dotdict
 
 
@@ -140,8 +141,8 @@ def DebugPlug(name, mklogger=None):
     :param mklogger: a function of `name` (str) that returns a new callable(msg:
       str) used for logging.  See code for an example.
     """
-    ## The construction with mkClass is for removing the need of
-    ##   `__getattr__`ing the name and logger.
+    # The construction with mkClass is for removing the need of
+    #   `__getattr__`ing the name and logger.
     import logging
 
     def mklogger_default(name):
@@ -164,9 +165,9 @@ def DebugPlug(name, mklogger=None):
 
         def __getattr__(self, attname):
             namef = "%s.%s" % (name, attname)
-            ## Recursive!
+            # Recursive!
             dpchild = DebugPlug(name=namef, mklogger=mklogger)
-            #setattr(self, attname, dpchild)
+            # setattr(self, attname, dpchild)
             object.__setattr__(self, attname, dpchild)
             return dpchild
 
@@ -180,9 +181,9 @@ def DebugPlug(name, mklogger=None):
     return DebugPlugInternal()
 
 
-#######
-## `range`-like things
-#######
+# ######
+# `range`-like things
+# ######
 
 
 def fxrange(start, end=None, inc=None):
@@ -196,8 +197,8 @@ def fxrange(start, end=None, inc=None):
     i = 0  # to prevent error accumulation
     while True:
         nextv = start + i * inc
-        if (inc > 0 and nextv >= end
-                or inc < 0 and nextv <= end):
+        if (inc > 0 and nextv >= end or
+                inc < 0 and nextv <= end):
             break
         yield nextv
         i += 1
@@ -223,8 +224,8 @@ def dxrange(start, end=None, inc=None, include_end=False):
     end = Decimal(end)
     nextv = start
     while True:
-        if ((inc > 0) and (not include_end and nextv == end or nextv > end)
-                or (inc < 0) and (not include_end and nextv == end or nextv < end)):
+        if ((inc > 0) and (not include_end and nextv == end or nextv > end) or
+                (inc < 0) and (not include_end and nextv == end or nextv < end)):
             break
         yield nextv
         nextv += inc
@@ -348,7 +349,7 @@ def date_months_range(*ar, **kwa):
     return list(date_months_xrange(*ar, **kwa))
 
 
-####### dict-lazies
+# ###### dict-lazies
 
 def dict_fget(D, k, d):
     """ dict_get(D, k, d) -> D[k] if k in D, else d().
@@ -363,7 +364,8 @@ def dict_fsetdefault(D, k, d):
     """ dict_fsetdefault(D, k, d) -> dict_fget(D, k, d), also set D[k]=d() if k not in D.
       - a lazy-evaluated dict.setdefault.
       (d is mandatory but can be None).  """
-    ## Can be `D[k] = dict_fget(D, k, d); return D[k]`, but let's micro-optimize.
+    # Can be `D[k] = dict_fget(D, k, d); return D[k]`, but let's micro-optimize.
+    # NOTE: not going over 'keyerror' for the defaultdict or alike classes.
     if k in D:
         return D[k]
     v = d() if d is not None else d
@@ -371,9 +373,9 @@ def dict_fsetdefault(D, k, d):
     return v
 
 
-####### String interpolation
+# ###### String interpolation
 
-## http://rightfootin.blogspot.com/2007/02/string-interpolation-in-python.html
+# http://rightfootin.blogspot.com/2007/02/string-interpolation-in-python.html
 def interp(string, _regexp=r'(#\{([^}]*)\})'):
     """ Inline string interpolation.
     >>> var1 = 213; ff = lambda v: v**2
@@ -387,15 +389,17 @@ def interp(string, _regexp=r'(#\{([^}]*)\})'):
     fglobals = fframe.f_globals
     items = re.findall(_regexp, string)
     item_to_str = {}
-    ## Do eval and replacement separately and replacement in one regex
-    ## go to avoid interpolating already interpolated values.
+    # Do eval and replacement separately and replacement in one regex
+    # go to avoid interpolating already interpolated values.
     for item_outer, item in items:
         item_to_str[item] = str(eval(item, fglobals, flocals))
     string = re.sub(_regexp, lambda match: item_to_str[match.group(2)], string)
     return string
 
 
-## Yet another string-interpolation helper
+# Yet another string-interpolation helper
+
+
 class InterpolationEvaluationException(KeyError):
     pass
 
@@ -408,8 +412,8 @@ class edi(dict):  # "expression_dictionary"...
     1 is   313, f1 is 626, f is <function <lambda> at 0x...>, 1/2 is 156.500.
 
     """
-    ## No idea for what sake this is subclassed from dictionary, actually. A
-    ## neat extra, perhaps.
+    # No idea for what sake this is subclassed from dictionary, actually. A
+    # neat extra, perhaps.
 
     globals = {}
 
@@ -430,7 +434,7 @@ class edi(dict):  # "expression_dictionary"...
                 raise InterpolationEvaluationException(key, e)
 
 
-####### ...
+# ###### ...
 
 def split_list(lst, cond):
     """ Split list items into two into (matching, non_matching) by
@@ -444,7 +448,7 @@ def split_list(lst, cond):
     return res1, res2
 
 
-####### Monkey-patching of various things:
+# ###### Monkey-patching of various things:
 
 def use_cdecimal():
     """ Do a hack-in replacement of `decimal` with `cdecimal`.
@@ -469,9 +473,12 @@ def use_exc_log():
 def use_colorer():
     """ Wrap logging's StreamHandler.emit to add colors to the logged
       messages based on log level """
+    # TODO: make a ColorerHandlerMixin version
     import pyaux.Colorer as Colorer
     Colorer.init()
 
+
+# ...
 
 def obj2dict(o, add_type=False, add_instance=False, do_lists=True,
              dict_class=dotdict):
@@ -488,9 +495,9 @@ def obj2dict(o, add_type=False, add_instance=False, do_lists=True,
         if add_instance:
             res['__instance__'] = o
         return res
-    ## Recurse through other types too:
-    ## NOTE: There might be subclasses of these that would not be processed
-    ##   here
+    # Recurse through other types too:
+    # NOTE: There might be subclasses of these that would not be
+    # processed here.
     elif isinstance(o, dict):
         return dict_class((k, obj2dict(v, **kwa)) for k, v in o.iteritems())
     elif isinstance(o, list):
@@ -509,12 +516,12 @@ def mk_logging_property(actual_name, logger_name='_log'):
 
     def do_set(self, val):
         tb = traceback.extract_stack(limit=2)[0]
-        ## or:
-        #next((r.f_code.co_filename, r.f_lineno, r.f_code.co_name) for r in (sys._getframe(1),))
-        ## that is,
-        #r = sys._getframe(1)
-        #co = r.f_code
-        #co.co_filename, r.f_lineno, co.co_name
+        # # or:
+        # next((r.f_code.co_filename, r.f_lineno, r.f_code.co_name) for r in (sys._getframe(1),))
+        # # that is,
+        # r = sys._getframe(1)
+        # co = r.f_code
+        # co.co_filename, r.f_lineno, co.co_name
         setattr(self, actual_name, val)
         getattr(self, logger_name).debug(
             "%s set to %r from %s:%d, in %s",
@@ -528,11 +535,9 @@ def sign(v):
     return cmp(v, 0)
 
 
-#######  "Human" sorting, advanced
+# ######  "Human" sorting, advanced
 # partially from quodlibet/quodlibet/util/__init__.py
 # partially from comix/src/filehandler.py
-
-import unicodedata
 
 
 def try_parse(v, fn=int):
@@ -543,7 +548,7 @@ def try_parse(v, fn=int):
         return v
 
 
-## Note: not localized (i.e. always as dot for decimal separator)
+# Note: not localized (i.e. always as dot for decimal separator)
 _re_alphanum_f = re.compile(r'[0-9]+(?:\.[0-9]+)?|[^0-9]+')
 
 
@@ -551,7 +556,7 @@ def _split_numeric_f(s):
     return [try_parse(v, fn=float) for v in _re_alphanum_f.findall(s)]
 
 
-## Or to avoid interpreting numbers as float:
+# Or to avoid interpreting numbers as float:
 _re_alphanum_int = re.compile(r'\d+|\D+')
 
 
@@ -559,7 +564,7 @@ def _split_numeric(s):
     return [try_parse(v, fn=int) for v in _re_alphanum_int.findall(s)]
 
 
-## Primary function:
+# Primary function:
 def human_sort_key(s, normalize=unicodedata.normalize, floats=True):
     """ Sorting key for 'human' sorting """
     if not isinstance(s, unicode):
@@ -569,8 +574,8 @@ def human_sort_key(s, normalize=unicodedata.normalize, floats=True):
     return s and split_fn(s)
 
 
-####### Reading files backwards
-## http://stackoverflow.com/a/260433/62821
+# ###### Reading files backwards
+# http://stackoverflow.com/a/260433/62821
 
 def reversed_blocks(fileobj, blocksize=4096):
     """ Generate blocks of file's contents in reverse order.  """
@@ -598,7 +603,7 @@ def reversed_lines(fileobj):
         yield ''.join(tail)
 
 
-######## ...
+# ####### ...
 
 class ThrottledCall(object):
     """ Decorator for throttling calls to some functions (e.g. logging).
@@ -609,7 +614,7 @@ class ThrottledCall(object):
     Methods: `call_something`
     """
 
-    #_last_call_time = None
+    # _last_call_time = None
     _call_time_throttle = None
     _call_cnt = 0  # (kept accurate; but can become ineffectively large)
     _call_cnt_throttle = 0  # next _call_cnt to call at
@@ -622,8 +627,8 @@ class ThrottledCall(object):
         `cnt_limit`: call only once each `cnt_limit` calls
         """
         self.fn = fn
-        # mimickry, v2
-        #self.__call__ = wraps(fn)(self.__call__)
+        # # mimickry, v2
+        # self.__call__ = wraps(fn)(self.__call__)
         self.sec_limit = sec_limit
         self.cnt_limit = cnt_limit
         doc = "%s (throttled)" % (fn.__doc__,)
@@ -636,9 +641,9 @@ class ThrottledCall(object):
     def call_something(self, fn, *ar, **kwa):
         """ Call some (other) function with the same throttling """
         now = time.time()
-        #do_call = True
-        ## NOTE: `throttle_cnt(throttle_sec(fn))` is emulated if both are
-        ##   set.
+        # do_call = True
+        # # NOTE: `throttle_cnt(throttle_sec(fn))` is emulated if both
+        # # are set.
         if self.cnt_limit is not None:
             self._call_cnt += 1
             if self._call_cnt >= self._call_cnt_throttle:
@@ -666,11 +671,11 @@ class ThrottledCall(object):
     def __repr__(self):
         return "<throttled_call(%r)>" % (self.fn,)
 
-    ## Optional: mimickry
-    #def __repr__(self):
-    #    return repr(self.fn)
-    #def __getattr__(self, v):
-    #    return getattr(self.fn, v)
+    # # Optional: mimickry
+    # def __repr__(self):
+    #     return repr(self.fn)
+    # def __getattr__(self, v):
+    #     return getattr(self.fn, v)
 
 
 @functools.wraps(ThrottledCall)
@@ -682,7 +687,7 @@ def throttled_call(fn=None, *ar, **kwa):
             # mimickry, v3
             return functools.wraps(fn)(ThrottledCall(fn, *ar, **kwa))
         else:  # supplied some arguments as positional?
-            ## XX: make a warning?
+            # XX: make a warning?
             ar = (fn,) + ar
     return lambda fn: functools.wraps(fn)(ThrottledCall(fn, *ar, **kwa))
 
@@ -714,7 +719,7 @@ def uniq_g(lst, key=lambda v: v):
         if k not in known:
             yield v
             known.add(k)
-    ## ...
+    # ...
 
 
 def uniq(lst, key=lambda v: v):
@@ -725,7 +730,7 @@ def uniq(lst, key=lambda v: v):
 list_uniq = uniq_g
 
 
-### Helper for o_repr that displays '???'
+# Helper for o_repr that displays '???'
 class ReprObj(object):
     """ A class for inserting specific text in __repr__ outputs.  """
 
@@ -736,32 +741,40 @@ class ReprObj(object):
         return self.txt
 
 
-#_err_obj = type('ErrObj', (object,), dict(__repr__=lambda self: '???'))()
+# _err_obj = type('ErrObj', (object,), dict(__repr__=lambda self: '???'))()
 _err_obj = ReprObj('???')
 
 
-## It is similar to using self.__dict__ in repr() but works over dir()
-def o_repr_g(o, _colors=False, _colors256=False, _colorvs=None):
+# It is similar to using self.__dict__ in repr() but works over dir()
+def o_repr_g(
+        o, _colors=False, _colors256=False, _colorvs=None, _method=2,
+        _private=False, _callable=False):
     """ Represent (most of) data on a python object in readable
     way. Useful default for a __repr__.
     WARN: does not handle recursive structures; use carefully.  """
 
-    ## TODO: handle recursive structures (similar to dict.__repr__)
-    ## TODO: process base types (dict / list / ...) in a special way
+    # TODO: handle recursive structures (similar to dict.__repr__)
+    # TODO: process base types (dict / list / ...) in a special way
 
     def _color(x16, x256=None):
         if not _colors:
             return ''
+        if x16 is None and x256 is None:
+            return '\x1b[00m'
         if _colors256 and x256:
             return '\x1b[38;5;' + str(x256) + 'm'
         return '\x1b[0' + str(x16) + 'm'
 
-    _colorvs = _colorvs or dict(
-        base=('1;37', '230'),  ## Base (punctuation)  # white / pink-white
-        clsn=('1;36', '123'),  ## Class name  # cyan / purple-white
-        attr=('0;32', '120'),  ## Attribute name  # dark-green / green-white
-        val=('0;37', '252'),  ## Value data  # light-gray / light-light-gray
+    _colorvs_add = _colorvs
+    _colorvs = dict(
+        base=('1;37', '230'),  # Base (punctuation)  # white / pink-white
+        clsn=('1;36', '123'),  # Class name  # bright cyan / cyan-white
+        attr=('0;32', '120'),  # Attribute name  # dark-green / green-white
+        func=('0;34', '75'),  # Function name  # blue / blue-cyan
+        val=('0;37', '252'),  # Value data  # light-gray / light-light-gray
+        clear=(None, None),
     )
+    _colorvs.update(_colorvs_add or {})
 
     def _colorv(n):
         return _color(*_colorvs[n])
@@ -773,52 +786,71 @@ def o_repr_g(o, _colors=False, _colors256=False, _colorvs=None):
     yield _colorv("base")
     yield '('
 
-    #o_type = type(o)  # V3: check type for properties
+    if _method == 3:
+        # V3: check type for properties
+        o_type = type(o)
+
     first = True
 
     for n in sorted(dir(o)):
-        if n.startswith('_'):  # skip 'private' stuff
+
+        # skip 'private' stuff
+        if n.startswith('_') and not _private:
             continue
+
         if first:
             first = False
         else:
             yield _colorv("base")
             yield ', '
-        yield _colorv("attr")
-        yield str(n)  ## NOTE: some cases (e.g. functions) will remain just names
 
-        ## V2: try but fail
-        try:
+        keytype = "attr"
+        has_val = True
+
+        # V2: try but fail
+        if _method == 2:
+            try:
+                v = getattr(o, n)
+                if callable(v):  # skip functions (... and other callables)
+                    if not _callable:
+                        has_val = False
+                    keytype = "func"
+            except Exception:
+                v = _err_obj
+
+        if _method == 3:
+            # V3: check type for properties
+            v_m = getattr(o_type, n, None)
+            if v_m is not None and isinstance(v_m, property):
+                continue  # skip properties
             v = getattr(o, n)
-            if callable(v):  # skip functions (... and other callables)
-                continue
-        except Exception as e:
-            v = _err_obj
 
-        ## V3: check type for properties
-        #v_m = getattr(o_type, n, None)
-        #if v_m is not None and isinstance(v_m, property):
-        #    continue  # skip properties
-        #v = getattr(o, n)
-        #if callable(v):  # skip functions (... and other callables)
-        #    continue
-        yield _colorv("base")
-        yield '='
-        yield _colorv("val")
-        yield repr(v)
+            # skip functions (... and other callables)
+            if callable(v):
+                if not _callable:
+                    has_val = False
+                keytype = "func"
+
+        yield _colorv(keytype)
+        yield str(n)  # NOTE: some cases (e.g. functions) will remain just names
+
+        if has_val:
+            try:
+                v = repr(v)
+            except Exception:
+                v = _err_obj
+            yield _colorv("base")
+            yield '='
+            yield _colorv("val")
+            yield v
 
     yield _colorv("base")
     yield ')>'
-    yield '\x1b[00m'  # color clear
+    yield _colorv("clear")
 
 
 def o_repr(o, **kwa):
     return ''.join(o_repr_g(o, **kwa))
-
-
-def p_o_repr(o, **kwa):
-    kwa = dict(dict(_colors=True, _colors256=True), **kwa)
-    print o_repr(o, **kwa)
 
 
 class OReprMixin(object):
@@ -835,7 +867,7 @@ def stdin_lines(strip_newlines=True):
             return
         if not l:
             break
-        ## This might not be the case if the stream terminates with a non-newline at the end.
+        # This might not be the case if the stream terminates with a non-newline at the end.
         if strip_newlines and l[-1] == '\n':
             l = l[:-1]
         yield l
@@ -849,7 +881,7 @@ def stdout_lines(gen):
 
 
 def dict_merge(target, source, instancecheck=None, dictclass=dict,
-               del_obj=object(), _copy=True):
+               del_obj=object(), _copy=True, inplace=False):
     """ do update() on 'dict of dicts of di...' structure recursively.
     Also, see sources for details.
     NOTE: does not keep target's specific tree structure (forces source's)
@@ -868,23 +900,28 @@ def dict_merge(target, source, instancecheck=None, dictclass=dict,
     {'open_folders': {'my_folder_a': False}}
     """
     if instancecheck is None:  # funhorrible ducktypings
-        #instancecheck = lambda iv: isinstance(iv, dict)
-        instancecheck = lambda iv: hasattr(iv, 'iteritems')
-    ## Recursive parameters shorthand
+        # instancecheck = lambda iv: isinstance(iv, dict)
+
+        def instancecheck_default(iv):
+            return hasattr(iv, 'iteritems')
+
+        instancecheck = instancecheck_default
+
+    # Recursive parameters shorthand
     kwa = dict(instancecheck=instancecheck, dictclass=dictclass, del_obj=del_obj)
 
-    if _copy:
+    if _copy or not inplace:  # 'either is default'
         target = deepcopy(target)
 
     for k, v in source.iteritems():
         if v is del_obj:
             target.pop(k, None)
         elif instancecheck(v):  # (v -> source -> iteritems())
-            ## NOTE: if target[k] wasn't a dict - it will be, now.
+            # NOTE: if target[k] wasn't a dict - it will be, now.
             target[k] = dict_merge(
                 dict_fget(target, k, dictclass), v, **kwa)
         else:  # nowhere to recurse into - just replace
-            ## NOTE: if target[k] was a dict - it won't be, anymore.
+            # NOTE: if target[k] was a dict - it won't be, anymore.
             target[k] = v
 
     return target
@@ -905,7 +942,7 @@ class IterStat(object):
 
     Error is on the rate of 1e-08 for 1e6 values in the range of
     0..1e6, both for mean and for stddev. """
-    ## http://www.johndcook.com/standard_deviation.html
+    # http://www.johndcook.com/standard_deviation.html
 
     def __init__(self, vals=None, start=0):
         self.start = start
@@ -1037,4 +1074,3 @@ def colorize_diff(text, **kwa):
     """ Attempt to colorize the [unified] diff text using pygments
     (for console output) """
     return colorize(text, 'diff', **kwa)
-
