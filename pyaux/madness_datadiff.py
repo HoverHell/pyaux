@@ -4,7 +4,7 @@
 import yaml
 import difflib
 import itertools
-from pyaux.base import colorize_yaml
+from pyaux.base import colorize_yaml, colorize_diff
 
 
 __all__ = (
@@ -23,17 +23,18 @@ def _dumprepr(val, no_anchors=True, colorize=False, try_ujson=True, **kwa):
             'NoAliasesSafeDumper', (dumper,),
             dict(ignore_aliases=lambda self, data: True))
 
-    params = dict(default_flow_style=False, Dumper=dumper)
+    params = dict(default_flow_style=False, allow_unicode=True,
+                  Dumper=dumper)
     params.update(kwa.get('yaml_kwa', {}))
 
-    def do_colorize(text):
+    def maybe_colorize(text):
         if not colorize:
             return text
-        return colorize_yaml(text)
+        return colorize_yaml(text, **kwa)
 
     res = ''
     try:
-        res += do_colorize(yaml.dump(val, **params))
+        res += maybe_colorize(yaml.dump(val, **params))
     except Exception:
         if not try_ujson:
             raise
@@ -42,7 +43,7 @@ def _dumprepr(val, no_anchors=True, colorize=False, try_ujson=True, **kwa):
         import ujson
         res += "# Unable to serialize directly!\n"
         prepared_value = ujson.loads(ujson.dumps(val))
-        res += do_colorize(yaml.dump(prepared_value, **params))
+        res += maybe_colorize(yaml.dump(prepared_value, **params))
 
     return res
 
@@ -57,12 +58,15 @@ def _diff_pre_diff(val, **kwa):
 
 def _diff_datadiff_data(val1, val2, **kwa):
     """ Do the diff and return the data """
-    res = difflib.unified_diff(_diff_pre_diff(val1), _diff_pre_diff(val2))
+    val1_p = _diff_pre_diff(val1, **kwa)
+    val2_p = _diff_pre_diff(val2, **kwa)
+    res = difflib.unified_diff(val1_p, val2_p)
     return res
 
 
-def datadiff(val1, val2, **kwa):
+def datadiff(val1, val2, colorize=False, colorize_yaml=False, **kwa):
     """ Return a values diff string """
+    kwa['colorize'] = colorize_yaml  # NOTE: controversial
     data = _diff_datadiff_data(val1, val2, **kwa)
 
     # line_limit
@@ -77,7 +81,10 @@ def datadiff(val1, val2, **kwa):
         else:
             data.append(u'...')  # u'…'
 
-    return '\n'.join(data)
+    res = '\n'.join(data)
+    if colorize:
+        res = colorize_diff(res, **kwa)
+    return res
 
 
 def p_datadiff(val1, val2, **kwa):
