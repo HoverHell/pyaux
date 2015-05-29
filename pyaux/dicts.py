@@ -93,6 +93,15 @@ from pyaux.base import uniq_g
 from pyaux.base import dotdict
 
 
+__all__ = (
+    'ODReprMixin', 'OrderedDict',
+    'MVOD',
+    'hasattr_x',
+    'dotdictx', 'defaultdictx', 'DefaultDotDictMixin',
+    'dodd', 'mvdodd', 'remvdodd', 'redodd',
+)
+
+
 class ODReprMixin(object):
     """ A mixin for ordered dicts that provides two different representations
     and a wrapper for handling self-referencing structures. """
