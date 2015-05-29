@@ -3,6 +3,17 @@
 Release History
 ---------------
 
+1.6.0 (2015-05-29)
+++++++++++++++++++
+
+ - dicts: __all__
+ - dicts: style
+ - p_o_repr builtinable
+ - more pep8
+ - mrosources, colorize in oneliny
+ - mangle_dict, generalised pygments-using colorize
+
+
 1.5.0 (2015-03-19)
 ++++++++++++++++++
 
