@@ -17,7 +17,7 @@ __all__ = (
     # the oneliners and debug-useful stuff
     '_try', '_try2', '_iter_ar', '_filter',
     '_filter_n', '_print', '_ipdbg', '_uprint',
-    '_yprint',
+    '_yprint', 'p_o_repr',
     # diff stuff
     '_dumprepr',
     '_diff_pre_diff', '_diff_datadiff_data', 'datadiff', 'p_datadiff',
@@ -43,14 +43,11 @@ def _into_builtin(d):
 
 # For _into_builtin
 __all_stuff = locals()
-__all_stuff_e = dict(
-    _try2=_try2, _try=_try, _iter_ar=_iter_ar, _filter=_filter,
-    _filter_n=_filter_n, _print=_print, _ipdbg=_ipdbg,
-    _uprint=_uprint)
-__all_stuff_e.update((k, globals().get(k)) for k in __all__)
+__all_stuff_e = dict((k, globals().get(k)) for k in __all__)
 
 
 try:
+    # better pprint
     from IPython.lib.pretty import pprint, pretty
     __all_stuff.update(pprint=pprint, pretty=pretty, pformat=pretty)
     __all_stuff_e.update(pprint=pprint, pretty=pretty, pformat=pretty)
