@@ -3,7 +3,7 @@
 import os
 from setuptools import setup
 
-version = '1.5.0'  # should be the same as pyaux.__version__
+version = '1.6.0'  # should be the same as pyaux.__version__
 
 LONG_DESCRIPTION = """
 Collection of helpers and useful things for Python
