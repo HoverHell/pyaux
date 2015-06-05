@@ -35,6 +35,8 @@ setup_kwargs = dict(
             'lzcat.py = pyaux.lzcat:_lzcat_main',
             'lzma.py = pyaux.lzmah:_lzma_main',
             'fjson_yaml = pyaux.bin.fjson_yaml:main',
+            'fjson.py = pyaux.bin.fjson:main',
+            'fmsgp_json = pyaux.bin.fmsgp_json:main',
         ],
     },
     install_requires=['six'],
