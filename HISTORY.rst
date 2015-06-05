@@ -3,6 +3,14 @@
 Release History
 ---------------
 
+1.7.0 (2015-06-05)
+++++++++++++++++++
+
+ - Lots of things, a bit of module-separation
+ - separated out ranges
+ - bin: fjson.py, fmsgp_json
+
+
 1.6.0 (2015-05-29)
 ++++++++++++++++++
 
