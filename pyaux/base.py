@@ -4,21 +4,26 @@
 
 import os
 import sys
-import inspect
-import six
-from copy import deepcopy
 
-import math
-import time
+from copy import deepcopy
+import errno
 import functools
+import itertools
 from itertools import chain, repeat, islice
-import traceback
+import json
+import logging
+import math
 import re
+import six
+import time
+import traceback
 import unicodedata
 
-from . import ranges
-from .ranges import *
+from pyaux import ranges
+from pyaux.ranges import *
 
+from pyaux import interpolate
+from pyaux.interpolate import *
 
 __all__ = (
     'bubble',
@@ -28,8 +33,6 @@ __all__ = (
     'DebugPlug', 'repr_call',
     'dict_fget',
     'dict_fsetdefault',
-    'interp',
-    'edi', 'InterpolationEvaluationException',
     'split_list',
     'use_cdecimal',
     'use_exc_ipdb',
@@ -51,17 +54,23 @@ __all__ = (
     # 'lzmah',
     # 'lzcat',
     # 'psql',
-) + ranges.__all__
+    'to_bytes',
+    'to_unicode',
+) + ranges.__all__ + interpolate.__all__
 
 
 def bubble(*args, **kwargs):
     """ Prettified super():
-    Call `super(ThisClass, this_instance).this_method(...)`.
-    Not super-performant but quite prettifying ("Performance is 5 times
-      worse than super() call").
+    Calls `super(ThisClass, this_instance).this_method(...)`.
+
+    Not super-performant but quite prettifying ("Performance is 5
+    times worse than super() call").
+
     src:
     http://stackoverflow.com/questions/2706623/super-in-python-2-x-without-args/2706703#2706703
     """
+    import inspect
+
     def find_class_by_code_object(back_self, method_name, code):
         for cls in inspect.getmro(type(back_self)):
             if method_name in cls.__dict__:
@@ -121,6 +130,37 @@ class dotdict(dict):
 
 # Compat alias
 SmartDict = dotdict
+
+
+_dotdictify_marker = object()
+
+
+class dotdictify(dict):
+    """ Recursive automatic doctdict thingy """
+
+    def __init__(self, value=None):
+        if value is None:
+            pass
+        elif isinstance(value, dict):
+            for key in value:
+                self.__setitem__(key, value[key])
+        else:
+            raise TypeError('expected a dict')
+
+    def __setitem__(self, key, value):
+        if isinstance(value, dict) and not isinstance(value, dotdictify):
+            value = dotdictify(value)
+        dict.__setitem__(self, key, value)
+
+    def __getitem__(self, key):
+        found = self.get(key, _dotdictify_marker)
+        if found is _dotdictify_marker:
+            found = dotdictify()
+            dict.__setitem__(self, key, found)
+        return found
+
+    __setattr__ = __setitem__
+    __getattr__ = __getitem__
 
 
 def repr_call(ar, kwa):
@@ -208,69 +248,6 @@ def dict_fsetdefault(D, k, d):
     D[k] = v
     return v
 
-
-# ###### String interpolation
-
-# http://rightfootin.blogspot.com/2007/02/string-interpolation-in-python.html
-def interp(string, _regexp=r'(#\{([^}]*)\})'):
-    """ Inline string interpolation.
-    >>> var1 = 213; ff = lambda v: v**2
-    >>> interp("var1 is #{var1}")
-    'var1 is 213'
-    >>> interp("var1 is #{ff(var1)}; also #{ff(12)}")
-    'var1 is 45369; also 144'
-    """
-    fframe = sys._getframe(1)
-    flocals = fframe.f_locals
-    fglobals = fframe.f_globals
-    items = re.findall(_regexp, string)
-    item_to_str = {}
-    # Do eval and replacement separately and replacement in one regex
-    # go to avoid interpolating already interpolated values.
-    for item_outer, item in items:
-        item_to_str[item] = str(eval(item, fglobals, flocals))
-    string = re.sub(_regexp, lambda match: item_to_str[match.group(2)], string)
-    return string
-
-
-# Yet another string-interpolation helper
-
-
-class InterpolationEvaluationException(KeyError):
-    pass
-
-
-class edi(dict):  # "expression_dictionary"...
-    """ Yet another string interpolation helper.
-
-    >>> var1 = 313; f = lambda x: x*2
-    >>> print "1 is %(var1)5d, f1 is %(f(var1))d, f is %(f)r, 1/2 is %(float(var1)/2)5.3f." % edi()  #doctest: +ELLIPSIS
-    1 is   313, f1 is 626, f is <function <lambda> at 0x...>, 1/2 is 156.500.
-
-    """
-    # No idea for what sake this is subclassed from dictionary, actually. A
-    # neat extra, perhaps.
-
-    globals = {}
-
-    def __init__(self, d=None):
-        if d is None:  # Grab parent's locals forcible
-            self.locals = sys._getframe(1).f_locals
-            self.globals = sys._getframe(1).f_globals
-            d = self.locals
-        super(edi, self).__init__(d)
-
-    def __getitem__(self, key):
-        try:
-            return dict.__getitem__(self, key)
-        except KeyError:
-            try:
-                return eval(key, self.globals, self)
-            except Exception, e:
-                raise InterpolationEvaluationException(key, e)
-
-
-# ###### ...
 
 def split_list(lst, cond):
     """ Split list items into two into (matching, non_matching) by
@@ -812,8 +789,8 @@ class IterStat(object):
 
 def chunks(lst, size):
     """ Yield successive chunks from lst. No padding.  """
-    for i in xrange(0, len(lst), size):
-        yield lst[i:i + size]
+    for idx in xrange(0, len(lst), size):
+        yield lst[idx:idx + size]
 
 
 def chunks_g(iterable, size):
@@ -846,37 +823,51 @@ def group(lst, cls=dict):
         try:
             group_list = res[key]
         except KeyError:
-            group_list = []
-            res[key] = group_list
-        group_list.append(val)
+            res[key] = [val]
+        else:
+            group_list.append(val)
     return res
 
 
+def group2(lst, key=lambda v: v[0]):
+    """ RTFS.
+
+    Not particularly better than `group((key(val), val) for val in lst)`.
+    """
+    res = {}
+    for v in lst:
+        res.setdefault(key(v), []).append(v)
+    return res.items()
+
+
 def mangle_dict(input_dict, include=None, exclude=None, add=None, _return_list=False):
-    res = []
+    """ Functional-style dict editing """
     include = set(include) if include is not None else None
     exclude = set(exclude) if exclude is not None else None
     if include:
         assert not exclude
-    # TODO?: make a clever one-liner of all this stuff.
-    for key, val in input_dict.iteritems():
-        if include is not None:
-            if key in include:
-                res.append((key, val))
-        elif exclude is not None:
-            if key not in exclude:
-                res.append((key, val))
-        else:  # no includes/excludes
-            res.append((key, val))
+
+    items = input_dict.iteritems()
+    if include is not None:
+        res = [(key, val) for key, val in items
+               if key in include]
+    elif exclude is not None:
+        res = [(key, val) for key, val in items
+               if key not in exclude]
+    else:
+        res = list(items)
+
     # ... functional-style `update`.
     if add is not None:
         if isinstance(add, dict):
             add = add.iteritems()
-        for key, val in add:
-            res.append((key, val))
+        res.extend(add)
     if _return_list:
         return res
     return dict(res)
+
+
+filterdict = mangle_dict
 
 
 def colorize(text, fmt, outfmt='term', lexer_kwa=None, formatter_kwa=None, **kwa):
@@ -910,3 +901,287 @@ def colorize_diff(text, **kwa):
     """ Attempt to colorize the [unified] diff text using pygments
     (for console output) """
     return colorize(text, 'diff', **kwa)
+
+
+def _dict_hash_1(dct):
+    """ Simple non-recursive dict -> hash """
+    return hash(tuple(sorted(dct.items())))
+
+_dict_hash = _dict_hash_1
+
+
+# TODO?: some clear-all-memos method
+class memoize(object):
+
+    def __init__(self, fn, timelimit=None):  # TODO?: time limit
+        self.log = logging.getLogger("%s.%r" % (__name__, self))
+        self.fn = fn
+        self.mem = {}
+        self.timelimit = timelimit
+        self.skip_first_arg = False
+        functools.update_wrapper(self, fn)
+
+    def __call__(self, *ar, **kwa):
+        now = time.time()  # NOTE: before the call
+        override = kwa.pop('_memoize_force_new', False)
+        # TODO?: cleanup obsolete keys here sometimes.
+        try:
+            if self.skip_first_arg:
+                key = (ar[1:], _dict_hash(kwa))
+            else:
+                key = (ar, _dict_hash(kwa))
+            # XXX/TODO: make `key` a weakref
+            then, res = self.mem[key]
+        except KeyError:
+            pass
+        except TypeError:  # e.g. unhashable args
+            self.log.warn("memoize: Trying to memoize unhashable args %r, %r", ar, kwa)
+            return self.fn(*ar, **kwa)
+        else:
+            if not override and (self.timelimit is None or (now - then) < self.timelimit):
+                # Still okay
+                return res
+        # KeyError or obsolete result
+        res = self.fn(*ar, **kwa)
+        self.mem[key] = (now, res)
+        return res
+
+
+def memoize_method(*ar, **cfg):
+    """ `memoize` for a method, saving the cache on an instance
+    attribute.
+
+    :param memo_attr: name of the attribute to save the cache on.
+    :param timelimit: see `memoize`.
+    """
+
+    def memoize_method_configured(func):
+        memo_attr = cfg.pop('memo_attr', None)
+        if memo_attr is None:
+            memo_attr = '_cached_%s' % (func.__name__,)
+
+        @functools.wraps(func)
+        def memoized_method(self, *ar, **kwa):
+            cache = getattr(self, memo_attr, None)
+            if cache is None:
+                cache = memoize(func, **cfg)
+                cache.skip_first_arg = True
+                setattr(self, memo_attr, cache)
+
+            return cache(self, *ar, **kwa)
+
+        return memoized_method
+
+    if ar and callable(ar[0]):
+        return memoize_method_configured(ar[0])
+    return memoize_method_configured
+
+
+def mkdir_p(path):
+    try:
+        os.makedirs(path)
+    except OSError as exc:
+        if exc.errno == errno.EEXIST and os.path.isdir(path):
+            pass
+        else:
+            raise
+
+
+def _dict_to_hashable_json(dct, dumps=json.dumps):
+    """ ...
+
+    NOTE: Not meant to be performant; tends towards collisions.
+
+    Use `id(dct)` for a performant way with the reverse tendency.
+    """
+    return dumps(dct, skipkeys=True, default=id)
+
+
+def group3(items, to_hashable=_dict_to_hashable_json):
+    """ Same as `group` but supports dicts as keys (and returns list
+    of pairs) """
+    annotated = [(to_hashable(key), key, val) for key, val in items]
+    hashes = dict((keyhash, key) for keyhash, key, val in annotated)
+    groups = group((keyhash, val) for keyhash, key, val in annotated).items()
+    return [(hashes[keyhash], lst) for keyhash, lst in groups]
+
+
+def to_bytes(st, default=(lambda val: val), **kwa):
+    if isinstance(st, bytes):
+        return st
+    if not isinstance(st, unicode):
+        return default(st)  # normally the value itself
+    kwa.setdefault('encoding', 'utf-8')
+    return st.encode(**kwa)
+
+
+def to_unicode(st, default=(lambda val: val), **kwa):
+    if isinstance(st, unicode):
+        return st
+    if not isinstance(st, bytes):
+        return default(st)
+    kwa.setdefault('encoding', 'utf-8')
+    return st.decode(**kwa)
+
+
+def import_module(name, package=None):
+    """ ...
+
+    django.utils.importlib.import_module without the package support
+    """
+    __import__(name)
+    return sys.modules[name]
+
+
+def import_func(func_path, _check_callable=True):
+    """ Get an object (e.g. a function / callable) by import path.
+
+    supports '<module>:<path>' notation as well as '<module>.<func_name>'.
+    """
+    # # Somewhat borrowed from django.core.handlers.base.BaseHandler.load_middleware
+    # from django.utils.importlib import import_module
+
+    _exc_cls = Exception
+
+    if ':' in func_path:
+        f_module, f_name = func_path.split(':', 1)
+    else:
+        try:
+            f_module, f_name = func_path.rsplit('.', 1)
+        except ValueError as exc:
+            raise _exc_cls("func_path isn't a path", func_path, exc)
+
+    f_name_parts = f_name.split('.')
+
+    try:
+        mod = import_module(f_module)
+    except ImportError as exc:
+        raise _exc_cls("func_path's module cannot be imported", func_path, exc)
+
+    try:
+        here = mod
+        for f_name_part in f_name_parts:
+            if not f_name_part:
+                continue  ## allows for weirder things to be done.
+            here = getattr(here, f_name_part)
+        func = here
+    except AttributeError as exc:
+        raise _exc_cls("func_path's module does not have the specified func", func_path, exc)
+
+    if _check_callable and not callable(func):
+        raise _exc_cls("func does not seem to be a callable", func_path, func)
+
+    return func
+
+
+def next_or_fdefault(it, default=lambda: None, skip_empty=False):
+    """
+    `next(it, default_value)` with laziness.
+
+    >>> next_or_fdefault([1], lambda: 1/0)
+    1
+    >>> next_or_fdefault([], lambda: list(range(2)))
+    [0, 1]
+    """
+    if skip_empty:
+        it = (val for val in it if val)
+    else:
+        it = iter(it)
+    try:
+        return next(it)
+    except StopIteration:
+        return default()
+
+
+def iterator_is_over(it, ret_value=False):
+    """ Try to consume an item from an iterable `it` and return False
+    if it succeeded (the item stays consumed) """
+    try:
+        val = next(it)
+    except StopIteration:
+        if ret_value:
+            return True, None
+        return True
+    else:
+        if ret_value:
+            return False, val
+        return False
+
+
+def dict_is_subset(
+        smaller_dict, larger_dict,
+        recurse_iterables=False, structure_match=True):
+    """ Recursive check "smaller_dict's keys are subset of
+    larger_dict's keys.
+
+    NOTE: in practice, supports non-dict values at top.
+    """
+    kwa = dict(
+        recurse_iterables=recurse_iterables,
+        structure_match=structure_match,
+    )
+    if isinstance(smaller_dict, dict):
+        if not isinstance(larger_dict, dict):
+            if structure_match:
+                return False
+            return True
+        # Both are dicts.
+        for key, val in smaller_dict.items():
+            try:
+                lval = larger_dict[key]
+            except KeyError:
+                return False
+            # 'compare' the values whatever they are
+            if not dict_is_subset(val, lval, **kwa):
+                return False
+    elif recurse_iterables and hasattr(smaller_dict, '__iter__'):
+        if not hasattr(larger_dict, '__iter__'):
+            if structure_match:
+                return False
+            return True
+        # smaller_value_iter, larger_value_iter
+        svi = iter(smaller_dict)
+        lvi = iter(larger_dict)
+        for sval, lval in itertools.izip(svi, lvi):
+            if not dict_is_subset(sval, lval, **kwa):
+                return False
+        if structure_match:
+            if not iterator_is_over(svi) or not iterator_is_over(lvi):
+                # One of the iterables was longer and thus was not
+                # consumed entirely by the izip
+                return False
+
+    return True
+
+
+def find_files(
+        in_dir, fname_re=None, older_than=None, skip_last=None,
+        _prewalk=True):
+    """ Return all full file paths under the directory `in_dir` whose
+    *filenames* match the `fname_re` regexp (if not None) """
+    now = time.time()
+    walk = os.walk(in_dir)
+    if _prewalk:
+        walk = list(walk)
+    for dir_name, dir_list, file_list in walk:
+        if fname_re is not None:
+            file_list = (v for v in file_list if re.match(fname_re, v))
+        # Annotate with full path:
+        file_list = ((os.path.join(dir_name, file_name), file_name)
+                     for file_name in file_list)
+        if older_than is not None:
+            file_list = ((fpath, fname) for fpath, fname in file_list
+                         if now - os.path.getmtime(fpath) >= older_than)
+
+        # Convenience shortcut
+        if skip_last:
+            file_list = sorted(list(file_list), key=lambda v: v[1])
+            file_list = file_list[:-skip_last]
+
+        for fpath, fname in file_list:
+            yield fpath
+
+
+if __name__ == '__main__':
+    import doctest
+    doctest.testmod()
