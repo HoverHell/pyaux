@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import os
-from setuptools import setup
+from setuptools import setup, find_packages
 
 version = '1.7.0'  # should be the same as pyaux.__version__
 
@@ -29,7 +29,7 @@ setup_kwargs = dict(
     author_email='hoverhell@gmail.com',
     url='https://github.com/HoverHell/pyaux',
     download_url='https://github.com/HoverHell/pyaux/tarball/%s' % (version,),
-    packages=['pyaux'],
+    packages=find_packages(),
     entry_points={
         'console_scripts': [
             'lzcat.py = pyaux.lzcat:_lzcat_main',
@@ -45,7 +45,7 @@ setup_kwargs = dict(
         'recommended': [
             'ipython', 'ipdb', 'PyYAML',
             'atomicfile', 'cdecimal',
-            #'requests', 'pycurl',
+            # 'requests', 'pycurl',
         ],
         # All things that are known to be used in some part of this
         # library or another.
@@ -65,9 +65,9 @@ setup_kwargs = dict(
     dependency_links=[
         # 'https://github.com/sashka/atomicfile/tarball/master#egg=atomicfile',  # on pypi now
     ],
-    #package_data={},
-    #include_package_data=True,
-    #zip_safe=False,
+    # package_data={},
+    # include_package_data=True,
+    # zip_safe=False,
 )
 
 
