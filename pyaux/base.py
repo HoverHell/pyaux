@@ -265,7 +265,12 @@ def split_list(lst, cond):
 
 def use_cdecimal():
     """ Do a hack-in replacement of `decimal` with `cdecimal`.
-    Should be done before importing other modules.  """
+    Should be done before importing other modules.
+
+    Also see
+    http://adamj.eu/tech/2015/06/06/swapping-decimal-for-cdecimal-on-python-2/
+    for a possibly more reliable way.
+    """
     import decimal  # maybe not needed
     import cdecimal
     sys.modules['decimal'] = cdecimal

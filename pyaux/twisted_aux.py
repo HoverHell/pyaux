@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # coding: utf8
 
+# XXXX/TODO: use the module from pyauxm
+
 import sys
 import twisted.python.log as twisted_log
 from . import exc_log
