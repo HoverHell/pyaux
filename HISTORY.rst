@@ -3,6 +3,14 @@
 Release History
 ---------------
 
+1.7.1 (2015-06-08)
+++++++++++++++++++
+
+ - minor notes
+ - fix setup.py packages
+ - refactor: style, make_manhole moved to twisted_aux
+
+
 1.7.0 (2015-06-05)
 ++++++++++++++++++
 
