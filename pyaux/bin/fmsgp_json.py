@@ -4,6 +4,8 @@ import os
 import sys
 import json
 
+from pyaux.base import to_bytes
+
 
 def main():
     import msgpack
@@ -17,7 +19,7 @@ def main():
         return 13
 
     data_out = json.dumps(data, indent=indent, sort_keys=True, ensure_ascii=False)
-    sys.stdout.write(data_out)
+    sys.stdout.write(to_bytes(data_out))
     sys.stdout.write("\n")
 
 
