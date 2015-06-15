@@ -6,6 +6,7 @@ import json
 import yaml
 import argparse
 from pyaux.base import colorize_yaml as colorize
+from pyaux.base import to_bytes
 
 
 def cmd_make_parser(**kwa):
@@ -53,7 +54,7 @@ def main():
     parser = cmd_make_parser()
     params = parser.parse_args()
 
-    ## TODO?: support input file
+    # TODO?: support input file
     data = sys.stdin.read()
     data_data = json.loads(data)
 
@@ -64,29 +65,25 @@ def main():
 
     out = yaml.safe_dump(data_data, **kwa)
 
-    ## Result:
-    ##   `--color=no` always skips this
-    ##   `--color`, `--color=yes`, `-c` always do this
-    ##   ``, `--color=auto` make this isatty-conditional.
+    # Result:
+    #   `--color=no` always skips this
+    #   `--color`, `--color=yes`, `-c` always do this
+    #   ``, `--color=auto` make this isatty-conditional.
     if ((params.color == 'auto' and sys.stdout.isatty())
-            ## NOTE: `'auto'` is default, `None` means it was
-            ## specified without an argument (equals to 'always')
+            # NOTE: `'auto'` is default, `None` means it was
+            # specified without an argument (equals to 'always')
             or params.color in ('yes', 'always', True, None)):
 
-        ## pygments doesn't like utf-8 as-is; make it unicode
+        # pygments doesn't like utf-8 as-is; make it unicode
         if isinstance(out, bytes):
             out = out.decode('utf-8')
 
-        ## TODO?: support --color=auto
+        # TODO?: support --color=auto
         out = colorize(out)
 
-    ## Apply the default encoding and don't even allow to change it
-    if isinstance(out, unicode):
-        out = out.encode('utf-8')
-
-    ## TODO?: support output file
-    sys.stdout.write(out)
-    if out[-1] != '\n':  ## Just in case
+    # TODO?: support output file
+    sys.stdout.write(to_bytes(out))
+    if out[-1] != '\n':  # Just in case
         sys.stdout.write('\n')
     sys.stdout.flush()
 
