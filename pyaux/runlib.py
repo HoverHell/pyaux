@@ -15,10 +15,13 @@ __all__ = [
 
 
 # TODO: lazy-imports
-from pyaux.twisted_aux import (
-    make_manhole_telnet,
-    make_manhole,
-)
+try:
+    from pyaux.twisted_aux import (
+        make_manhole_telnet,
+        make_manhole,
+    )
+except ImportError:
+    pass
 
 
 def _make_short_levelnames(shortnum=True):
