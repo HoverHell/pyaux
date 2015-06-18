@@ -9,9 +9,10 @@ from .madness_datadiff import _dumprepr
 
 
 __all__ = (
-    '_try', '_try2', '_iter_ar', '_filter',
-    '_filter_n', '_print', '_ipdbg', '_uprint',
-    '_yprint', '_mrosources', 'p_o_repr',
+    '_try', '_try2',
+    '_iter_ar', '_filter', '_filter_n',
+    '_ipdbg', '_ipdbt',
+    '_print', '_uprint', '_yprint', '_mrosources', 'p_o_repr',
 )
 
 
@@ -79,6 +80,20 @@ def _ipdbg(_a_function_thingie, *ar, **kwa):
         traceback.print_exc()
         ipdb.pm()
         return None
+
+
+def _ipdbt(_a_function_thingie, *ar, **kwa):
+    """ Run with ipdb trace and post-mortem on exception """
+    import ipdb
+    ipdb.set_trace()
+    try:
+        return _a_function_thingie(*ar, **kwa)
+    except Exception as exc:
+        _, _, sys.last_traceback = sys.exc_info()
+        traceback.print_exc()
+        ipdb.pm()
+        return None
+
 
 
 def _uprint(obj, ret=False):

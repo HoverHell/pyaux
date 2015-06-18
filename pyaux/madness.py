@@ -4,31 +4,25 @@
 Also, things that are useful in an ipython interactice shell.
 """
 
+from . import madness_datadiff
 from .madness_datadiff import *
+from . import madness_oneliny
 from .madness_oneliny import *
+from . import madness_reprstuff
 from .madness_reprstuff import *
+from . import madness_stuffstuff
 from .madness_stuffstuff import *
 
 
-# __all__ includes everything from submodules too
 __all__ = (
-    # repr stuff
-    'GenReprWrap', 'GenReprWrapWrap',
-    # the oneliners and debug-useful stuff
-    '_try', '_try2', '_iter_ar', '_filter',
-    '_filter_n', '_print', '_ipdbg', '_uprint',
-    '_yprint', 'p_o_repr',
-    # diff stuff
-    '_dumprepr',
-    '_diff_pre_diff', '_diff_datadiff_data', 'datadiff', 'p_datadiff',
-    # stuff stuff
-    'Url',
-    '_url_re',
-    '_cut', 'IPNBDFDisplay',
     # __builtin__ hacks
     '_olt_into_builtin',
     '_into_builtin',
 )
+__all__ += madness_datadiff.__all__
+__all__ += madness_oneliny.__all__
+__all__ += madness_reprstuff.__all__
+__all__ += madness_stuffstuff.__all__
 
 
 # # Builtin-madness # #
