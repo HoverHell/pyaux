@@ -10,6 +10,7 @@ __all__ = (
     'Url',
     '_url_re',
     '_cut', 'IPNBDFDisplay',
+    '_re_largest_matching_start',
 )
 
 
@@ -86,3 +87,46 @@ def IPNBDFDisplay(df, *ar, **kwa):
         display(HTML(html))
     else:
         return HTML(html)
+
+
+def _re_largest_matching_start(regex, value, return_regexp=False):
+    """ Find a largest match (from the start of the string) in a value
+    for the regex.
+
+    WARN: computationally complex (d'uh).
+
+    >>> _re_largest_matching_start(r'^[az]+zxcvb', 'aazx')
+    'aazx'
+    >>> _re_largest_matching_start(r'^[az]+zxcvb', 'aazx', return_regexp=1)
+    ('^[az]+zx', 'aazx')
+    """
+    # Yet Another Insane Horror
+
+    all_regexes = [regex[:idx] for idx in xrange(len(regex) + 1)]
+
+    def _try_match(rex, st):
+        try:
+            return re.match(rex, st)
+        except Exception:
+            return
+
+    # all_match_tries = [_try_match(subreg, s) for subreg in all_regexes]
+
+    # Even more horrible:
+    all_substrings = [value[:idx] for idx in xrange(len(value) + 1)]
+    all_match_tries = (
+        (subreg, _try_match(subreg, substr))
+        for subreg in all_regexes
+        for substr in all_substrings)
+    all_matchstrings = [
+        (subreg, val.group(0))
+        for subreg, val in all_match_tries
+        if val]
+    if not all_matchstrings:
+        return ''
+    lrex, lval = max(
+        all_matchstrings,
+        key=lambda val: len(val[1]))  # longest match
+    if return_regexp:
+        return lrex, lval
+    return lval
