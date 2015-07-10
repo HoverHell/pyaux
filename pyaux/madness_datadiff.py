@@ -1,6 +1,7 @@
 # coding: utf8
 """ madstuff: datadiff stuff """
 
+import re
 import yaml
 import difflib
 import itertools
@@ -54,6 +55,32 @@ def _diff_pre_diff(val, **kwa):
     res = _repr(val, **kwa)
     res = res.splitlines()
     return res
+
+
+def word_diff_color(val1, val2, add='\x1b[32m', rem='\x1b[31;01m',
+                    clear='\x1b[39;49;00m'):
+    """ Proper-ish word-diff represented by colors """
+
+    def _preprocess(val):
+        return re.split(r'(?u)(\w+)', val)
+
+    diffs = difflib.unified_diff(_preprocess(val1), _preprocess(val2))
+
+    def _postprocess(line):
+        if line == '--- \n' or line == '+++ \n':
+            return ''
+        if line.startswith('+'):
+            color = add
+        elif line.startswith('-'):
+            color = rem
+        else:
+            color = ''
+        return '%s%s%s' % (color, line[1:], clear)
+
+    diffs = list(diffs)
+    diffs_colored = (_postprocess(line) for line in diffs)
+    # return diffs_colored
+    print ''.join(diffs_colored)
 
 
 def _diff_datadiff_data(val1, val2, **kwa):
