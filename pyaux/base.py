@@ -845,7 +845,7 @@ def group2(lst, key=lambda v: v[0]):
     return res.items()
 
 
-def mangle_dict(input_dict, include=None, exclude=None, add=None, _return_list=False):
+def mangle_dict(input_dict, include=None, exclude=None, add=None, _return_list=False, dcls=dict):
     """ Functional-style dict editing """
     include = set(include) if include is not None else None
     exclude = set(exclude) if exclude is not None else None
@@ -863,13 +863,14 @@ def mangle_dict(input_dict, include=None, exclude=None, add=None, _return_list=F
         res = list(items)
 
     # ... functional-style `update`.
+    # Almost the `dict(input_dict, **add)`, but better.
     if add is not None:
         if isinstance(add, dict):
             add = add.iteritems()
         res.extend(add)
     if _return_list:
         return res
-    return dict(res)
+    return dcls(res)
 
 
 filterdict = mangle_dict
