@@ -106,7 +106,7 @@ def datadiff(val1, val2, colorize=False, colorize_yaml=False, **kwa):
         except StopIteration:
             pass
         else:
-            data.append(u'...')  # u'…'
+            data.append('...')  # u'…'
 
     res = '\n'.join(data)
     if colorize:
