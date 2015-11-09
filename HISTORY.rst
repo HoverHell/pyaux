@@ -3,6 +3,17 @@
 Release History
 ---------------
 
+1.8.0 (2015-11-09)
+++++++++++++++++++
+
+ - memoized_property
+ - Various fixes and improvements
+ - More conveniences
+ - madness: _re_largest_matching_start
+ - madness: _ipdbt, reorganisation
+ - FIX: make runlib importable without twisted
+
+
 1.7.2 (2015-06-15)
 ++++++++++++++++++
 
