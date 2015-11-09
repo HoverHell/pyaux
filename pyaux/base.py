@@ -967,20 +967,70 @@ def memoize_method(*ar, **cfg):
             memo_attr = '_cached_%s' % (func.__name__,)
 
         @functools.wraps(func)
-        def memoized_method(self, *ar, **kwa):
+        def memoized_method(self, *c_ar, **c_kwa):
             cache = getattr(self, memo_attr, None)
             if cache is None:
                 cache = memoize(func, **cfg)
                 cache.skip_first_arg = True
                 setattr(self, memo_attr, cache)
 
-            return cache(self, *ar, **kwa)
+            return cache(self, *c_ar, **c_kwa)
 
         return memoized_method
 
     if ar and callable(ar[0]):
         return memoize_method_configured(ar[0])
     return memoize_method_configured
+
+
+def memoized_property(*ar, **cfg):
+    """
+    Return a property attribute for new-style classes that only calls its getter on the first
+    access. The result is stored and on subsequent accesses is returned, preventing the need to
+    call the getter any more.
+
+    >>> import time
+    >>> class C(object):
+    ...     load_name_count = 0
+    ...     @memoized_property
+    ...     def name(self):
+    ...         ''' name's docstring '''
+    ...         self.load_name_count += 1
+    ...         return "the name"
+    ...     @memoized_property(timelimit=0.0001)
+    ...     def timelimited(self):
+    ...         time.sleep(0.0005)
+    ...         return self.load_name_count
+    >>> c = C()
+    >>> c.load_name_count
+    0
+    >>> c.timelimited
+    0
+    >>> c.name
+    'the name'
+    >>> c.load_name_count
+    1
+    >>> c.name
+    'the name'
+    >>> c.load_name_count
+    1
+    >>> c.timelimited
+    1
+    """
+    func = None
+    if ar and callable(ar[0]):
+        func = ar[0]
+        ar = ar[1:]
+
+    memoize_method_configured = memoize_method(None, *ar, **cfg)
+
+    def mk_property(a_func):
+        return property(memoize_method_configured(a_func))
+
+    if func is not None:
+        return mk_property(func)
+
+    return mk_property
 
 
 def mkdir_p(path):
