@@ -3,7 +3,7 @@
 import os
 from setuptools import setup, find_packages
 
-version = '1.8.0'  # should be the same as pyaux.__version__
+version = '1.9.0'  # should be the same as pyaux.__version__
 
 LONG_DESCRIPTION = """
 Collection of helpers and useful things for Python

@@ -3,6 +3,17 @@
 Release History
 ---------------
 
+1.9.0 (2015-11-09)
+++++++++++++++++++
+
+ - fixes
+ - logging_helpers
+ - mygrequests
+ - urlhelpers
+ - exclogwrap, repr_cut, slstrip
+ - request requests wrapper
+
+
 1.8.0 (2015-11-09)
 ++++++++++++++++++
 
