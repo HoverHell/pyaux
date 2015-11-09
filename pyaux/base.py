@@ -187,8 +187,6 @@ def DebugPlug(name, mklogger=None):
     """
     # The construction with mkClass is for removing the need of
     #   `__getattr__`ing the name and logger.
-    import logging
-
     def mklogger_default(name):
         logger = logging.getLogger(name)
         return logger.debug
@@ -792,6 +790,20 @@ class IterStat(object):
         return _sqrt(self.variance)
 
 
+def IterMean(iterable, dtype=float):
+    """ Mean of an iterable """
+    res_sum, cnt = dtype(), dtype()
+    for val in iterable:
+        res_sum += val
+        cnt += 1
+    if cnt == 0:  # NOTE.
+        try:
+            return dtype('nan')
+        except Exception:
+            return float('nan')
+    return res_sum / cnt
+
+
 def chunks(lst, size):
     """ Yield successive chunks from lst. No padding.  """
     for idx in xrange(0, len(lst), size):
@@ -1236,6 +1248,113 @@ def find_files(
 
         for fpath, fname in file_list:
             yield fpath
+
+
+@memoize
+def get_requests_session():
+    """ Singleton with the common requests session """
+    import requests
+    return requests.session()
+
+
+def request(
+        url, data=None,
+        method=None, _w_method='post',
+        # Conveniences for overriding:
+        _extra_headers=None, _extra_params=None, _default_host=None,
+        # NOTE: using JSON by default here.
+        _dataser='json', timeout=5,
+        _callinfo=True, session=True, _rfs=False, **kwa):
+    """ requests.request wrapper with conveniences.
+
+    :param session: default session if `True`, new session if `False`, or the specified session.
+    :param _w_method: method to use for writing (if `data` or `files` are present).
+    :param _dataser: data-dict serialization format (WARN: default is 'json'). 'json' or 'url'.
+    :param _callinfo: add the caller file and line to the user-agent.
+    """
+    import requests
+    import urlparse
+    log = logging.getLogger('request')
+
+    # Different default, basically.
+    kwa['timeout'] = timeout
+
+    if url.startswith('/'):
+        if _default_host is None:
+            raise Exception("Must specify _default_host for host-relative URLs")
+        if '://' not in _default_host:
+            _default_host = 'http://%s' % _default_host
+        url = urlparse.urljoin(_default_host, url)
+
+    params = kwa.get('params') or {}
+    if _extra_params:
+        params.update(_extra_params)
+    kwa['params'] = params
+
+    headers = kwa.get('headers') or {}
+    if _extra_headers:
+        headers.update(_extra_headers)
+
+    if _callinfo:
+        if isinstance(_callinfo, tuple) and len(_callinfo) == 3:
+            _cfile, _cline, _cfunc = _callinfo
+        else:
+            _cfile, _cline, _cfunc = logging.Logger('').findCaller()
+        _prev_ua = headers.get('User-Agent') or requests.utils.default_user_agent()
+        headers.setdefault('User-Agent', '%(ua)s, %(cfile)s:%(cline)s: %(cfunc)s' % dict(
+            ua=_prev_ua, cfile=_cfile, cline=_cline, cfunc=_cfunc))
+
+    is_writing = data is not None or kwa.get('files') is not None
+    method = method if method is not None else (
+        _w_method if is_writing else 'get')
+    if method == 'get':
+        # From requests.get:
+        kwa.setdefault('allow_redirects', True)
+
+    # Put them back
+    kwa['headers'] = headers
+
+    if session in (0, False, None):
+        reqr = requests
+    elif session in (1, True):
+        reqr = get_requests_session()
+    else:
+        reqr = session
+
+    if data:
+        if isinstance(data, (bytes, unicode)):
+            # Assume the data is already serialised
+            pass
+        elif _dataser == 'json':
+            data = json.dumps(data)
+            kwa.setdefault("headers", {}).setdefault("content-type", "application/json")
+        elif _dataser in ('url', 'urlencode', None):
+            pass  # pretty much the default in `requests`
+        else:
+            raise Exception("Unknown _dataser", _dataser)
+
+        kwa['data'] = data
+        # TODO?: log a piece of the data?
+
+    # TODO?: put the params either entirely inthe url or entirely in
+    # the dict (which shouldn't necessarily be a dict, although MVOD
+    # is more convenient)?
+    log.info("%s %s  params=%r", method.upper(), url, params)
+    resp = reqr.request(method, url, **kwa)
+
+    try:
+        elapsed = '%.3fs' % (resp.elapsed.total_seconds(),)
+    except Exception as exc:  # Just in case
+        elapsed = '???(%s)' % (repr(exc)[:32],)
+    # NOTE: assuming that the reponse content is never too large
+    log.info(
+        "Response: %s %s %s   %db in %s",
+        resp.status_code, resp.request.method, resp.url, len(resp.content), elapsed)
+
+    if _rfs:
+        resp.raise_for_status()
+
+    return resp  # The sufficiently convenient way
 
 
 if __name__ == '__main__':
