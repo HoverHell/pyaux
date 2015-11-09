@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """ json -> yaml for pretty-reading. """
 
+import os
 import sys
 import json
 import yaml
@@ -62,6 +63,10 @@ def main():
         default_flow_style=params.default_flow_style,
         allow_unicode=params.allow_unicode,
     )
+    try:
+        kwa['width'] = int(os.environ['WIDTH'])
+    except Exception:
+        pass
 
     out = yaml.safe_dump(data_data, **kwa)
 

@@ -728,7 +728,7 @@ def dict_merge(target, source, instancecheck=None, dictclass=dict,
     # Recursive parameters shorthand
     kwa = dict(instancecheck=instancecheck, dictclass=dictclass, del_obj=del_obj)
 
-    if _copy or not inplace:  # 'either is default'
+    if _copy and not inplace:  # 'both are default'
         target = deepcopy(target)
 
     for k, v in source.iteritems():
