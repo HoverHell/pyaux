@@ -4,6 +4,7 @@
 import re
 import urlparse
 from pyaux import dotdict
+from pyaux import repr_cut as _cut
 
 
 __all__ = (
@@ -41,12 +42,6 @@ _url_re = (
     ur'''(?i)\b((?:[a-z][\w-]+:(?:/{1,3}|[a-z0-9%])|www\d{0,3}[.]|[a-z0-9.\-]+'''
     ur'''[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+'''
     ur'''(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'".,<>?«»“”‘’]))''')
-
-
-def _cut(s, l):
-    if len(s) <= l:
-        return s
-    return s[:l] + u'…'
 
 
 def IPNBDFDisplay(df, *ar, **kwa):

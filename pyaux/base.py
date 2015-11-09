@@ -1357,6 +1357,49 @@ def request(
     return resp  # The sufficiently convenient way
 
 
+def exclogwrap(func=None, name=None, log=logging):
+    """
+    Wrap the function to exception-log its exceptions.
+
+    Useful for e.g. send_robust signals.
+    """
+
+
+    def exclogwrap_configured(func):
+        name_actual = name
+        if name_actual is None and func is not None:
+            name_actual = repr(func)
+
+        @functools.wraps(func)
+        def _wrapped(*ar, **kwa):
+            try:
+                return func(*ar, **kwa)
+            except Exception as exc:
+                log.exception("%r failed: %r", name_actual, exc)
+                raise
+
+        return _wrapped
+
+    if func is not None:
+        return exclogwrap_configured(func)
+
+    return exclogwrap_configured
+
+
+def repr_cut(some_str, length):
+    if len(some_str) <= length:
+        return some_str
+    return some_str[:length] + (u'…' if isinstance(some_str, unicode) else '…')
+
+
+def slstrip(self, substring):
+    """ Strip a substring from the string at left side """
+    if not self.startswith(substring):
+        raise ValueError("Value %r does not start with substring %r" % (
+            repr_cut(self, len(substring) * 2), substring))
+    return self[len(substring):]
+
+
 if __name__ == '__main__':
     import doctest
     doctest.testmod()
