@@ -4,7 +4,7 @@
 import re
 import urlparse
 from pyaux import dotdict
-from pyaux import repr_cut as _cut
+from pyaux.base import repr_cut as _cut
 
 
 __all__ = (

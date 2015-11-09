@@ -73,11 +73,12 @@ def mangle_url_l(url, include=None, exclude=None, add=None, **kwargs):
 
     Additional keyword parameters are passed to url_replace.
 
+    >>> from pyaux.dicts import MVOD
     >>> query = r'a=&a=1&a=true&b=null&b=undefined&b=&b=5'
     >>> urllib.urlencode(MVOD(urlparse.parse_qsl(query, keep_blank_values=1))) == query
     True
     """
-    from .dicts import MVOD
+    from pyaux.dicts import MVOD
     url_parts = urlparse.urlparse(to_bytes(url))
     query = MVOD(urlparse.parse_qsl(url_parts.query, keep_blank_values=1))
     query_new = mangle_dict(
