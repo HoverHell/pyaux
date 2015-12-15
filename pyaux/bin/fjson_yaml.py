@@ -56,8 +56,18 @@ def main():
     params = parser.parse_args()
 
     # TODO?: support input file
-    data = sys.stdin.read()
-    data_data = json.loads(data)
+    data_in = sys.stdin.read()
+
+    def bailout(msg):
+        sys.stderr.write(
+            "ERROR: fjson_yaml: %s; original data as follows (on stdout)\n" % (msg,))
+        sys.stdout.write(data_in)
+        return 13
+
+    try:
+        data_data = json.loads(data_in)
+    except Exception as exc:
+        return bailout("Error parsing as json: %s" % (exc,))
 
     kwa = dict(
         default_flow_style=params.default_flow_style,
@@ -68,16 +78,19 @@ def main():
     except Exception:
         pass
 
-    out = yaml.safe_dump(data_data, **kwa)
+    try:
+        out = yaml.safe_dump(data_data, **kwa)
+    except Exception as exc:
+        return bailout("Error dumping as yaml: %s" % (exc,))
 
     # Result:
     #   `--color=no` always skips this
     #   `--color`, `--color=yes`, `-c` always do this
     #   ``, `--color=auto` make this isatty-conditional.
-    if ((params.color == 'auto' and sys.stdout.isatty())
+    if ((params.color == 'auto' and sys.stdout.isatty()) or
             # NOTE: `'auto'` is default, `None` means it was
             # specified without an argument (equals to 'always')
-            or params.color in ('yes', 'always', True, None)):
+            params.color in ('yes', 'always', True, None)):
 
         # pygments doesn't like utf-8 as-is; make it unicode
         if isinstance(out, bytes):
