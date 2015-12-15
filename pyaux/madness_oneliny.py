@@ -95,6 +95,30 @@ def _ipdbt(_a_function_thingie, *ar, **kwa):
         return None
 
 
+def _pdbg(_a_function_thingie, *ar, **kwa):
+    """ Run with pdb post-mortem on exception """
+    import pdb
+    try:
+        return _a_function_thingie(*ar, **kwa)
+    except Exception as exc:
+        _, _, sys.last_traceback = sys.exc_info()
+        traceback.print_exc()
+        pdb.pm()
+        return None
+
+
+def _pdbt(_a_function_thingie, *ar, **kwa):
+    """ Run with pdb trace and post-mortem on exception """
+    import pdb
+    pdb.set_trace()
+    try:
+        return _a_function_thingie(*ar, **kwa)
+    except Exception as exc:
+        _, _, sys.last_traceback = sys.exc_info()
+        traceback.print_exc()
+        pdb.pm()
+        return None
+
 
 def _uprint(obj, ret=False):
     try:
