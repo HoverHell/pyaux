@@ -35,9 +35,13 @@ class DummyProfiler(object):
 
 profile = None
 profile_type = None
+
+
 def _check_add_builtin(force=True):
     ## Do the scary global-state stuff
     global profile
+
+
 def get_prof(proftype='lp', add_builtin=True):
     """ Initialize the global and buitin profiler *wrapper* (currently,
     only meant for LineProfiler) """
@@ -54,10 +58,10 @@ def get_prof(proftype='lp', add_builtin=True):
     else:
         raise Exception("Unknown `proftype`.")
     if add_builtin:  # add/replace/whatever
-        import __builtin__
-        __builtin__.__dict__['profile'] = profile
+        from six.moves import builtins
+        builtins.__dict__['profile'] = profile
     return profile
-        
+
 
 def _wrap_class_stuff(the_class, wrapf):
     # for i_name in dir(the_class):
@@ -121,12 +125,12 @@ def _wrap_module_stuff(module, wrapf):
 def wrap_packages(packages, wrapf=None, verbose=True):
     """ Wraps all the currently imported modules within any package of
     the `packages` (e.g. `['module1', 'package2', 'package3.module1']`) """
-    ## Line-profiler: package-wrap.
-    ## NOTE: this would be more reliable if done on the import hook; but
-    ##   this is more simple and should be sufficient here.
+    # Line-profiler: package-wrap.
+    # NOTE: this would be more reliable if done on the import hook; but
+    #   this is more simple and should be sufficient here.
     if wrapf is None:
         wrapf = get_prof()
-    for pkg_name, pkg in sys.modules.iteritems():
+    for pkg_name, pkg in sys.modules.items():
         if pkg is None:
             continue
         for pkg_to_wrap in packages:
@@ -157,11 +161,11 @@ def stgrab(sig, frame):
             and any((v in trace_last_src) for v in stgrab.poll_codes)):
         print(" ... Polling ...")  # don't spam that specific traceback
         return
-    print (" ------- %s\n" % (stgrab.header_str,) +
+    print(
+        " ------- %s\n" % (stgrab.header_str,) +
         # "Framedata: %s\n" % (name, d) +
         "Traceback:\n%s" % (trace_formatted,) +
-        ""
-    )
+        "")
 
 
 ## Funny place to put that:

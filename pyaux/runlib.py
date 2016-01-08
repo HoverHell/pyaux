@@ -6,6 +6,10 @@ import random
 import time
 import warnings
 import logging
+import signal
+import atexit
+import traceback
+from six.moves import xrange
 
 
 __all__ = [
@@ -72,7 +76,7 @@ def init_logging(*ar, **kwa):
     short_levelnames = kwa.pop('short_levelnames', True)
     if short_levelnames:
         _names = _make_short_levelnames()
-        for lvl, name in _names.iteritems():
+        for lvl, name in _names.items():
             logging.addLevelName(lvl, str(name))
     kwa.setdefault('level', logging.DEBUG)
     logformat = BASIC_LOG_FORMAT if not _td else BASIC_LOG_FORMAT_TD
@@ -88,11 +92,6 @@ def init_logging(*ar, **kwa):
         logging.root.setLevel(kwa.get('level', logging.INFO))
     else:
         logging.basicConfig(*ar, **kwa)
-
-
-import signal
-import atexit
-import traceback
 
 
 def argless_wrap(fn):

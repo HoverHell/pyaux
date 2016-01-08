@@ -3,6 +3,9 @@
 Also can be used as a script for compressing a file.
 """
 
+from __future__ import absolute_import
+
+import sys
 import pylzma
 
 
@@ -83,17 +86,35 @@ def unjsllzma(fi, fi_close=True, parse_fn=None, handle_fail=None, bufs=655350):
     if fi_close:
         fi.close()
 
+
+def get_stdin():
+    """
+    Get a stdin fileobject that can (possibly) read bytes.
+    """
+    try:
+        return sys.stdin.buffer  # py3
+    except AttributeError:
+        return sys.stdin  # py2
+
+
+def get_stdout():
+    """
+    Get stdout fileobject that can possibly read bytes.
+    """
+    try:
+        return sys.stdout.buffer  # py3
+    except AttributeError:
+        return sys.stdout  # py2
     
 
 def _lzma_main():
-    import sys
     fi_a = sys.argv[1]
     fo_a = sys.argv[2]
 
     if fi_a == '-':
-        fi_a = sys.stdin
+        fi_a = get_stdin()
     if fo_a == '-':
-        fo_a = sys.stdout
+        fo_a = get_stdout()
     lzma_compress(fi_a, fo_a)
 
 

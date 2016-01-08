@@ -8,14 +8,25 @@ Replaces sys.excepthook on `init()`.
 Can be included in 'sitecustomize.py'
 """
 
+from __future__ import absolute_import
+
+import re
 import sys
 import traceback
 import types
 import logging
-try:
-    import reprlib  # py3
+
+# # Extracts from django.views.debug
+# # (should not require django)
+try:  # pretty printing
+    # # That one is a little bit preettier
+    from IPython.lib.pretty import pretty as pformat
 except ImportError:
-    import repr as reprlib
+    from pprint import pformat
+# from django.template.filters import force_escape
+from six.moves import reprlib
+from six import text_type as unicode
+from pyaux import edi  # 'templating'.
 
 
 _log = logging.getLogger("unhandled_exception_handler")
@@ -47,18 +58,6 @@ def info(exc_type, exc_value, tb):
     sys.__excepthook__(exc_type, exc_value, tb)
 
 
-# # Extracts from django.views.debug
-# # (should not require django)
-try:  # pretty printing
-    # # That one is a little bit preettier
-    from IPython.lib.pretty import pretty as pformat
-except ImportError:
-    from pprint import pformat
-# from django.template.filters import force_escape
-import re
-from pyaux import edi  # 'templating'.
-
-
 def _var_repr(v, ll=356):
     try:
         # # not exactly optimized in case of huge datalists
@@ -75,7 +74,7 @@ def _var_repr(v, ll=356):
 
 
 def _get_lines_from_file(filename, lineno, context_lines, loader=None, module_name=None):
-    """ 
+    """
     Returns context_lines before and after lineno from file.
     Returns (pre_context_lineno, pre_context, context_line, post_context).
     """
@@ -176,13 +175,14 @@ def render_exc_repr(exc_type, exc_value):
                 res += "  (Failure to repr: %r)\n" % (e,)
             except Exception as e2:
                 res += "  (Failure to repr totally: (%s) (%s)\n" % (
-                  _exc_safe_repr(type(e), e).strip(),
-                  _exc_safe_repr(type(e2), e2).strip())
+                    _exc_safe_repr(type(e), e).strip(),
+                    _exc_safe_repr(type(e2), e2).strip())
     except Exception as e3:
         try:
-            res += ("Error: Some faulty exception of type %r, failing "
-              "on repr with %s") % (exc_type,
-              _exc_safe_repr(type(e3), e3))
+            res += (
+                "Error: Some faulty exception of type %r, failing "
+                "on repr with %s") % (
+                    exc_type, _exc_safe_repr(type(e3), e3))
         except Exception:
             res += "Error: Some very faulty exception"
     return res
@@ -199,20 +199,22 @@ def render_frames_data(frames, exc_type=None, exc_value=None):
         for frame in frames:
             #res += ("%(frame['filename'])s:%(frame['lineno'])d:"
             #  " %(frame['function'])r -> %(frame['context_line'])s\n") % edi()
-            res += ("---- File %(frame['filename'])s, line %(frame['lineno'])d, in"
-              " %(frame['function'])r:\n  > %(frame['context_line'])s\n") % edi()
+            res += (
+                "---- File %(frame['filename'])s, line %(frame['lineno'])d, in"
+                " %(frame['function'])r:\n  > %(frame['context_line'])s\n") % edi()
             # if frame.pre_context: frame.id; for i, line in enumerate(frame.pre_context): frame.pre_context_lineno + i, line
-            #if frame.context_line:
-            #    res += "  %(frame.lineno): %(frame.context_line)s" % edi()
-            #if frame.post_context: for i, line in enumerate(frame.post_context): frame.lineno + 1 + i, line
+            # if frame.context_line:
+            #     res += "  %(frame.lineno): %(frame.context_line)s" % edi()
+            # if frame.post_context: for i, line in enumerate(frame.post_context): frame.lineno + 1 + i, line
             if frame['vars']:
                 res += "  Local vars:"
                 for var in sorted(frame['vars'], key=lambda v: v[0]):
-                    ## Note: 13 spaces to visually separate the
-                    ##   variables at the same time taking less vertical
-                    ##   space than printing each from a new line (and
-                    ##   then adding spaces anyway).
-                    res += "             %(var[0])s: %(var[1])s;" % edi()
+                    # Note: 13 spaces to visually separate the
+                    #   variables at the same time taking less vertical
+                    #   space than printing each from a new line (and
+                    #   then adding spaces anyway).
+                    res += " " * 13
+                    res += "%(var[0])s: %(var[1])s;" % edi()
                 res += "\n"
     if exc_type or exc_value:
         res += render_exc_repr(exc_type, exc_value)
@@ -222,13 +224,14 @@ def render_frames_data(frames, exc_type=None, exc_value=None):
 def advanced_info(exc_type, exc_value, tb):
     #reporter = ExceptionReporter(None, exc_type, exc_value, tb)
     frames = get_traceback_frames(tb)
-    for i, frame in enumerate(frames):
+    for idx, frame in enumerate(frames):
         if 'vars' in frame:
-            frame['vars'] = [(k,
-              #force_escape(pprint(v))
-              _var_repr(v)
-              ) for k, v in frame['vars']]
-        frames[i] = frame  # XX: does this even do something?
+            frame['vars'] = [
+                (key,
+                 # force_escape(pprint(v))
+                 _var_repr(val)
+                ) for key, val in frame['vars']]
+        frames[idx] = frame  # XX: does this even do something?
 
     text = render_frames_data(frames, exc_type, exc_value)
     #_log.exception(text)

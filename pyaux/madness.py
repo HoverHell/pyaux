@@ -4,6 +4,7 @@
 Also, things that are useful in an ipython interactice shell.
 """
 
+from six.moves import builtins
 from . import madness_datadiff
 from .madness_datadiff import *
 from . import madness_oneliny
@@ -28,16 +29,15 @@ __all__ += madness_stuffstuff.__all__
 # # Builtin-madness # #
 
 
-def _into_builtin(d):
+def _into_builtin(dct):
     """ Helper to put stuff (like the one-liner-helpers) into builtins """
-    import __builtin__
-    for k, v in d.items():
-        setattr(__builtin__, k, v)
+    for key, val in dct.items():
+        setattr(builtins, key, val)
 
 
 # For _into_builtin
 __all_stuff = locals()
-__all_stuff_e = dict((k, globals().get(k)) for k in __all__)
+__all_stuff_e = dict((key, globals().get(key)) for key in __all__)
 
 
 try:

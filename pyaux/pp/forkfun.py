@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-#
+
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 # "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 # LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
@@ -12,15 +12,13 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-"""
-...
-"""
 
 
 import os
+import math
 import struct
 import sys
-from six.moves import pickle
+from six.moves import cPickle as pickle
 
 
 __author__ = "Pedro Larroy"
@@ -156,9 +154,6 @@ def parallelizable(maxchildren=None, perproc=None):
     return decorate
 
 
-
-import math
-
 if __name__ == '__main__':
 
     def f(x):
@@ -177,12 +172,12 @@ if __name__ == '__main__':
 # if __name__ == '__main__':
 #     import doctest
 #     doctest.testmod()
-# 
+#
 #     @parallelizable(10, perproc=4)
 #     def timestwo(x, y):
 #         return (x + y) * 2
 #     print map(timestwo, [1, 2, 3, 4], [7, 8, 9, 10])
-# 
+#
 #     #@parallelizable(10)
 #     @parallelizable()
 #     def busybeaver(x):

@@ -207,7 +207,7 @@ class OrderedDict(dict, ODReprMixin, DictMixin):
         if not self:
             raise KeyError('dictionary is empty')
         if last:
-            key = reversed(self).next()
+            key = next(reversed(self))
         else:
             key = iter(self).next()
         value = self.pop(key)
@@ -258,7 +258,7 @@ class OrderedDict(dict, ODReprMixin, DictMixin):
         return dict.__eq__(self, other)
 
     def __ne__(self, other):
-        return not self == other
+        return not self.__eq__(other)  # not self == other
 
 
 # ######

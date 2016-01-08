@@ -39,16 +39,12 @@ actual multi-processing, code using this must conform to the usual PP
 restrictions (arguments must be serializable, etc.)
 """
 
-__author__  = "Kirk Strauser <kirk@strauser.com>"
+__author__ = "Kirk Strauser <kirk@strauser.com>"
 __version__ = "$Rev: 1139 $"
-__date__    = "$Date: 2008-04-16 $"
+__date__ = "$Date: 2008-04-16 $"
 
 import time
-try:
-    import __builtin__ as builtins
-except ImportError:
-    import builtins
-
+from six.moves import builtins
 import pp
 
 
@@ -92,7 +88,7 @@ def ppmap(processes, function, sequence, *sequences):
 
     # First, submit all the jobs.  Then harvest the results as they
     # come available.
-    return (subproc() for subproc in __builtin__.map(submit, *a))
+    return (subproc() for subproc in builtins.map(submit, *a))
 
 if __name__ == '__main__':
     def add(x, y, z):

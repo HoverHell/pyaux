@@ -172,7 +172,7 @@ class TheServer(object):
                         msg_data = repr(line + '\n')  ## ... after putting the newline back
                 else:
                     msg_data = " " + line  ## Unambiguate with the space
-                
+
                 if idx == len(lines) - 1:
                     if lines_are_unfinished:
                         ## TODO?: color for unambiguity
@@ -198,26 +198,43 @@ class TheServer(object):
         self.channel[sck].send(data)
 
 
-if __name__ == '__main__':
-    ## ... argparseitdamnit ...
+def main():
+    # TODO: argparse
     bind_addr, bind_port, fwd_addr, fwd_port = sys.argv[1], int(sys.argv[2]), sys.argv[3], int(sys.argv[4])
 
-    ###
-    ## logging config
-    ###
+    # ###
+    # logging config
+    # ###
     try:
         from pyaux import runlib
         runlib.init_logging(level=1)
     except Exception as _exc:
         pass
 
-    ## Make a nicer datetime:
-    fmtr = type("DTSFormatter", (logging.Formatter, object), dict(converter=datetime.datetime.fromtimestamp, formatTime=lambda self, record, datefmt=None: (lambda ct: ct.strftime(datefmt) if datefmt else "%s.%03d" % (ct.strftime("%Y-%m-%dT%H:%M:%S"), record.msecs))(self.converter(record.created))))
+    # Make a nicer datetime:
+
+    class DTSFormatter(logging.Formatter, object):
+
+        converter = datetime.datetime.fromtimestamp
+
+        def formatTime(self, record, datefmt=None):
+            def _proc(ct):
+                if _datefmt:
+                    return ct.strftime(_datefmt)
+                return "%s.%03d" % (ct.strftime("%Y-%m-%dT%H:%M:%S"), record.msecs)
+
+            res = _proc(self.converter(record.created))
+            return res
+
     logging.basicConfig(level=1)
-    logging.root.handlers[0].setFormatter(fmtr(_logfmt))  #, _datefmt))
+    logging.root.handlers[0].setFormatter(DTSFormatter(_logfmt))
     server = TheServer(bind_addr, bind_port, fwd_addr, fwd_port)
     try:
         server.main_loop()
     except KeyboardInterrupt:
         print("Ctrl C - Stopping server")
         sys.exit(1)
+
+
+if __name__ == '__main__':
+    main()

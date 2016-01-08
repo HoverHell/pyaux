@@ -2,20 +2,20 @@
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
 # are met:
-# 
+#
 #     * Redistributions of source code must retain the above copyright
 #       notice, this list of conditions and the following disclaimer.
-# 
+#
 #     * Redistributions in binary form must reproduce the above
 #       copyright notice, this list of conditions and the following
 #       disclaimer in the documentation and/or other materials
 #       provided with the distribution.
-# 
+#
 #     * Neither the name of Kirk Strauser nor the names of its
 #       contributors may be used to endorse or promote products
 #       derived from this software without specific prior written
 #       permission.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 # "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 # LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
@@ -37,24 +37,18 @@ semantics of map() as precisely as possible so that it can be used in
 all situations with little surprise.
 """
 
-__author__  = "Kirk Strauser <kirk@strauser.com>"
-__version__ = "$Rev: 1139 $"
-__date__    = "$Date: 2007-05-24 10:56:44 -0500 (Thu, 24 May 2007) $"
-
-try:
-    import cPickle as pickle
-except ImportError:
-    import pickle
-
 import os
 import signal
 import struct
 import sys
 import traceback
-try:
-    import __builtin__ as builtins
-except ImportError:
-    import builtins
+from six.moves import cPickle as pickle
+from six.moves import builtins
+
+
+__author__  = "Kirk Strauser <kirk@strauser.com>"
+__version__ = "$Rev: 1139 $"
+__date__    = "$Date: 2007-05-24 10:56:44 -0500 (Thu, 24 May 2007) $"
 
 
 def map(function, *sequence):
@@ -63,7 +57,7 @@ def map(function, *sequence):
     Like the builtin map() function, but splits the workload across a
     pool of processes whenever possible.
     """
-    
+
     # IPC stuff
     structformat = 'L'  #'H'  #not everything there is short enough.
     structlen = struct.calcsize(structformat)
@@ -100,7 +94,7 @@ def map(function, *sequence):
     # Spawn the worker children.  Don't create more than the number of
     # values we'll be processing.
     fromchild, toparent = os.pipe()
-    children = []    
+    children = []
     for childnum in range(min(maxchildren, len(arglist))):
         fromparent, tochild = os.pipe()
         pid = os.fork()
@@ -134,7 +128,7 @@ def map(function, *sequence):
                     signal.alarm(0)
                     if message is None:
                         sys.exit()
-                    index, value = message 
+                    index, value = message
                     sendmessage(toparent, (childnum, index, function(*value)))
                 except Exception as excvalue:
                     try:
@@ -169,8 +163,10 @@ def map(function, *sequence):
             argindex += 1
 
     # Kill the child processes
-    [sendmessage(child['tochild'], None) for child in children]
-    [os.wait() for child in children]
+    for child in children:
+        sendmessage(child['tochild'], None)
+    for child in children:
+        os.wait()
 
     return outlist
 

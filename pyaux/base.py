@@ -2,6 +2,8 @@
 # NOTE: no modules imported here should import `decimal` (otherwise
 #   `use_cdecimal` might become problematic for them)
 
+from __future__ import absolute_import
+
 import os
 import sys
 
@@ -14,16 +16,20 @@ import json
 import logging
 import math
 import re
-import six
 import time
 import traceback
 import unicodedata
+
+import six
+from six import text_type as unicode
+from six.moves import xrange, zip as izip
 
 from pyaux import ranges
 from pyaux.ranges import *
 
 from pyaux import interpolate
 from pyaux.interpolate import *
+
 
 __all__ = (
     'bubble',
@@ -165,12 +171,11 @@ class dotdictify(dict):
 
 def repr_call(args, kwargs):
     """ A helper function for pretty-printing a function call arguments """
-    res = ', '.join("%r" % (val,) for val in ar)
+    res = ', '.join("%r" % (val,) for val in args)
     if kwargs:
         if res:
             res += ', '
-        res + ', '.join(
-            '%s=%r' % (key, val) for key, val in kwa.items())
+        res + ', '.join('%s=%r' % (key, val) for key, val in kwargs.items())
     return res
 
 
@@ -354,12 +359,29 @@ def mk_logging_property(actual_name, logger_name='_log'):
     return property(do_get, do_set)
 
 
-def sign(v):
-    """ Sign of value: `return cmp(v, 0)` """
-    return cmp(v, 0)
+def sign(value):
+    """ Sign of value.
+
+    In [10]: sign(-10)
+    Out[10]: -1
+
+    In [11]: sign(0)
+    Out[11]: 0
+
+    In [12]: sign(10)
+    Out[12]: 1
+    """
+    if value == 0:
+        return 0
+    elif value > 0:
+        return 1
+    elif value < 0:
+        return -1
+    else:
+        raise ValueError("Inconsistent value")
 
 
-# ######  "Human" sorting, advanced
+# #######  "Human" sorting, advanced #######
 # partially from quodlibet/quodlibet/util/__init__.py
 # partially from comix/src/filehandler.py
 
@@ -396,7 +418,7 @@ def _split_numeric(string):
 def human_sort_key(string, normalize=unicodedata.normalize, floats=True):
     """ Sorting key for 'human' sorting """
     string = to_unicode(string)
-    s = normalize("NFD", s.lower())
+    string = normalize("NFD", string.lower())
     split_fn = _split_numeric_f if floats else _split_numeric
     return string and split_fn(string)
 
@@ -408,7 +430,7 @@ def reversed_blocks(fileobj, blocksize=4096):
     """ Read blocks of file's contents in reverse order.  """
     fileobj.seek(0, os.SEEK_END)
     here = fileobj.tell()
-    while 0 < here:
+    while here > 0:
         delta = min(blocksize, here)
         fileobj.seek(here - delta, os.SEEK_SET)
         yield fileobj.read(delta)
@@ -448,10 +470,10 @@ class ThrottledCall(object):
     _call_val = object()  # (some unique value at start)
 
     def __init__(self, fn=None, sec_limit=None, cnt_limit=None):
-        """ `fn`: function to call (can be customized later).
-        `sec_limit`: skip call if less than `sec_limit` seconds since the
-          last call
-        `cnt_limit`: call only once each `cnt_limit` calls
+        """
+        :param fn: function to call (can be customized later).
+        :param sec_limit: skip call if less than `sec_limit` seconds since the last call.
+        :param cnt_limit: call only once each `cnt_limit` calls.
         """
         self.fn = fn
         # # mimickry, v2
@@ -459,7 +481,12 @@ class ThrottledCall(object):
         self.sec_limit = sec_limit
         self.cnt_limit = cnt_limit
         doc = "%s (throttled)" % (fn.__doc__,)
-        self.__call__.__func__.__doc__ = self.__doc__ = doc
+
+        self.__doc__ = doc
+        self.__call__.__doc__ = doc
+        _f = getattr(self.__call__, '__func__')
+        if _f:
+            _f.__doc__ = doc
         self.handle_skip = lambda self, *ar, **kwa: None
 
     def __call__(self, *ar, **kwa):
@@ -1155,7 +1182,7 @@ def next_or_fdefault(it, default=lambda: None, skip_empty=False):
 
     >>> next_or_fdefault([1], lambda: 1/0)
     1
-    >>> next_or_fdefault([], lambda: list(range(2)))
+    >>> next_or_fdefault([], lambda: list(xrange(2)))
     [0, 1]
     """
     if skip_empty:
@@ -1217,7 +1244,7 @@ def dict_is_subset(
         # smaller_value_iter, larger_value_iter
         svi = iter(smaller_dict)
         lvi = iter(larger_dict)
-        for sval, lval in itertools.izip(svi, lvi):
+        for sval, lval in izip(svi, lvi):
             if not dict_is_subset(sval, lval, **kwa):
                 return False
         if structure_match:
@@ -1280,7 +1307,7 @@ def request(
     :param _callinfo: add the caller file and line to the user-agent.
     """
     import requests
-    import urlparse
+    from six.moves import urllib_parse as urlparse
     log = logging.getLogger('request')
 
     # Different default, basically.

@@ -1,8 +1,12 @@
 # coding: utf8
 """ Various functions for easier working with URLs """
 
+from __future__ import absolute_import
+from six.moves import urllib_parse as urlparse
+from six import text_type as unicode
 from .base import to_bytes, mangle_dict
-from pyaux.six import urlparse, urlencode
+
+urlencode = urlparse.urlencode
 
 
 __all__ = (
@@ -29,19 +33,20 @@ def url_to_querydict(url):
 def url_replace(url, **params):
     """ Replace some named parts in an url; See `urlparse.ParseResult` for the names """
     url_fields = urlparse.ParseResult._fields
-    name_to_num = {field: i for i, field in enumerate(url_fields)}
-    url_parts = list(urlparse.urlparse(url))  ## Need a copy anyway
-    for k, v in params.items():
+    name_to_num = {field: idx for idx, field in enumerate(url_fields)}
+    url_parts = list(urlparse.urlparse(url))  # Need a copy anyway
+    for key, val in params.items():
 
-        ## Allow supplying various stuff as a query
-        if k == 'query' and not isinstance(v, basestring):
-            if isinstance(v, dict):
-                v = v.items()
-            v = [(to_bytes(vk), to_bytes(vv)) for vk, vv in v]
-            v = urlencode(v)
+        # Allow supplying various stuff as a query
+        if key == 'query' and not isinstance(val, (bytes, unicode)):
+            if isinstance(val, dict):
+                val = val.items()
+            val = [(to_bytes(query_key), to_bytes(query_val))
+                   for query_key, query_val in val]
+            val = urlencode(val)
 
-        num = name_to_num[k]  ## Will except here if supplied an unknown url param
-        url_parts[num] = v
+        num = name_to_num[key]  # Will except here if supplied an unknown url param
+        url_parts[num] = val
     return urlparse.urlunparse(url_parts)
 
 

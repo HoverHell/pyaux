@@ -3,6 +3,8 @@
 
 # XXXX/TODO: use the module from pyauxm
 
+import os
+import random
 import sys
 import twisted.python.log as twisted_log
 from . import exc_log
@@ -159,7 +161,7 @@ def make_manhole(
     ##  and put into a separate module if needs be.
     from twisted.internet import reactor
     from twisted.cred import portal, checkers
-    from twisted.conch import manhole, manhole_ssh 
+    from twisted.conch import manhole, manhole_ssh
     from twisted.conch.checkers import SSHPublicKeyDatabase
     from twisted.python.filepath import FilePath
 
@@ -213,7 +215,7 @@ def make_manhole(
         if verbose:
             print('Creating shell server instance')
         z_auth_data = dict(auth_data or {})
-        for k, v in z_auth_data.iteritems():
+        for k, v in z_auth_data.items():
             if v is None:
                 rndpwd = "%x" % random.getrandbits(128)
                 z_auth_data[k] = rndpwd
