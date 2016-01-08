@@ -75,6 +75,14 @@ import httplib as _httplib
 
 import requests
 from requests import adapters
+from requests.packages.urllib3.poolmanager import PoolManager as _PoolManager
+from requests.packages.urllib3.poolmanager import SSL_KEYWORDS
+# from requests.packages.urllib3.response import HTTPResponse
+# from requests.packages.urllib3.exceptions import ...
+
+from requests.packages.urllib3.connectionpool import HTTPConnectionPool, HTTPSConnectionPool
+from requests.packages.urllib3.connection import HTTPConnection as _HTTPConnection
+from requests.packages.urllib3.connection import HTTPSConnection as _HTTPSConnection
 
 from .base import memoize
 
@@ -86,12 +94,6 @@ class GHTTPAdapter(adapters.HTTPAdapter):
         super(GHTTPAdapter, self).init_poolmanager(connections, maxsize, block=block)
         self.poolmanager = PoolManager(
             num_pools=connections, maxsize=maxsize, block=block)
-
-
-from requests.packages.urllib3.poolmanager import PoolManager as _PoolManager
-from requests.packages.urllib3.poolmanager import SSL_KEYWORDS
-#from requests.packages.urllib3.response import HTTPResponse
-#from requests.packages.urllib3.exceptions import ...
 
 
 class PoolManager(_PoolManager):
@@ -107,11 +109,6 @@ class PoolManager(_PoolManager):
                 kwargs.pop(kw, None)
 
         return pool_cls(host, port, **kwargs)
-
-
-from requests.packages.urllib3.connectionpool import HTTPConnectionPool, HTTPSConnectionPool
-from requests.packages.urllib3.connection import HTTPConnection as _HTTPConnection
-from requests.packages.urllib3.connection import HTTPSConnection as _HTTPSConnection
 
 
 class HTTPResponseProxy(object):

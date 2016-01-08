@@ -166,7 +166,7 @@ if __name__ == '__main__':
         print(x)
         pass
 
-    forkfun(acc, f, xrange(100000))
+    forkfun(acc, f, range(100000))
 
 
 # if __name__ == '__main__':

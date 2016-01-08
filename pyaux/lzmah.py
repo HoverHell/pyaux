@@ -54,7 +54,7 @@ def unjsllzma(fi, fi_close=True, parse_fn=None, handle_fail=None, bufs=655350):
             print("Error importing (preferred) simplejson")
             import json
         parse_fn = json.loads
-    if handle_fail == None:
+    if handle_fail is None:
         handle_fail = _handle_fail_default
     def try_loads(v):
         try:
@@ -105,7 +105,7 @@ def get_stdout():
         return sys.stdout.buffer  # py3
     except AttributeError:
         return sys.stdout  # py2
-    
+
 
 def _lzma_main():
     fi_a = sys.argv[1]

@@ -46,9 +46,9 @@ from six.moves import cPickle as pickle
 from six.moves import builtins
 
 
-__author__  = "Kirk Strauser <kirk@strauser.com>"
+__author__ = "Kirk Strauser <kirk@strauser.com>"
 __version__ = "$Rev: 1139 $"
-__date__    = "$Date: 2007-05-24 10:56:44 -0500 (Thu, 24 May 2007) $"
+__date__ = "$Date: 2007-05-24 10:56:44 -0500 (Thu, 24 May 2007) $"
 
 
 def map(function, *sequence):
@@ -101,10 +101,11 @@ def map(function, *sequence):
         # Parent?
         if pid:
             # Do some housekeeping and give the child its first assignment
-            children.append({'pid'       : pid,
-                             'fromparent': fromparent,
-                             'tochild'   : tochild,
-                             })
+            children.append({
+                'pid': pid,
+                'fromparent': fromparent,
+                'tochild': tochild,
+            })
             sendmessage(tochild, (argindex, arglist[argindex]))
             argindex += 1
         # Child?

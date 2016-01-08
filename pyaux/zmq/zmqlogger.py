@@ -20,14 +20,14 @@ combining at the receiver's side.
 
 
 import warnings
-#import traceback
+# import traceback
 try:
     import cPickle as pickle
 except ImportError:
     import pickle
 import logging
 import zmq
-#import zmq.log.handlers as zmqlog
+# import zmq.log.handlers as zmqlog
 import txzmq
 from twisted.internet import reactor
 
@@ -79,7 +79,7 @@ class ZMQHandler(logging.Handler):
         publisher.connect(uri)
         return cls(publisher, *ar, **kwa)
     def __init__(self, zmq_client, name='', channel='log',
-          level=logging.NOTSET):
+                 level=logging.NOTSET):
         super(ZMQHandler, self).__init__(level)
         self.zmq_client = zmq_client
         self.channel = channel
@@ -172,7 +172,7 @@ def test1():
         b = 1/0
     except Exception as e:
         root_logger.exception("more tst")
-    
+
 
 def test2():
     ## NOTE: Suggested way for configuring the logging is django-style

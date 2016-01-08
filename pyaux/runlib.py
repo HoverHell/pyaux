@@ -9,6 +9,7 @@ import logging
 import signal
 import atexit
 import traceback
+from pyaux.logging_helpers import LoggingStreamHandlerTD
 from six.moves import xrange
 
 
@@ -43,22 +44,6 @@ def _make_short_levelnames(shortnum=True):
         for i in xrange(1, 100):
             _names.setdefault(i, "L%02d" % (i,))
     return _names
-
-
-class LoggingStreamHandlerTD(logging.StreamHandler):
-    """ A logging.StreamHandler variery that adds time-difference with
-    the previous log line (`time_diff`) to the record """
-
-    def __init__(self, *ar, **kwa):
-        logging.StreamHandler.__init__(self, *ar, **kwa)
-        self.last_ts = time.time()
-
-    def emit(self, record):
-        now = time.time()
-        prev = self.last_ts
-        record.time_diff = (now - prev)
-        self.last_ts = now
-        return logging.StreamHandler.emit(self, record)
 
 
 BASIC_LOG_FORMAT = '%(asctime)s: %(levelname)-13s: %(name)s: %(message)s'
