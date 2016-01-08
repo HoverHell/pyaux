@@ -80,7 +80,7 @@ def word_diff_color(val1, val2, add='\x1b[32m', rem='\x1b[31;01m',
     diffs = list(diffs)
     diffs_colored = (_postprocess(line) for line in diffs)
     # return diffs_colored
-    print ''.join(diffs_colored)
+    print(''.join(diffs_colored))
 
 
 def _diff_datadiff_data(val1, val2, **kwa):
@@ -117,4 +117,4 @@ def datadiff(val1, val2, colorize=False, colorize_yaml=False, **kwa):
 def p_datadiff(val1, val2, **kwa):
     """ Print the values diff """
     # TODO: yaml coloring *and* diff coloring?
-    print datadiff(val1, val2, **kwa)
+    print(datadiff(val1, val2, **kwa))

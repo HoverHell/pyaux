@@ -48,7 +48,7 @@ def unjsllzma(fi, fi_close=True, parse_fn=None, handle_fail=None, bufs=655350):
         try:
             import simplejson as json
         except ImportError:
-            print "Error importing (preferred) simplejson"
+            print("Error importing (preferred) simplejson")
             import json
         parse_fn = json.loads
     if handle_fail == None:

@@ -16,17 +16,17 @@
 ...
 """
 
-__author__  = "Pedro Larroy"
-__version__ = "0.1"
-__date__    = "2011-07-29"
-__maintainer__ = "Pedro Larroy http://pedro.larroy.com"
 
-
-import cPickle
 import os
 import struct
 import sys
-import __builtin__
+from six.moves import pickle
+
+
+__author__ = "Pedro Larroy"
+__version__ = "0.1"
+__date__ = "2011-07-29"
+__maintainer__ = "Pedro Larroy http://pedro.larroy.com"
 
 
 def numcores():
@@ -34,15 +34,13 @@ def numcores():
 
 
 def forkfun(accumulator, function, sequence):
-    """ ... """
-
     # IPC stuff
     structformat = 'L'
     structlen = struct.calcsize(structformat)
 
     def sendmessage(myend, message):
         """ Send a pickled message across a pipe """
-        outobj = cPickle.dumps(message)
+        outobj = pickle.dumps(message)
         return os.write(myend, struct.pack(structformat, len(outobj)) + outobj)
 
     def recvmessage(myend):
@@ -52,7 +50,7 @@ def forkfun(accumulator, function, sequence):
             raise EOFError('EOF on pipe from parent, pid: {0}'.format(os.getpid()))
 
         length = struct.unpack(structformat, buf)[0]
-        return cPickle.loads(os.read(myend, length))
+        return pickle.loads(os.read(myend, length))
 
     try:
         maxchildren = function.parallel_maxchildren
@@ -99,7 +97,7 @@ def forkfun(accumulator, function, sequence):
                     if not sendmessage(toparent, (childnum, index, function(value))):
                         sys.stderr.write('Child {0}: pipe eof\n'.format(childnum))
 
-                except Exception, excvalue:
+                except Exception as excvalue:
                     sys.stderr.write('Exception: {0}\n'.format(excvalue))
 
                     # # For debugging where the exception took place, enable this:
@@ -146,7 +144,7 @@ def parallelizable(maxchildren=None, perproc=None):
             maxchildren = 2
 
     if perproc is not None:
-        processors = 4 # hand-waving
+        processors = 4  # hand-waving
         maxchildren = min(maxchildren, perproc * processors)
 
     def decorate(func):
@@ -170,27 +168,25 @@ if __name__ == '__main__':
         # x = math.acos(z)
 
     def acc(x):
-        print x
+        print(x)
         pass
 
     forkfun(acc, f, xrange(100000))
 
 
-#if __name__ == '__main__':
-#    import doctest
-#    doctest.testmod()
-#
-#    @parallelizable(10, perproc=4)
-#    def timestwo(x, y):
-#        """Make pylint happy"""
-#        return (x + y) * 2
-#    print map(timestwo, [1, 2, 3, 4], [7, 8, 9, 10])
-#
-#    #@parallelizable(10)
-#    @parallelizable()
-#    def busybeaver(x):
-#        """Make pylint happy"""
-#        for i in range(10000000):
-#            x = x + i
-#        return x
-#    print map(busybeaver, range(27))
+# if __name__ == '__main__':
+#     import doctest
+#     doctest.testmod()
+# 
+#     @parallelizable(10, perproc=4)
+#     def timestwo(x, y):
+#         return (x + y) * 2
+#     print map(timestwo, [1, 2, 3, 4], [7, 8, 9, 10])
+# 
+#     #@parallelizable(10)
+#     @parallelizable()
+#     def busybeaver(x):
+#         for i in range(10000000):
+#             x = x + i
+#         return x
+#     print map(busybeaver, range(27))

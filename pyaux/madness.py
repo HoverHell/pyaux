@@ -46,7 +46,7 @@ try:
     __all_stuff.update(pprint=pprint, pretty=pretty, pformat=pretty)
     __all_stuff_e.update(pprint=pprint, pretty=pretty, pformat=pretty)
 except ImportError as __e:
-    print "What, no IPython?", __e
+    print("What, no IPython?", __e)
 
 
 # For explicit call:

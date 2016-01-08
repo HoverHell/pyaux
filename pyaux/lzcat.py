@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """ lzcat """
 
+import sys
 import pylzma
 
 
@@ -51,7 +52,8 @@ def _lzcat_main():
     else:
         fo_a = sys.stdout
     if len(sys.argv) > 3:
-        print "Basic usage: %s <from_file> [<to_file>]" % (sys.argv[0],)
+        print("Basic usage: %s <from_file> [<to_file>]" % (sys.argv[0],))
+        sys.exit()
 
     if fi_a == '-':
         fi_a = sys.stdin

@@ -21,7 +21,10 @@ combining at the receiver's side.
 
 import warnings
 #import traceback
-import cPickle as pickle
+try:
+    import cPickle as pickle
+except ImportError:
+    import pickle
 import logging
 import zmq
 #import zmq.log.handlers as zmqlog
@@ -96,7 +99,7 @@ class ZMQHandler(logging.Handler):
         self.zmq_client.send_multipart([self.channel, data], zmq.NOBLOCK)
         ## Handler by handleError anyway.
         #except zmq.ZMQError as e:
-        #    print "ZMQHandler error"
+        #    print("ZMQHandler error")
         #    traceback.print_stack()
 
 
@@ -110,7 +113,7 @@ class TxLogServer(object):
             self.run()
     def run(self, verbose=True):
         if verbose:
-            print "TxLogServer: Starting."
+            print("TxLogServer: Starting.")
         return reactor.run()  # pylint: disable=E1101
 
     def _init_zmq(self, uri, factory=None):
@@ -147,12 +150,13 @@ class LogProtocol(object):
         record = logging.makeLogRecord(record_data)
         ## handle `channel`:
         record.name = '{%s} %s' % (channel, record.name)
-        #print record.__dict__  # dbg
+        # print(record.__dict__)  # dbg
         self._log.handle(record)
-## Sample record data:
-## Normal:
+
+# # Sample record data:
+# # Normal:
 # {'relativeCreated': 925.4779815673828, 'process': 901, 'module': 'tst_zmqlog2', 'funcName': '<module>', 'filename': 'tst_zmqlog2.py', 'levelno': 30, 'processName': 'MainProcess', 'lineno': 12, 'msg': "tst, warn: <open file '/dev/null', mode 'r' at 0x2c5de40>", 'args': None, 'exc_text': None, 'name': 'wut', 'thread': 140164311705344, 'created': 1359000458.195124, 'threadName': 'MainThread', 'msecs': 195.12391090393066, 'pathname': './tst_zmqlog2.py', 'exc_info': None, 'levelname': 'WARNING'}
-## Traceback:
+# # Traceback:
 # {'relativeCreated': 925.713062286377, 'process': 901, 'module': 'tst_zmqlog2', 'funcName': '<module>', 'message': 'more tst', 'filename': 'tst_zmqlog2.py', 'levelno': 40, 'processName': 'MainProcess', 'lineno': 18, 'msg': 'more tst', 'args': None, 'exc_text': 'Traceback (most recent call last):\n  File "./tst_zmqlog2.py", line 16, in <module>\n    b = 1/0\nZeroDivisionError: integer division or modulo by zero', 'name': 'wut', 'thread': 140164311705344, 'created': 1359000458.195359, 'threadName': 'MainThread', 'msecs': 195.3589916229248, 'pathname': './tst_zmqlog2.py', 'exc_info': None, 'levelname': 'ERROR'}
 
 
@@ -191,7 +195,7 @@ def test2():
     except Exception as e:
         log.exception("more tst")
 
-    print "DONE."
+    print("DONE.")
 
 
 if __name__ == '__main__':

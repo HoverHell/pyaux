@@ -12,24 +12,32 @@ import sys
 import traceback
 import types
 import logging
-import repr as reprlib  # ...named `reprlib` already in py3
-
+try:
+    import reprlib  # py3
+except ImportError:
+    import repr as reprlib
 
 
 _log = logging.getLogger("unhandled_exception_handler")
-_lrepr_params = dict(maxlevel=8, maxtuple=64, maxlist=64, maxarray=48,
-  maxdict=64, maxset=64, maxfrozenset=64, maxdeque=64, maxstring=80,
-  maxlong=128, maxother=32)
+
+_lrepr_params = dict(
+    maxlevel=8, maxtuple=64, maxlist=64, maxarray=48,
+    maxdict=64, maxset=64, maxfrozenset=64, maxdeque=64, maxstring=80,
+    maxlong=128, maxother=32)
+
+
 def make_lrepr():
     lrepr = reprlib.Repr()
-    for k, v in _lrepr_params.iteritems():
-        setattr(lrepr, k, v)
+    for key, val in _lrepr_params.items():
+        setattr(lrepr, key, val)
     return lrepr
-## The singleton:
+
+
+# # The singleton:
 lrepr = make_lrepr()
-## Monkeypatch convenience addition:
-#reprlib.Repr.__call__ = (lambda self, x: self.repr(x))
-## ... or let's not to that and patch own instance only instead.
+# # Monkeypatch convenience addition:
+# reprlib.Repr.__call__ = (lambda self, x: self.repr(x))
+# # ... or let's not to that and patch own instance only instead.
 lrepr.__call__ = types.MethodType(lambda self, x: self.repr(x), lrepr)
 
 
@@ -39,30 +47,30 @@ def info(exc_type, exc_value, tb):
     sys.__excepthook__(exc_type, exc_value, tb)
 
 
-## Extracts from django.views.debug
-## (should not require django)
+# # Extracts from django.views.debug
+# # (should not require django)
 try:  # pretty printing
-    ## That one is a little bit preettier
+    # # That one is a little bit preettier
     from IPython.lib.pretty import pretty as pformat
 except ImportError:
     from pprint import pformat
-#from django.template.filters import force_escape
+# from django.template.filters import force_escape
 import re
 from pyaux import edi  # 'templating'.
 
 
 def _var_repr(v, ll=356):
     try:
-        ## not exactly optimized in case of huge datalists
-        #r = pformat(v)
-        ## not exactly... pretty
+        # # not exactly optimized in case of huge datalists
+        # r = pformat(v)
+        # # not exactly... pretty
         r = lrepr(v)
-        ## XXX: combine those two somehow?
-        ## (also, make it print last value of `list`/`deque`/... always, too)
-    except Exception, e:
+        # # XXX: combine those two somehow?
+        # # (also, make it print last value of `list`/`deque`/... always, too)
+    except Exception as e:
         return "<un`repr()`able variable>"
-    #if len(r) > ll:  # handled by the lrepr, somewhat; `ll` is ignored
-    #    return r[:ll-4] + '... '
+    # if len(r) > ll:  # handled by the lrepr, somewhat; `ll` is ignored
+    #     return r[:ll-4] + '... '
     return r
 
 
@@ -163,14 +171,14 @@ def render_exc_repr(exc_type, exc_value):
         res += "Error:  %s" % _exc_safe_repr(exc_type, exc_value)
         try:
             res += "  (repr: '''%r''')\n" % (exc_value,)
-        except Exception, e:
+        except Exception as e:
             try:
                 res += "  (Failure to repr: %r)\n" % (e,)
-            except Exception, e2:
+            except Exception as e2:
                 res += "  (Failure to repr totally: (%s) (%s)\n" % (
                   _exc_safe_repr(type(e), e).strip(),
                   _exc_safe_repr(type(e2), e2).strip())
-    except Exception, e3:
+    except Exception as e3:
         try:
             res += ("Error: Some faulty exception of type %r, failing "
               "on repr with %s") % (exc_type,
@@ -225,7 +233,7 @@ def advanced_info(exc_type, exc_value, tb):
     text = render_frames_data(frames, exc_type, exc_value)
     #_log.exception(text)
     _log.error(text)
-    #print text
+    # print(text)
     sys.__excepthook__(exc_type, exc_value, tb)
 
 
@@ -235,11 +243,11 @@ def advanced_info_safe(exc_type, exc_value, tb):
     """
     try:
         advanced_info(exc_type, exc_value, tb)
-    except Exception, e:
+    except Exception as e:
         try:
             info(exc_type, exc_value, tb)
         except Exception:
-            print "Everything is failing! Running the default excepthook."
+            print("Everything is failing! Running the default excepthook.")
             sys.__excepthook__(exc_type, exc_value, tb)
         raise e
 

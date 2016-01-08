@@ -2,9 +2,7 @@
 """ Various functions for easier working with URLs """
 
 from .base import to_bytes, mangle_dict
-
-import urlparse
-import urllib
+from pyaux.six import urlparse, urlencode
 
 
 __all__ = (
@@ -40,7 +38,7 @@ def url_replace(url, **params):
             if isinstance(v, dict):
                 v = v.items()
             v = [(to_bytes(vk), to_bytes(vv)) for vk, vv in v]
-            v = urllib.urlencode(v)
+            v = urlencode(v)
 
         num = name_to_num[k]  ## Will except here if supplied an unknown url param
         url_parts[num] = v
@@ -75,7 +73,7 @@ def mangle_url_l(url, include=None, exclude=None, add=None, **kwargs):
 
     >>> from pyaux.dicts import MVOD
     >>> query = r'a=&a=1&a=true&b=null&b=undefined&b=&b=5'
-    >>> urllib.urlencode(MVOD(urlparse.parse_qsl(query, keep_blank_values=1))) == query
+    >>> urlencode(MVOD(urlparse.parse_qsl(query, keep_blank_values=1))) == query
     True
     """
     from pyaux.dicts import MVOD

@@ -41,13 +41,20 @@ __author__  = "Kirk Strauser <kirk@strauser.com>"
 __version__ = "$Rev: 1139 $"
 __date__    = "$Date: 2007-05-24 10:56:44 -0500 (Thu, 24 May 2007) $"
 
-import cPickle
+try:
+    import cPickle as pickle
+except ImportError:
+    import pickle
+
 import os
 import signal
 import struct
 import sys
 import traceback
-import __builtin__
+try:
+    import __builtin__ as builtins
+except ImportError:
+    import builtins
 
 
 def map(function, *sequence):
@@ -55,11 +62,6 @@ def map(function, *sequence):
 
     Like the builtin map() function, but splits the workload across a
     pool of processes whenever possible.
-
-    >>> map(None, [1,2,3])
-    [1, 2, 3]
-    >>> map(None, [1,2,3], [5,6])
-    [(1, 5), (2, 6), (3, None)]
     """
     
     # IPC stuff
@@ -68,18 +70,18 @@ def map(function, *sequence):
 
     def sendmessage(myend, message):
         """Send a pickled message across a pipe"""
-        outobj = cPickle.dumps(message)
+        outobj = pickle.dumps(message)
         os.write(myend, struct.pack(structformat, len(outobj)) + outobj)
 
     def recvmessage(myend):
         """Receive a pickled message from a pipe"""
         length = struct.unpack(structformat, (os.read(myend, structlen)))[0]
-        return cPickle.loads(os.read(myend, length))
+        return pickle.loads(os.read(myend, length))
 
     try:
         maxchildren = function.parallel_maxchildren
     except AttributeError:
-        return __builtin__.map(function, *sequence)
+        return builtins.map(function, *sequence)
 
     # Handle map()'s multi-sequence semantics
     if len(sequence) == 1:
@@ -87,7 +89,7 @@ def map(function, *sequence):
             return list(sequence[0])
         arglist = zip(sequence[0])
     else:
-        arglist = __builtin__.map(None, *sequence)
+        arglist = builtins.map(None, *sequence)
     if function is None:
         return arglist
 
@@ -134,13 +136,13 @@ def map(function, *sequence):
                         sys.exit()
                     index, value = message 
                     sendmessage(toparent, (childnum, index, function(*value)))
-                except Exception, excvalue:
+                except Exception as excvalue:
                     try:
                         excvalue.tb = traceback.extract_tb(sys.exc_info()[2])
-                    except Exception, e2:
+                    except Exception as e2:
                         try:
                             excvalue.e2 = e2
-                        except Exception, e3:
+                        except Exception as e3:
                             pass
                     sendmessage(toparent, (childnum, index, excvalue))
                 finally:
@@ -152,8 +154,8 @@ def map(function, *sequence):
         returnchild, returnindex, value = recvmessage(fromchild)
         if isinstance(value, Exception):
             try:
-                print "Child traceback:"
-                print ''.join(traceback.format_list(value.tb))
+                print("Child traceback:")
+                print(''.join(traceback.format_list(value.tb)))
             except Exception as e2:
                 pass
             raise value
@@ -182,12 +184,15 @@ def parallelizable(maxchildren=2, perproc=None):
     if perproc is not None:
         processors = 4 # hand-waving
         maxchildren = min(maxchildren, perproc * processors)
+
     def decorate(f):
         """Set the parallel_maxchildren attribute to the value
         appropriate for this function"""
         setattr(f, 'parallel_maxchildren', maxchildren)
         return f
+
     return decorate
+
 
 if __name__ == '__main__':
     import doctest
@@ -195,14 +200,14 @@ if __name__ == '__main__':
 
     @parallelizable(10, perproc=4)
     def timestwo(x, y):
-        """Make pylint happy"""
         return (x + y) * 2
-    print map(timestwo, [1, 2, 3, 4], [7, 8, 9, 10])
+
+    print(map(timestwo, [1, 2, 3, 4], [7, 8, 9, 10]))
 
     @parallelizable(10)
     def busybeaver(x):
-        """Make pylint happy"""
         for i in range(1000000):
             x = x + i
         return x
-    print map(busybeaver, range(27))
+
+    print(map(busybeaver, range(27)))

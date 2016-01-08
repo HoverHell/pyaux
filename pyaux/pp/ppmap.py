@@ -44,11 +44,16 @@ __version__ = "$Rev: 1139 $"
 __date__    = "$Date: 2008-04-16 $"
 
 import time
-import __builtin__
+try:
+    import __builtin__ as builtins
+except ImportError:
+    import builtins
 
 import pp
 
+
 __STATE = {'server': None}
+
 
 def ppmap(processes, function, sequence, *sequences):
     """Split the work of 'function' across the given number of
@@ -103,18 +108,18 @@ if __name__ == '__main__':
     # Immediate evaluation example
     start = time.time()
     results = ppmap(None, busybeaver, range(10))
-    print 'Time to queue the jobs:', time.time() - start
+    print('Time to queue the jobs:', time.time() - start)
     start = time.time()
     # Casting the ppmap generator to a list forces each result to be
     # evaluated.  When done immediately after the jobs are submitted,
     # our program twiddles its thumbs while the work is finished.
-    print list(results)
-    print 'Time to get the results:', time.time() - start
+    print(list(results))
+    print('Time to get the results:', time.time() - start)
 
     # Delayed evaluation example
     start = time.time()
     results = ppmap(None, busybeaver, range(10))
-    print 'Time to queue the jobs:', time.time() - start
+    print('Time to queue the jobs:', time.time() - start)
     # In contrast with the above example, this time we're submitting a
     # batch of jobs then going off to do more work while they're
     # processing.  Maybe "time.sleep" isn't the most exciting example,
@@ -126,24 +131,24 @@ if __name__ == '__main__':
     # results.
     time.sleep(5)
     start = time.time()
-    print list(results)
-    print 'Time to get the first results:', time.time() - start
+    print(list(results))
+    print('Time to get the first results:', time.time() - start)
 
     # Built-in map example
-    print map(add, [1, 2, 3], [4, 5, 6], [7, 8, 9])
+    print(map(add, [1, 2, 3], [4, 5, 6], [7, 8, 9]))
 
     # Trivial ppmap tests
     for i in range(10):
-        print '-' * 30
+        print('-' * 30)
         start = time.time()
-        print i, 'adders'
-        print ppmap(i, add, [1, 2, 3], [4, 5, 6], [7, 8, 9])
-        print 'Iteration time:', time.time() - start
+        print(i, 'adders')
+        print(ppmap(i, add, [1, 2, 3], [4, 5, 6], [7, 8, 9]))
+        print('Iteration time:', time.time() - start)
 
     # Heavier ppmap tests
     for i in range(10):
-        print '-' * 30
+        print('-' * 30)
         start = time.time()
-        print i, 'beavers'
-        print ppmap(i, busybeaver, range(10))
-        print 'Iteration time:', time.time() - start
+        print(i, 'beavers')
+        print(ppmap(i, busybeaver, range(10)))
+        print('Iteration time:', time.time() - start)

@@ -60,35 +60,36 @@ def get_prof(proftype='lp', add_builtin=True):
         
 
 def _wrap_class_stuff(the_class, wrapf):
-    #for i_name in dir(the_class):
-    #    i_val = getattr(the_class, i_name)
-    #    if not callable(i_val):
-    #        continue
-    ## Note: this, still, executes the class properties; hopefully, that
-    ##   won't be a problem (they are damn rare after all)
+    # for i_name in dir(the_class):
+    #     i_val = getattr(the_class, i_name)
+    #     if not callable(i_val):
+    #         continue
+    # # Note: this, still, executes the class properties; hopefully, that
+    # #   won't be a problem (they are damn rare after all)
     for i_name, i_val in inspect.getmembers(the_class, predicate=inspect.ismethod):
         try:
             if getattr(i_val, '__prof_wrapped__', False):
                 continue  # do not wrap wrapped wrapstuff.
-            ## XXX: do the sourcefilename check too?
-            print "    Method wrapping: %s" % (i_name,)
+            # XXX: do the sourcefilename check too?
+            print("    Method wrapping: %s" % (i_name,))
             wrapped_val = wrapf(i_val)
             setattr(wrapped_val, '__prof_wrapped__', True)
             setattr(the_class, i_name, wrapped_val)
         except Exception as e:
-            print "     ... Failed (%r). %r" % (i_name, e)
+            print("     ... Failed (%r). %r" % (i_name, e))
+
+
 def _wrap_module_stuff(module, wrapf):
     """ Wrap each function and method in the module with the specified
     function (e.g. LineProfiler) """
-    ## This should not fail:
-    ## (Note: there's also `inspect.getfile; but it sometimes returns ...py and sometimes ...pyc)
+    # This should not fail:
+    # (Note: there's also `inspect.getfile; but it sometimes returns ...py and sometimes ...pyc)
     if not inspect.ismodule(module) and isinstance(module, object):
-        ## NOTE: only known to happen with twisted.internet.reactor;
-        ##   along with other problematic twistedness.
-        #import ipdb; ipdb.set_trace()
+        # NOTE: only known to happen with twisted.internet.reactor;
+        # along with other problematic twistedness.
         module = type(module)
     module_filename = inspect.getsourcefile(module)
-    ## ...
+    # ...
     for i_name in dir(module):
         try:
             i_val = getattr(module, i_name)
@@ -105,16 +106,18 @@ def _wrap_module_stuff(module, wrapf):
                 ## ... and skip, too, all the built-ins, non-(module/class/function/...)
                 continue
             if inspect.isclass(i_val):
-                print "  Class wrapping: %s" % (i_name,)
+                print("  Class wrapping: %s" % (i_name,))
                 _wrap_class_stuff(i_val, wrapf=wrapf)
             elif callable(i_val):
-                print "  Wrapping: %s" % (i_name,)
+                print("  Wrapping: %s" % (i_name,))
                 wrapped_val = wrapf(i_val)
                 setattr(wrapped_val, '__prof_wrapped__', True)
                 setattr(module, i_name, wrapped_val)
         except Exception as e:
-            print "  ... Failed (%r). %r" % (i_name, e)
-## TODO: make it possible to specify down to particular objects to wrap.
+            print("  ... Failed (%r). %r" % (i_name, e))
+
+
+# TODO: make it possible to specify down to particular objects to wrap.
 def wrap_packages(packages, wrapf=None, verbose=True):
     """ Wraps all the currently imported modules within any package of
     the `packages` (e.g. `['module1', 'package2', 'package3.module1']`) """
@@ -129,14 +132,14 @@ def wrap_packages(packages, wrapf=None, verbose=True):
         for pkg_to_wrap in packages:
             if pkg_name.startswith(pkg_to_wrap):
                 if verbose:
-                    print "Module-wrapping: %s" % (pkg_name,)
+                    print("Module-wrapping: %s" % (pkg_name,))
                 try:
                     _wrap_module_stuff(pkg, wrapf)
-                except Exception as e:
-                    print " ... Failed.", e
+                except Exception as exc:
+                    print(" ... Failed.", exc)
                 break  # make sure not to wrap it many times.
     if verbose:
-        print "Wrapping done."
+        print("Wrapping done.")
 
 
 ## TODO?: put into the main prof module
@@ -151,14 +154,16 @@ def stgrab(sig, frame):
     trace_formatted = ''.join(traceback.format_list(trace_data))
     trace_last_src = ''.join(ofra[0][4] or [])
     if (stgrab.check_polling
-     and any((v in trace_last_src) for v in stgrab.poll_codes)):
-        print " ... Polling ..."  # don't spam that specific traceback
+            and any((v in trace_last_src) for v in stgrab.poll_codes)):
+        print(" ... Polling ...")  # don't spam that specific traceback
         return
     print (" ------- %s\n" % (stgrab.header_str,) +
-      #"Framedata: %s\n" % (name, d) +
-      "Traceback:\n%s" % (trace_formatted,) +
-      ""
-      )
+        # "Framedata: %s\n" % (name, d) +
+        "Traceback:\n%s" % (trace_formatted,) +
+        ""
+    )
+
+
 ## Funny place to put that:
 stgrab.header_str = "Stack trace in process:"
 stgrab.check_polling = True

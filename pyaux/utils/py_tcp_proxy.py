@@ -219,5 +219,5 @@ if __name__ == '__main__':
     try:
         server.main_loop()
     except KeyboardInterrupt:
-        print "Ctrl C - Stopping server"
+        print("Ctrl C - Stopping server")
         sys.exit(1)

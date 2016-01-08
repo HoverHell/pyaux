@@ -48,8 +48,8 @@ class edi(dict):  # "expression_dictionary"...
     """ Yet another string interpolation helper.
 
     >>> var1 = 313; f = lambda x: x*2
-    >>> print "1 is %(var1)5d, f1 is %(f(var1))d, f is %(f)r, 1/2 is %(float(var1)/2)5.3f." % edi()  #doctest: +ELLIPSIS
-    1 is   313, f1 is 626, f is <function <lambda> at 0x...>, 1/2 is 156.500.
+    >>> print("1 is %(var1)05d, f1 is %(f(var1))d, f is %(f)r, 1/2 is %(float(var1)/2)5.3f." % edi())  #doctest: +ELLIPSIS
+    1 is 00313, f1 is 626, f is <function <lambda> at 0x...>, 1/2 is 156.500.
 
     """
     # No idea for what sake this is subclassed from dictionary, actually. A
@@ -70,5 +70,5 @@ class edi(dict):  # "expression_dictionary"...
         except KeyError:
             try:
                 return eval(key, self.globals, self)
-            except Exception, e:
-                raise InterpolationEvaluationException(key, e)
+            except Exception as exc:
+                raise InterpolationEvaluationException(key, exc)

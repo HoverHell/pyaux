@@ -15,7 +15,7 @@ try:
         LONG_DESCRIPTION +
         open(os.path.join(os.path.dirname(__file__), 'README.rst')).read())
 except Exception as _exc:
-    print "Pkg-description error:", _exc
+    print("Pkg-description error:", _exc)
 
 
 setup_kwargs = dict(
@@ -32,8 +32,14 @@ setup_kwargs = dict(
     packages=find_packages(),
     entry_points={
         'console_scripts': [
-            'lzcat.py = pyaux.lzcat:_lzcat_main',
-            'lzma.py = pyaux.lzmah:_lzma_main',
+            'pylzcat = pyaux.lzcat:_lzcat_main',
+            'pyunlzma = pyaux.lzcat:_lzcat_main',
+            # NOTE: cannot name it 'lzma.py' as it will get imported
+            # and break py3's zipfile
+            'pylzma = pyaux.lzmah:_lzma_main',
+            # And naming it 'pylzma' is confusing too, so provide a
+            # preferred alias.
+            'pyenlzma = pyaux.lzmah:_lzma_main',
             'fjson_yaml = pyaux.bin.fjson_yaml:main',
             'fjson.py = pyaux.bin.fjson:main',
             'fmsgp_json = pyaux.bin.fmsgp_json:main',

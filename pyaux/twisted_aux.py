@@ -79,7 +79,7 @@ def make_manhole_telnet(
 
     def createShellServer():
         if verbose:
-            print 'Creating telnet server instance'
+            print('Creating telnet server instance')
         # Namespace stuff
         ns = ns_b
         if ns1 is not None:
@@ -109,7 +109,7 @@ def make_manhole_telnet(
                 manhole.ColoredManhole,
                 ns))
         if verbose:
-            print 'Listening on %r' % (socket,)
+            print('Listening on %r' % (socket,))
 
         lport = reactor.listenUNIX(  # pylint: disable=E1101
             socket, factory, **(socket_kwa or {}))
@@ -211,13 +211,13 @@ def make_manhole(
 
     def createShellServer():
         if verbose:
-            print 'Creating shell server instance'
+            print('Creating shell server instance')
         z_auth_data = dict(auth_data or {})
         for k, v in z_auth_data.iteritems():
             if v is None:
                 rndpwd = "%x" % random.getrandbits(128)
                 z_auth_data[k] = rndpwd
-                print "Manhole password for %r: %r" % (k, rndpwd)
+                print("Manhole password for %r: %r" % (k, rndpwd))
 
         # Namespace stuff
         ns = ns_b
@@ -237,7 +237,7 @@ def make_manhole(
         #mhportal.registerChecker(PubKeysChecker(zauthorizedKeys))
         mhfactory = manhole_ssh.ConchFactory(mhportal)
         if verbose:
-            print 'Listening on %r' % (port,)
+            print('Listening on %r' % (port,))
         if use_unix_sock:
             lport = reactor.listenUNIX(  # pylint: disable=E1101
                 port, mhfactory)
@@ -249,12 +249,12 @@ def make_manhole(
     def run_manhole(run_reactor=run_reactor):
         """ RTFS """
         if verbose:
-            print 'Registering Manhole server with the reactor'
+            print('Registering Manhole server with the reactor')
         reactor.callWhenRunning(  # pylint: disable=E1101
             createShellServer)
         if run_reactor:
             if verbose:
-                print 'Running Twisted Reactor'
+                print('Running Twisted Reactor')
             return reactor.run()  # pylint: disable=E1101
         else:
             return reactor.run  # pylint: disable=E1101

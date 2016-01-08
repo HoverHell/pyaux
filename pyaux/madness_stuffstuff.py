@@ -2,7 +2,7 @@
 """ madstuff: other stuff stuff """
 
 import re
-import urlparse
+from pyaux.six import urlparse
 from pyaux import dotdict
 from pyaux.base import repr_cut as _cut
 
@@ -39,9 +39,9 @@ class Url(dotdict):
 
 
 _url_re = (
-    ur'''(?i)\b((?:[a-z][\w-]+:(?:/{1,3}|[a-z0-9%])|www\d{0,3}[.]|[a-z0-9.\-]+'''
-    ur'''[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+'''
-    ur'''(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'".,<>?«»“”‘’]))''')
+    r'''(?i)\b((?:[a-z][\w-]+:(?:/{1,3}|[a-z0-9%])|www\d{0,3}[.]|[a-z0-9.\-]+'''
+    r'''[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+'''
+    r'''(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'".,<>?«»“”‘’]))''')
 
 
 def IPNBDFDisplay(df, *ar, **kwa):
@@ -97,7 +97,7 @@ def _re_largest_matching_start(regex, value, return_regexp=False):
     """
     # Yet Another Insane Horror
 
-    all_regexes = [regex[:idx] for idx in xrange(len(regex) + 1)]
+    all_regexes = [regex[:idx] for idx in range(len(regex) + 1)]
 
     def _try_match(rex, st):
         try:
@@ -108,7 +108,7 @@ def _re_largest_matching_start(regex, value, return_regexp=False):
     # all_match_tries = [_try_match(subreg, s) for subreg in all_regexes]
 
     # Even more horrible:
-    all_substrings = [value[:idx] for idx in xrange(len(value) + 1)]
+    all_substrings = [value[:idx] for idx in range(len(value) + 1)]
     all_match_tries = (
         (subreg, _try_match(subreg, substr))
         for subreg in all_regexes

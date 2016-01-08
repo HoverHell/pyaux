@@ -163,14 +163,15 @@ class dotdictify(dict):
     __getattr__ = __getitem__
 
 
-def repr_call(ar, kwa):
+def repr_call(args, kwargs):
     """ A helper function for pretty-printing a function call arguments """
-    r = ', '.join("%r" % (v,) for v in ar)
-    if kwa:
-        if r:
-            r += ', '
-        r + ', '.join('%s=%r' % (k, v) for k, v in kwa.iteritems())
-    return r
+    res = ', '.join("%r" % (val,) for val in ar)
+    if kwargs:
+        if res:
+            res += ', '
+        res + ', '.join(
+            '%s=%r' % (key, val) for key, val in kwa.items())
+    return res
 
 
 dbgs = {}   # global object for easier later access of dumped `__call__`s
@@ -296,30 +297,37 @@ def use_colorer():
 
 # ...
 
-def obj2dict(o, add_type=False, add_instance=False, do_lists=True,
-             dict_class=dotdict):
-    """" Recursive o -> o.__dict__ """
-    kwa = dict(add_type=add_type, add_instance=add_instance,
-               do_lists=do_lists, dict_class=dict_class)
+# TODO: make a recurser that supports and recurses, maintains,
+# optionally-replaces various classes such as tuple, defaultdict, and
+# other containers. Possibly use pickle/deepcopy's logic.
 
-    if hasattr(o, '__dict__'):
+
+def obj2dict(obj, add_type=False, add_instance=False, do_lists=True,
+             dict_class=dotdict):
+    """" Recursive obj -> obj.__dict__ """
+    kwa = dict(
+        add_type=add_type, add_instance=add_instance,
+        do_lists=do_lists, dict_class=dict_class)
+
+    if hasattr(obj, '__dict__'):
         res = dict_class()
-        for k, v in o.__dict__.iteritems():
-            res[k] = obj2dict(v, **kwa)
+        for key, val in obj.__dict__.items():
+            res[key] = obj2dict(val, **kwa)
         if add_type:
-            res['__class__'] = o.__class__
+            res['__class__'] = obj.__class__
         if add_instance:
-            res['__instance__'] = o
+            res['__instance__'] = obj
         return res
     # Recurse through other types too:
     # NOTE: There might be subclasses of these that would not be
     # processed here.
-    elif isinstance(o, dict):
-        return dict_class((k, obj2dict(v, **kwa)) for k, v in o.iteritems())
-    elif isinstance(o, list):
-        return [obj2dict(v, **kwa) for v in o]
+    elif isinstance(obj, dict):
+        return dict_class((key, obj2dict(val, **kwa))
+                          for key, val in obj.items())
+    elif isinstance(obj, list):
+        return [obj2dict(val, **kwa) for val in obj]
 
-    return o  # something else - return as-is.
+    return obj  # something else - return as-is.
 
 
 def mk_logging_property(actual_name, logger_name='_log'):
@@ -356,45 +364,48 @@ def sign(v):
 # partially from comix/src/filehandler.py
 
 
-def try_parse(v, fn=int):
+def try_parse(val, fn=int):
     """ 'try parse' (with fn) """
     try:
-        return fn(v)
-    except Exception, e:
-        return v
+        return fn(val)
+    except Exception:
+        return val
 
 
 # Note: not localized (i.e. always as dot for decimal separator)
 _re_alphanum_f = re.compile(r'[0-9]+(?:\.[0-9]+)?|[^0-9]+')
 
 
-def _split_numeric_f(s):
-    return [try_parse(v, fn=float) for v in _re_alphanum_f.findall(s)]
+def _split_numeric_f(string):
+    return [
+        try_parse(val, fn=float)
+        for val in _re_alphanum_f.findall(string)]
 
 
 # Or to avoid interpreting numbers as float:
 _re_alphanum_int = re.compile(r'\d+|\D+')
 
 
-def _split_numeric(s):
-    return [try_parse(v, fn=int) for v in _re_alphanum_int.findall(s)]
+def _split_numeric(string):
+    return [
+        try_parse(val, fn=int)
+        for val in _re_alphanum_int.findall(string)]
 
 
 # Primary function:
-def human_sort_key(s, normalize=unicodedata.normalize, floats=True):
+def human_sort_key(string, normalize=unicodedata.normalize, floats=True):
     """ Sorting key for 'human' sorting """
-    if not isinstance(s, unicode):
-        s = s.decode("utf-8")
+    string = to_unicode(string)
     s = normalize("NFD", s.lower())
     split_fn = _split_numeric_f if floats else _split_numeric
-    return s and split_fn(s)
+    return string and split_fn(string)
 
 
 # ###### Reading files backwards
 # http://stackoverflow.com/a/260433/62821
 
 def reversed_blocks(fileobj, blocksize=4096):
-    """ Generate blocks of file's contents in reverse order.  """
+    """ Read blocks of file's contents in reverse order.  """
     fileobj.seek(0, os.SEEK_END)
     here = fileobj.tell()
     while 0 < here:
@@ -405,7 +416,7 @@ def reversed_blocks(fileobj, blocksize=4096):
 
 
 def reversed_lines(fileobj):
-    """ Generate the lines of file in reverse order.  """
+    """ Read the lines of file in reverse order """
     tail = []           # Tail of the line whose head is not yet read.
     for block in reversed_blocks(fileobj):
         # A line is a list of strings to avoid quadratic concatenation.
@@ -708,18 +719,14 @@ def dict_merge(target, source, instancecheck=None, dictclass=dict,
     >>> data
     {'open_folders': {'my_folder_a': False}}
     >>> data = dict_merge(data, {'open_folders': {'my_folder_b': True}})
-    >>> data
-    {'open_folders': {'my_folder_b': True, 'my_folder_a': False}}
+    >>> assert data == {'open_folders': {'my_folder_a': False, 'my_folder_b': True}}
     >>> _del = object()
     >>> data = dict_merge(data, {'open_folders': {'my_folder_b': _del}}, del_obj=_del)
-    >>> data
-    {'open_folders': {'my_folder_a': False}}
+    >>> assert data == {'open_folders': {'my_folder_a': False}}
     """
     if instancecheck is None:  # funhorrible ducktypings
-        # instancecheck = lambda iv: isinstance(iv, dict)
-
         def instancecheck_default(iv):
-            return hasattr(iv, 'iteritems')
+            return hasattr(iv, 'items')
 
         instancecheck = instancecheck_default
 
@@ -729,16 +736,16 @@ def dict_merge(target, source, instancecheck=None, dictclass=dict,
     if _copy and not inplace:  # 'both are default'
         target = deepcopy(target)
 
-    for k, v in source.iteritems():
-        if v is del_obj:
-            target.pop(k, None)
-        elif instancecheck(v):  # (v -> source -> iteritems())
-            # NOTE: if target[k] wasn't a dict - it will be, now.
-            target[k] = dict_merge(
-                dict_fget(target, k, dictclass), v, **kwa)
+    for key, val in source.items():
+        if val is del_obj:
+            target.pop(key, None)
+        elif instancecheck(val):  # (val -> source -> items())
+            # NOTE: if target[key] wasn't a dict - it will be, now.
+            target[key] = dict_merge(
+                dict_fget(target, key, dictclass), val, **kwa)
         else:  # nowhere to recurse into - just replace
-            # NOTE: if target[k] was a dict - it won't be, anymore.
-            target[k] = v
+            # NOTE: if target[key] was a dict - it won't be, anymore.
+            target[key] = val
 
     return target
 
@@ -864,7 +871,7 @@ def mangle_dict(input_dict, include=None, exclude=None, add=None, _return_list=F
     if include:
         assert not exclude
 
-    items = input_dict.iteritems()
+    items = input_dict.items()
     if include is not None:
         res = [(key, val) for key, val in items
                if key in include]
@@ -878,7 +885,7 @@ def mangle_dict(input_dict, include=None, exclude=None, add=None, _return_list=F
     # Almost the `dict(input_dict, **add)`, but better.
     if add is not None:
         if isinstance(add, dict):
-            add = add.iteritems()
+            add = add.items()
         res.extend(add)
     if _return_list:
         return res

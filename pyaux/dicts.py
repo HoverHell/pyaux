@@ -87,7 +87,10 @@ remvdodd('mod': ..., 'u1': 'y', 1: 3, 5: 2)
 
 import copy
 import itertools
-from UserDict import DictMixin
+try:
+    from UserDict import DictMixin
+except ImportError:
+    from collections import MutableMapping as DictMixin
 
 from pyaux.base import uniq_g
 from pyaux.base import dotdict
@@ -120,13 +123,16 @@ class ODReprMixin(object):
             self.__class__.__name__,
             ', '.join(
                 '%r: %r' % (key, val)
-                for key, val in self.iteritems()))
+                for key, val in self.items()))
 
     def __repr__(self, _repr_running={}, fn=__drepr__):
         """ Wrapped around __drepr__ that makes it possible to
         represent infinitely-recursive dictionaries of this type. """
         # NOTE: version variety; might be a _get_ident or something else.
-        from thread import get_ident as _get_ident
+        try:
+            from thread import get_ident as _get_ident
+        except ImportError:
+            from threading import get_ident as _get_ident
 
         call_key = (id(self), _get_ident())
         if call_key in _repr_running:
@@ -225,9 +231,11 @@ class OrderedDict(dict, ODReprMixin, DictMixin):
     pop = DictMixin.pop
     values = DictMixin.values
     items = DictMixin.items
-    iterkeys = DictMixin.iterkeys
-    itervalues = DictMixin.itervalues
-    iteritems = DictMixin.iteritems
+
+    # Will be provided in any version from whichever is available.
+    iterkeys = getattr(DictMixin, 'iterkeys', None) or getattr(DictMixin, 'keys')
+    itervalues = getattr(DictMixin, 'itervalues', None) or getattr(DictMixin, 'values')
+    iteritems = getattr(DictMixin, 'iteritems', None) or getattr(DictMixin, 'items')
 
     def copy(self):
         return self.__class__(self)
@@ -302,10 +310,10 @@ class MVOD(ODReprMixin, dict):
         if isinstance(arg, MVOD):  ## support init / update from antother MVOD
             arg = arg._data
         elif isinstance(arg, dict):
-            arg = arg.iteritems()
+            arg = getattr(arg, 'iteritems', arg.items)()
         if kwds:
             # Append the keywords to the other stuff
-            arg = itertools.chain(arg, kwds.iteritems())
+            arg = itertools.chain(arg, kwds.items())
             # raise TypeError('initializing an ordered dict from keywords is not recommended')
         if preprocess:
             arg = self._preprocess_data(arg)  ## NOTE: iterates over it and makes a tuple.

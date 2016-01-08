@@ -64,10 +64,10 @@ def _filter_n(*ar):
             yield i
 
 
-def _print(s):
+def _print(something):
     """ Simple one-argument `print` one-liner; returns the argument """
-    print s
-    return s
+    print(something)
+    return something
 
 
 def _ipdbg(_a_function_thingie, *ar, **kwa):
@@ -125,7 +125,7 @@ def _uprint(obj, ret=False):
         from IPython.lib.pretty import pretty
     except Exception:
         from pprint import pformat as pretty
-    print pretty(obj).decode('unicode-escape')
+    print(pretty(obj).decode('unicode-escape'))
     if ret:
         return obj
 
@@ -133,7 +133,7 @@ def _uprint(obj, ret=False):
 def _yprint(obj, ret=False, **kwa):
     kwa.setdefault('colorize', True)
     kwa.setdefault('no_anchors', False)
-    print _dumprepr(obj, **kwa)
+    print(_dumprepr(obj, **kwa))
     if ret:
         return obj
 
@@ -174,4 +174,4 @@ def _mrosources(cls, attname, raw=False, colorize=False):
 
 def p_o_repr(o, **kwa):
     kwa = dict(dict(_colors=True, _colors256=True), **kwa)
-    print o_repr(o, **kwa)
+    print(o_repr(o, **kwa))

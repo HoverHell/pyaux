@@ -132,17 +132,17 @@ class ListSigHandler(list):
         for func in reversed(self):
             try:
                 if self.verbose:
-                    print "ListSigHandler: running %r" % (func,)
+                    print("ListSigHandler: running %r" % (func,))
                 if self.try_argless:
                     func = argless_wrap(func)
                 func(n, f)
-            except Exception, e:
+            except Exception as e:
                 if self.ignore_exc:
                     if self.verbose:
                         traceback.print_exc()
                     else:
                         # Still print something
-                        print "Exception ignored: %r" % (e,)
+                        print("Exception ignored: %r" % (e,))
                 else:
                     raise
 
