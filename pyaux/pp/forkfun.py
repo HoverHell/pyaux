@@ -13,6 +13,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import print_function, unicode_literals, absolute_import, division
 
 import os
 import math
@@ -55,8 +56,8 @@ def forkfun(accumulator, function, sequence):
     except AttributeError:
         maxchildren = numcores()
 
-    assert(function)
-    assert(accumulator)
+    assert function
+    assert accumulator
 
     finished = 0
 

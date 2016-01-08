@@ -1,5 +1,7 @@
 """ Various (un)necessary stuff for runscripts """
 
+from __future__ import print_function, unicode_literals, absolute_import, division
+
 import os
 import sys
 import random

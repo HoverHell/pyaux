@@ -1,6 +1,8 @@
 # coding: utf8
 """ madstuff: oneliners and debug-useful stuff """
 
+from __future__ import print_function, unicode_literals, absolute_import, division
+
 import sys
 import traceback
 from .base import o_repr

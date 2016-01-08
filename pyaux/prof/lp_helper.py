@@ -18,6 +18,8 @@ It is also possible to use `get_prof()` before all other imports and add
  instead of `get_prof` and this whole module.
 """
 
+from __future__ import print_function, unicode_literals, absolute_import, division
+
 import sys
 import inspect
 import traceback

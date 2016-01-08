@@ -4,6 +4,8 @@
 Also, things that are useful in an ipython interactice shell.
 """
 
+from __future__ import print_function, unicode_literals, absolute_import, division
+
 from six.moves import builtins
 from . import madness_datadiff
 from .madness_datadiff import *

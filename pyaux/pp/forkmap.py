@@ -37,6 +37,8 @@ semantics of map() as precisely as possible so that it can be used in
 all situations with little surprise.
 """
 
+from __future__ import print_function, unicode_literals, absolute_import, division
+
 import os
 import signal
 import struct

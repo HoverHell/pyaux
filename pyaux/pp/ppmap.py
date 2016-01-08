@@ -39,6 +39,8 @@ actual multi-processing, code using this must conform to the usual PP
 restrictions (arguments must be serializable, etc.)
 """
 
+from __future__ import print_function, unicode_literals, absolute_import, division
+
 import time
 import pp
 from six.moves import builtins

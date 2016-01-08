@@ -30,8 +30,9 @@ def add_coloring_to_emit_windows(fn):
         FOREGROUND_GREEN = 0x0002  # text color contains green.
         FOREGROUND_RED = 0x0004  # text color contains red.
         FOREGROUND_INTENSITY = 0x0008  # text color is intensified.
-        FOREGROUND_WHITE = (FOREGROUND_BLUE | FOREGROUND_GREEN |
-          FOREGROUND_RED)
+        FOREGROUND_WHITE = (
+            FOREGROUND_BLUE | FOREGROUND_GREEN |
+            FOREGROUND_RED)
        # winbase.h
         STD_INPUT_HANDLE = -10
         STD_OUTPUT_HANDLE = -11
@@ -61,7 +62,7 @@ def add_coloring_to_emit_windows(fn):
         levelno = args[1].levelno
         if levelno >= 50:
             color = (BACKGROUND_YELLOW | FOREGROUND_RED |
-              FOREGROUND_INTENSITY | BACKGROUND_INTENSITY)
+                     FOREGROUND_INTENSITY | BACKGROUND_INTENSITY)
         elif levelno >= 40:
             color = FOREGROUND_RED | FOREGROUND_INTENSITY
         elif levelno >= 30:

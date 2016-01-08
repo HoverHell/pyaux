@@ -1,6 +1,8 @@
 # coding: utf8
 """ madstuff: datadiff stuff """
 
+from __future__ import print_function, unicode_literals, absolute_import, division
+
 import re
 import yaml
 import difflib

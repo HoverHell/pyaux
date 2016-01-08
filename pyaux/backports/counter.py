@@ -1,5 +1,9 @@
 # coding: utf8
 
+# NOTE: not using unicode_literals because doctesting becomes a problem.
+from __future__ import print_function, absolute_import, division
+
+
 from operator import itemgetter
 from heapq import nlargest
 from itertools import repeat
