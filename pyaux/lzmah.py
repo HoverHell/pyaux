@@ -34,9 +34,13 @@ def lzma_compress(fi, fo, fi_close=True, fo_close=True, bufs=65535):
 class _IgnoreTheError(Exception):
     """ Used in `unjsllzma` to signify that the exception should be simply ignored
     """
+
+
 def _handle_fail_default(v, e):
     raise _IgnoreTheError
-    ## supposedly can do simple `raise` to re-raise the original (parse) excetion
+    # supposedly can do simple `raise` to re-raise the original (parse) exception
+
+
 def unjsllzma(fi, fi_close=True, parse_fn=None, handle_fail=None, bufs=655350):
     """ Make a generator for reading an lzma-compressed file with
     json(or something else) in lines.
@@ -54,17 +58,21 @@ def unjsllzma(fi, fi_close=True, parse_fn=None, handle_fail=None, bufs=655350):
             print("Error importing (preferred) simplejson")
             import json
         parse_fn = json.loads
+
     if handle_fail is None:
         handle_fail = _handle_fail_default
+
     def try_loads(v):
         try:
             return parse_fn(v)
         except Exception as e:
             return handle_fail(v, e)
+
     if isinstance(fi, str):
         fi = open(fi, 'rb')
+
     tmp2 = ''  # buffer for unfunushed lines
-    in_bufs = int(bufs/100)  # XXX: see lzcat.py note around in_bufs
+    in_bufs = int(bufs / 100)  # XXX: see lzcat.py note around in_bufs
     s = pylzma.decompressobj()
     cont = True
     while cont:
@@ -73,7 +81,7 @@ def unjsllzma(fi, fi_close=True, parse_fn=None, handle_fail=None, bufs=655350):
             tmp2 += s.flush()
             cont = False
         else:
-            ## XXX: TODO: use bytearray.extend (likely).
+            # XXX: TODO: use bytearray.extend (likely).
             tmp2 = tmp2 + s.decompress(tmp, bufs)
         tmp3 = tmp2.split('\n')  # finished and unfinished lines
         for v in tmp3[:-1]:

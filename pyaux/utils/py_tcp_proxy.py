@@ -8,7 +8,9 @@
 
 from __future__ import print_function, unicode_literals, absolute_import, division
 
+import os
 import socket
+import ssl
 import select
 import time
 import sys
@@ -51,7 +53,7 @@ def need_repr(string):
     if any(unicodedata.category(ch)[0] == "C" for ch in string):
         return True
 
-    if "'''" in string or '"""' in string:  ## Okay, make it python-ier
+    if "'''" in string or '"""' in string:  # Okay, make it python-ier
         return True
 
     return False
@@ -59,31 +61,44 @@ def need_repr(string):
 
 class Forward(object):
     def __init__(self):
-        self.forwardsck = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.forwardsck = None
 
-    def start(self, host, port):
+    def start(self, host, port, ip6=False, ssl_connect=False):
+        self.forwardsck = socket.socket(
+            socket.AF_INET6 if ip6 else socket.AF_INET,
+            socket.SOCK_STREAM)
+        if ssl_connect:
+            self.forwardsck = ssl.wrap_socket(self.forwardsck)
         try:
             self.forwardsck.connect((host, port))
             return self.forwardsck
         except Exception as exc:
             _out(repr(exc))
+            logging.exception("Forward error: %r", exc)
             return False
+
 
 class TheServer(object):
 
     _last_data = None
 
-    def __init__(self, host, port, fwdhost, fwdport, buffer_size=4096, delay=0.0001):
+    def __init__(
+            self, host, port, fwdhost, fwdport,
+            buffer_size=4096, delay=0.0001,
+            ip6_listen=False, ip6_connect=False, ssl_connect=False):
+
         self.input_list = []
         self.channel = {}
         self.meta = {}
         self.forwardscks = set()
 
-        self.fwdparams = (fwdhost, fwdport)
+        self.fwdparams = (fwdhost, fwdport, ip6_connect, ssl_connect)
         self.buffer_size = buffer_size
         self.delay = delay
 
-        self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.server = socket.socket(
+            socket.AF_INET6 if ip6_listen else socket.AF_INET,
+            socket.SOCK_STREAM)
         self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.server.bind((host, port))
         self.server.listen(200)
@@ -92,7 +107,7 @@ class TheServer(object):
         self.input_list.append(self.server)
         _log.debug("Starting the eventloop")
         while 1:
-            time.sleep(self.delay)  ## XXXXX: should not be needed, really.
+            time.sleep(self.delay)  # XXXXX: should not be needed, really.
             ss = select.select
             inputready, outputready, exceptready = ss(self.input_list, [], [])
             for sck in inputready:
@@ -153,7 +168,7 @@ class TheServer(object):
             meta = _addr_repr(meta)
 
         if _splitlines:
-            ## per-line annotation of msg
+            # per-line annotation of msg
             lines_are_unfinished = (not data or data[-1] != '\n')
             #lines = data.splitlines()
             lines = data.split('\n')
@@ -161,7 +176,7 @@ class TheServer(object):
                 lines = lines[:-1]
             for idx, line in enumerate(lines):
 
-                ## NOTE: length is limited by the bytes length, not the unicode or repr length
+                # NOTE: length is limited by the bytes length, not the unicode or repr length
                 too_long = False
                 if len(line) > _maxlength:
                     too_long = True
@@ -171,16 +186,16 @@ class TheServer(object):
                     if too_long:
                         msg_data = repr(line) + '…'
                     else:
-                        msg_data = repr(line + '\n')  ## ... after putting the newline back
+                        msg_data = repr(line + '\n')  # ... after putting the newline back
                 else:
-                    msg_data = " " + line  ## Unambiguate with the space
+                    msg_data = " " + line  # Unambiguate with the space
 
                 if idx == len(lines) - 1:
                     if lines_are_unfinished:
-                        ## TODO?: color for unambiguity
+                        # # TODO?: color for unambiguity
                         # msg_data = msg_data + '\\'
-                        ## Actually, too non-nice, and "virtual empty string
-                        ##   at the end" is unambiguously printed anyway
+                        # # Actually, too non-nice, and "virtual empty string
+                        # #   at the end" is unambiguously printed anyway
                         pass
 
                 msg = _msgfmt % dict(dir=_dir, meta=meta, data=msg_data)
@@ -188,7 +203,7 @@ class TheServer(object):
 
         else:
 
-            ## NOTE: length is limited by the base bytes length, not the repr length
+            # NOTE: length is limited by the base bytes length, not the repr length
             if len(data) > _maxlength:
                 msg_data = repr(data[:_maxlength]) + '…'
             else:
@@ -203,6 +218,9 @@ class TheServer(object):
 def main():
     # TODO: argparse
     bind_addr, bind_port, fwd_addr, fwd_port = sys.argv[1], int(sys.argv[2]), sys.argv[3], int(sys.argv[4])
+    ip6_listen = bool(os.environ.get('IP6_LISTEN'))
+    ip6_connect = bool(os.environ.get('IP6_CONNECT'))
+    ssl_connect = bool(os.environ.get('SSL_CONNECT'))
 
     # ###
     # logging config
@@ -230,7 +248,9 @@ def main():
 
     logging.basicConfig(level=1)
     logging.root.handlers[0].setFormatter(DTSFormatter(_logfmt))
-    server = TheServer(bind_addr, bind_port, fwd_addr, fwd_port)
+    server = TheServer(
+        bind_addr, bind_port, fwd_addr, fwd_port,
+        ip6_listen=ip6_listen, ip6_connect=ip6_connect, ssl_connect=ssl_connect)
     try:
         server.main_loop()
     except KeyboardInterrupt:
