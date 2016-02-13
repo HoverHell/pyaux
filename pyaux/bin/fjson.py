@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # coding: utf8
 
+from __future__ import print_function, unicode_literals, absolute_import, division
+
 import os
 import json
 import sys
@@ -12,10 +14,15 @@ def main():
     indent = int(os.environ.get('INDENT') or '2')
     data_in = sys.stdin.read()
 
+    try:
+        outbuf = sys.stdout.buffer
+    except AttributeError:
+        outbuf = sys.stdout
+
     def bailout(msg):
         sys.stderr.write(
             "ERROR: fjson.py: %s; original data as follows (on stdout)\n" % (msg,))
-        sys.stdout.write(data_in)
+        outbuf.write(data_in)
         return 13
 
     try:
@@ -29,9 +36,9 @@ def main():
     except Exception as exc:
         return bailout("Error dumping as json: %s" % (exc,))
 
-    sys.stdout.write(to_bytes(data_out))
-    sys.stdout.write("\n")
-    sys.stdout.flush()
+    outbuf.write(to_bytes(data_out))
+    outbuf.write(b"\n")
+    outbuf.flush()
 
 
 if __name__ == '__main__':
