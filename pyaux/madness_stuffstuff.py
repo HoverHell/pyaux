@@ -58,12 +58,16 @@ def IPNBDFDisplay(df, *ar, **kwa):
     """
     from IPython.display import display, HTML
     kwa.setdefault('float_format', lambda v: '%.6f' % (v,))
+    exclude = kwa.pop('exclude', None)
     head = kwa.pop('head', 200)
     cutlinks = kwa.pop('cutlinks', True)
     do_display = kwa.pop('display', True)
 
     if head:
         df = df.head(head)
+
+    if exclude is not None:
+        df = df.__class__(df, columns=[val for val in df.columns if val not in exclude])
 
     html = df.to_html(*ar, **kwa)
 
