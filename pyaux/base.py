@@ -1099,6 +1099,12 @@ def _dict_to_hashable_json(dct, dumps=json.dumps):
     return dumps(dct, skipkeys=True, default=id)
 
 
+class hashabledict_st(dict):
+    """ sorted-tuple based hashable subclass of `dict` """
+    def __hash__(self):
+        return hash(tuple(sorted(list(self.items()))))
+
+
 def group3(items, to_hashable=_dict_to_hashable_json):
     """ Same as `group` but supports dicts as keys (and returns list
     of pairs) """
