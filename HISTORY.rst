@@ -3,6 +3,25 @@
 Release History
 ---------------
 
+1.10.0 (2016-02-19)
++++++++++++++++++++
+
+ - FIX: py3 minor fixes
+ - hashabledict_st
+ - fjson.py: py3
+ - IPNBDFDisplay exclude columns
+ - py3 gitignore
+ - Improved debug-tcp-proxy
+ - py23: future imports
+ - more style cleanup
+ - py23 single-codebase compat
+ - py23 single-codebase support, in process
+ - madness: plain-pdb versions of _ipdbg and _ipdbt
+ - fjson, fjson_yaml: better failure reporting
+ - Colorer: proper string interpolation
+ - style of the obsolete stuff
+
+
 1.9.0 (2015-11-09)
 ++++++++++++++++++
 
