@@ -23,7 +23,7 @@ def _dumprepr(val, no_anchors=True, colorize=False, try_ujson=True, **kwa):
     # NOTE: this means it'll except on infinitely-recursive data.
     if no_anchors:
         dumper = type(
-            'NoAliasesSafeDumper', (dumper,),
+            b'NoAliasesSafeDumper', (dumper,),
             dict(ignore_aliases=lambda self, data: True))
 
     params = dict(default_flow_style=False, allow_unicode=True,

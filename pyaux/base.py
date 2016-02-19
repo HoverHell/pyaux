@@ -595,7 +595,7 @@ class ReprObj(object):
         return self.txt
 
 
-# _err_obj = type('ErrObj', (object,), dict(__repr__=lambda self: '???'))()
+# _err_obj = type(b'ErrObj', (object,), dict(__repr__=lambda self: '???'))()
 _err_obj = ReprObj('???')
 
 
