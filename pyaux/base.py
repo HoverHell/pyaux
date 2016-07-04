@@ -1008,6 +1008,8 @@ def memoize_method(*ar, **cfg):
     """
 
     def memoize_method_configured(func):
+        # WARN: might cause infinite recursion in some cases
+        # (e.g. with getattr that blindly returns to this property).
         memo_attr = cfg.pop('memo_attr', None)
         if memo_attr is None:
             memo_attr = '_cached_%s' % (func.__name__,)
@@ -1264,7 +1266,7 @@ def dict_is_subset(
 
 def find_files(
         in_dir, fname_re=None, older_than=None, skip_last=None,
-        _prewalk=True):
+        _prewalk=True, strip_dir=False, include_base=False):
     """ Return all full file paths under the directory `in_dir` whose
     *filenames* match the `fname_re` regexp (if not None) """
     now = time.time()
@@ -1273,21 +1275,34 @@ def find_files(
         walk = list(walk)
     for dir_name, dir_list, file_list in walk:
         if fname_re is not None:
-            file_list = (v for v in file_list if re.match(fname_re, v))
+            file_list = (val for val in file_list if re.match(fname_re, val))
+
         # Annotate with full path:
-        file_list = ((os.path.join(dir_name, file_name), file_name)
-                     for file_name in file_list)
+        file_list = (
+            (os.path.join(dir_name, file_name), file_name)
+            for file_name in file_list)
+
+        if strip_dir:
+            # Strip the top dir from it
+            file_list = (
+                (slstrip(fpath, dir_name).lstrip('/'), fname)
+                for fpath, fname in file_list)
+
         if older_than is not None:
-            file_list = ((fpath, fname) for fpath, fname in file_list
-                         if now - os.path.getmtime(fpath) >= older_than)
+            file_list = (
+                (fpath, fname) for fpath, fname in file_list
+                if now - os.path.getmtime(fpath) >= older_than)
 
         # Convenience shortcut
         if skip_last:
-            file_list = sorted(list(file_list), key=lambda v: v[1])
-            file_list = file_list[:-skip_last]
+            file_list = sorted(list(file_list), key=lambda val: val[1])
+            file_list = file_list[:-int(skip_last)]
 
-        for fpath, fname in file_list:
-            yield fpath
+        if not include_base:
+            file_list = (fpath for fpath, fname in file_list)
+
+        for res_val in file_list:
+            yield res_val
 
 
 @memoize
