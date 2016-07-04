@@ -27,6 +27,7 @@ def _dumprepr(val, no_anchors=True, colorize=False, try_ujson=True, **kwa):
             dict(ignore_aliases=lambda self, data: True))
 
     params = dict(default_flow_style=False, allow_unicode=True,
+                  encoding=None,  # return text
                   Dumper=dumper)
     params.update(kwa.get('yaml_kwa', {}))
 
@@ -38,13 +39,13 @@ def _dumprepr(val, no_anchors=True, colorize=False, try_ujson=True, **kwa):
     res = ''
     try:
         res += maybe_colorize(yaml.dump(val, **params))
-    except Exception:
+    except Exception as exc:
         if not try_ujson:
             raise
         # ujson can handle many objects somewhat-successfully. But can
         # segfault while doing that.
         import ujson
-        res += "# Unable to serialize directly!\n"
+        res += "# Unable to serialize directly! (%r)\n" % (exc,)
         prepared_value = ujson.loads(ujson.dumps(val))
         res += maybe_colorize(yaml.dump(prepared_value, **params))
 
