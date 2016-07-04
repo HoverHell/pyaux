@@ -1455,6 +1455,22 @@ def slstrip(self, substring):
     return self[len(substring):]
 
 
+def get_env_flag(name, default=False, falses=('0',)):
+    """
+    Get a boolean flag from os.environ with support for `default`
+    and some of the shell trickiness.
+
+    To reset a value in shell, use `unset $name`.
+    """
+    try:
+        value = os.environ[name]
+    except KeyError:
+        return default
+    if value in falses:
+        return False
+    return value  # Still can be e.g. an empty string.
+
+
 if __name__ == '__main__':
     import doctest
     doctest.testmod()
