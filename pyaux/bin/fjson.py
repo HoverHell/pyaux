@@ -12,7 +12,11 @@ from pyaux.base import to_bytes
 
 def main():
     indent = int(os.environ.get('INDENT') or '2')
-    data_in = sys.stdin.read()
+    if len(sys.argv) >= 2:
+        with open(sys.argv[1]) as fo:
+            data_in = fo.read()
+    else:
+        data_in = sys.stdin.read()
 
     try:
         outbuf = sys.stdout.buffer
