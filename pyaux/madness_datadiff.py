@@ -7,7 +7,7 @@ import re
 import yaml
 import difflib
 import itertools
-from pyaux.base import colorize_yaml, colorize_diff
+from pyaux.base import colorize_yaml, colorize_diff, to_unicode
 
 
 __all__ = (

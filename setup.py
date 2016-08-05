@@ -15,7 +15,7 @@ Collection of helpers and useful things for Python
 try:
     LONG_DESCRIPTION = (
         LONG_DESCRIPTION +
-        open(os.path.join(os.path.dirname(__file__), 'README.rst')).read())
+        open(os.path.join(os.path.dirname(__file__), 'README.rst'), 'rb').read().decode('utf-8'))
 except Exception as _exc:
     print("Pkg-description error:", _exc)
 
