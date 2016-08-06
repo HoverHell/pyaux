@@ -58,6 +58,8 @@ def IPNBDFDisplay(df, *ar, **kwa):
     """
     from IPython.display import display, HTML
     kwa.setdefault('float_format', lambda v: '%.6f' % (v,))
+    columns = kwa.pop('columns', None)
+    include = kwa.pop('include', None)
     exclude = kwa.pop('exclude', None)
     head = kwa.pop('head', 200)
     cutlinks = kwa.pop('cutlinks', True)
@@ -66,6 +68,10 @@ def IPNBDFDisplay(df, *ar, **kwa):
     if head:
         df = df.head(head)
 
+    if columns is not None:  # allows for reordering
+        df = df.__class__(df, columns=columns)
+    if include is not None:
+        df = df.__class__(df, columns=[val for val in df.columns if val in include])
     if exclude is not None:
         df = df.__class__(df, columns=[val for val in df.columns if val not in exclude])
 
@@ -76,6 +82,7 @@ def IPNBDFDisplay(df, *ar, **kwa):
 
         def cutlink(link):
             return '<a href="%s">%s</a>' % (link, _cut(link, cutlinks))
+
         html = re.sub(
             _url_re,
             lambda match: cutlink(match.group(0)),
