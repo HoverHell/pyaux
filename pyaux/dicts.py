@@ -295,6 +295,13 @@ class MultiValueDict(dict):
     def __init__(self, key_to_list_mapping=()):
         super(MultiValueDict, self).__init__(key_to_list_mapping)
 
+    @classmethod
+    def make_from_items(cls, items):
+        key_to_list_mapping = {}
+        for key, val in items:
+            key_to_list_mapping.setdefault(key, []).append(val)
+        return cls(key_to_list_mapping)
+
     def __repr__(self):
         return "<%s: %s>" % (self.__class__.__name__,
                              super(MultiValueDict, self).__repr__())
