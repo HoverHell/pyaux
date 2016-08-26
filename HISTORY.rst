@@ -3,6 +3,21 @@
 Release History
 ---------------
 
+1.11.0 (2016-08-26)
++++++++++++++++++++
+
+ - MVOD.getlist, MultiValueDict from django
+ - wittgendoc callable
+ - Minor improvements
+ - some fixes
+ - sh_quote_prettier
+ - get_env_flag shortcut
+ - find_files: more options
+ - datadiff: minor improvements
+ - fjson.py: simple support for filename arg
+ - sh_quote backport
+
+
 1.10.0 (2016-02-19)
 +++++++++++++++++++
 
