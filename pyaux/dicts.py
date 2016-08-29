@@ -318,6 +318,8 @@ class MultiValueDict(dict):
         try:
             return list_[-1]
         except IndexError:
+            # Does anyone know the reason for this behaviour and ways
+            # there could happen to be an empty list?
             return []
 
     def __setitem__(self, key, value):
@@ -470,32 +472,84 @@ class MultiValueDict(dict):
 # ######
 
 
-class MVOD(ODReprMixin, dict):
-    """ MultiValuedOrderedDict: A not-very-optimized (most write operations
-    are at least O(N) with the re-hashing cost) somewhat-trivial verison.
-    Stores a tuple of pairs as the actual data (in `_data`), uses it for
-    iteration, caches dict(data) as self for optimized key-access. """
-    # TODO?: support unhashable keys (by skipping them in the cache)
-    # TODO?: make the setitem behaviour configurable per instance
+def _is_MultiValueDict(val, deep=False):
+    """
+    Check the object for MultiValueDict face (to support e.g. the
+    django's one). Does not include MVODs.
+    """
+    if isinstance(val, MultiValueDict):
+        return True
+    # The interesting internal-data access method 'lists':
+    if not hasattr(val, 'lists'):
+        return False
+    if deep:
+        return any(
+            cls.__name__ == 'MultiValueDict'
+            for cls in val.__class__.__mro__)
+    else:
+        return isinstance(val, dict)
 
-    __data = ()
 
-    def __init__(self, *args, **kwds):
-        self.update(*args, **kwds)
+def _lists_group(items):
+    """ items -> key_to_list_mapping """
+    # Pretty much `pyaux.base.group()`
+    result = {}
+    for key, val in items:
+        try:
+            list_ = result[key]
+        except KeyError:
+            list_ = [val]
+            result[key] = list_
+        else:
+            list_.append(val)
+    return result
 
-    def clear(self):
-        self._data_checked = ()  # still does the _update_cache (over property)
 
-    def _update_cache(self):
-        dict.clear(self)
-        dict.update(self, self.__data)
+def _lists_group_ordered(items):
+    """ items -> key_to_list_mapping keeping some order """
+    order = []
+    lists = {}
+    for key, val in items:
+        try:
+            list_ = lists[key]
+        except KeyError:
+            lst = [val]
+            lists[key] = lst
+            order.append((key, lst))
+        else:
+            list_.append(val)
+    return iter(order)
+
+
+def _lists_ungroup(key_to_list_mapping):
+    """" key_to_list_mapping -> items """
+    if isinstance(key_to_list_mapping, dict):
+        key_to_list_mapping = key_to_list_mapping.items()
+    result = [
+        (key, val)
+        for key, vals in key_to_list_mapping
+        for val in vals]
+    return result
+
+
+class MVOD_Common(ODReprMixin, object):
+
+    _data_internal = ()
+
+    # Conveniences
+
+    _lists_group = staticmethod(_lists_group)
+    _lists_group_ordered = staticmethod(_lists_group_ordered)
+    _lists_ungroup = staticmethod(_lists_ungroup)
 
     def _preprocess_data(self, data):
-        """ Make sure the passed data is a list of pairs; returns a tuple with
-        the pair-tuples. """
+        """
+        Make sure the passed data is a list of pairs; returns a tuple
+        with the pair-tuples.
+        """
         res = []
         for i, item in enumerate(data):
-            lv = len(item)  ## Paranoidally avoid calling it twice.
+            lv = len(item)  # Paranoidally avoid calling it twice.
             if lv != 2:
                 raise ValueError((
                     "dictionary update sequence element #%d has"
@@ -504,121 +558,60 @@ class MVOD(ODReprMixin, dict):
             res.append((key, val))
         return tuple(res)
 
-    def _process_upddata(self, args, kwds, preprocess=True):
-        """ Convert some function call args into list of key-value pairs (same
-        as `dict(*args, **kwds)` does).
-        Returns a tuple with pair-tuples.  """
+    def _process_upddata(self, args, kwds, preprocess=True, strict=False):
+        """
+        Convert some function call args into list of key-value pairs
+        (same as `dict(*args, **kwds)` does).  Returns a tuple with
+        pair-tuples.
+        """
         if len(args) > 1:
             raise TypeError('expected at most 1 arguments, got %d' % len(args))
         arg = args[0] if args else []
-        if isinstance(arg, MVOD):  ## support init / update from antother MVOD
+        if isinstance(arg, MVOD):  # support init / update from antother MVOD
             arg = arg._data
+        elif _is_MultiValueDict(arg):  # Other `MultiValueDict`s
+            arg = self._lists_ungroup(arg.lists())
         elif isinstance(arg, dict):
             arg = getattr(arg, 'iteritems', arg.items)()
         if kwds:
+            if strict:
+                raise TypeError('initializing an ordered dict from keywords is not recommended')
             # Append the keywords to the other stuff
             arg = itertools.chain(arg, kwds.items())
-            # raise TypeError('initializing an ordered dict from keywords is not recommended')
         if preprocess:
             arg = self._preprocess_data(arg)  ## NOTE: iterates over it and makes a tuple.
         return arg
 
-    def update_append(self, *args, **kwds):
-        """ ...
-        (the usual equivalent of dict.update)
-
-        WARNING: appends the data; thus, multiple `update`s will cause
-        it to grow; thus, might need to be `.deduplicate`d.
-        """
-        data_new = self._process_upddata(args, kwds)
-        # XXXXX: A dilemma:
-        #  * If self._data is a list, then it can be mutated by the
-        #    user without updating the cache
-        #  * If self._data is a tuple, then it has to be re-created for
-        #    any change (current version).
-        #  * If self._data is a custom proxy to a list... dunno. TODO?
-        #    (similar to the django.utils.datastructures.ImmutableList
-        #    except not tuple-derived)
-        self._data_checked = self._data + data_new
-
-    def update_replace(self, *args, **kwds):
-        """ A closer equivalent of dict.update that removes all the previous
-        occurrences of the keys that are updated and appends the new ones to
-        the end. The new keys still can occur multiple times. """
-        data_new = self._process_upddata(args, kwds)
-        keys = set(key for key, val in data_new)
-        pre_data = tuple((key, val) for key, val in self._data
-                         if key not in keys)
-        self._data_checked = pre_data + data_new
-
-    def update_inplace(self, *args, **kwds):
-        """ A closer equivalent of OrderedDict.update that replaces the
-        previous occurrences at the point of first occurrence.  Does not yet
-        support multiple items handling in the updated keys. """
-        data_new = self._process_upddata(args, kwds)
-        news = dict(*args, **kwds)
-        # XXXX/TODO: To update with multiple values will have to do `MVOD(*args,
-        #   **kwds).lists()`, and (configurably) pop either each item from the
-        #   list when it occurs or just one item each time.
-        pre_data = tuple((key, news.pop(key, val))
-                         for key, val in self._data)
-        # Add the non-previously-existing ones.
-        data_new = [(key, val) for key, val in data_new if key in news]
-        self._data_checked = pre_data + tuple(data_new)
-
-    update = update_append
-
-    def __delitem__(self, key):
-        self._data_checked = tuple((k, v) for k, v in self._data if k != key)
-
     # A set of properties to set the data with or without checking it
     # for validity.
+
     @property
     def _data(self):
-        return self.__data
+        return self._data_internal
 
     @_data.setter
     def _data(self, val):
-        self.__data = self._preprocess_data(val)
+        self._data_internal = self._preprocess_data(val)
         self._update_cache()
 
     @property
     def _data_checked(self):
-        return self.__data
+        return self._data_internal
 
     @_data_checked.setter
     def _data_checked(self, val):
-        # just a check that can be optimized out.
         assert isinstance(val, tuple)
-        self.__data = val
+        self._data_internal = val
         self._update_cache()
 
-    # def __getitem__:  inherited from `dict`
+    def _update_cache(self):
+        raise NotImplementedError
 
-    def __setitem__(self, key, value):
-        return self.update(((key, value),))
-        # self._data_checked = self._data + ((key, value),)
+    # Commonly usable methods
 
-    def deduplicate(self, how='last'):
-        """ ...
-        NOTE: this method is equivalent to deduplicate_last by default. """
-        if how == 'first':
-            pass
-        elif how == 'last':
-            return self.deduplicate_last()
-        else:
-            raise ValueError("Unknown deduplication `how`: %r" % (how,))
-        self._data_checked = tuple(uniq_g(self._data, key=lambda item: item[0]))
-
-    def deduplicate_last(self):
-        data_pre = uniq_g(reversed(self._data), key=lambda item: item[0])
-        data_pre = list(data_pre)
-        self._data_checked = tuple(reversed(data_pre))
-
-    def deduplicated(self, **kwa):
-        cp = self.copy()
-        cp.deduplicate(**kwa)
-        return cp
+    def clear(self):
+        # does `self._update_cache`:
+        self._data_checked = ()
 
     def __copy__(self):
         return self.__class__(self._data)
@@ -628,69 +621,88 @@ class MVOD(ODReprMixin, dict):
             memo = {}
         result = self.__class__()
         memo[id(self)] = result
-        result._data_checked = copy.deepcopy(self.__data, memo)
+        result._data_checked = copy.deepcopy(self._data, memo)
         return result
 
     copy = __copy__  # XXX: re-check.
 
-    # XXX/TODO: PY3.  (see django.utils.datastructures.MultiValueDict)
+    # TODO?: __getstate__, __setstate__; probably not useful.
 
-    def iteritems(self):
-        # XXXX: no dict-changed-while-iterating handling.
-        return iter(self._data)
+    def _iteritems(self):
+        # WARN: no dict-changed-while-iterating handling. In practice,
+        # iteration is always over a copy (since self._data is a tuple).
+        for item in self._data:
+            yield item
 
-    def iterlists(self):
+    def __reversed__(self):
+        # See the `_iteritems` dict-changed-while-iterating note.
+        for key, _ in reversed(self._data):
+            yield key
+
+    def _iterlists(self, ordered=True):
         """ MultiValueDict-like (django) method. Not very optimal. """
-        # XXX: no dict-changed-while-iterating handling.
-        order = []
-        lists = {}
-        for key, val in self.iteritems():
-            if key not in lists:
-                lst = lists[key] = [val]
-                order.append((key, lst))
-            else:
-                lists[key].append(val)
-        for key, lst in order:
-            yield key, lst  # lists[k]
+        # See the `_iteritems` dict-changed-while-iterating note.
+        pre_func = self._lists_group_ordered if ordered else self._lists_group
+        for key, lst in pre_func(self._data):
+            yield key, lst
 
-    def getlist(self, key, default=None):
-        values = [item_val for item_key, item_val in self.iteritems() if item_key == key]
-        if values:
-            return values
-        if default is None:
-            return []
-        return default
+    def _itervalues(self):
+        for _, val in self._iteritems():
+            yield val
 
-    def iterkeys(self):
-        for key, _ in self.iteritems():
+    def _iterkeys(self):
+        # Supports the duplicates.
+        for key, _ in self._iteritems():
             yield key
 
     def __iter__(self):
-        return self.iterkeys()
+        return self._iterkeys()
 
-    def __reversed__(self):
-        for key, val in reversed(self._data):
-            yield key
+    # # six:
 
-    # Copypaste from UserDict.DictMixin
-    def itervalues(self):
-        for _, val in self.iteritems():
-            yield val
+    if six.PY3:
 
-    def values(self):
-        return [val for _, val in self.iteritems()]
+        def items(self, *args, **kwargs):
+            return self._iteritems(*args, **kwargs)
 
-    def items(self):
-        return list(self.iteritems())
+        def lists(self, *args, **kwargs):
+            return self._iterlists(*args, **kwargs)
 
-    def keys(self):
-        return [k for k, _ in self.iteritems()]
+        def values(self, *args, **kwargs):
+            return self._itervalues(*args, **kwargs)
 
-    def lists(self, **kwa):
-        return list(self.iterlists(**kwa))
+        def keys(self, *args, **kwargs):
+            return self._iterkeys(*args, **kwargs)
+
+    else:
+
+        def iteritems(self, *args, **kwargs):
+            return self._iteritems(*args, **kwargs)
+
+        def iterlists(self, *args, **kwargs):
+            return self._iterlists(*args, **kwargs)
+
+        def itervalues(self, *args, **kwargs):
+            return self._itervalues(*args, **kwargs)
+
+        def iterkeys(self, *args, **kwargs):
+            return self._iterkeys(*args, **kwargs)
+
+        def items(self, *args, **kwargs):
+            return list(self.iteritems(*args, **kwargs))
+
+        def lists(self, *args, **kwargs):
+            return list(self.iterlists(*args, **kwargs))
+
+        def values(self, *args, **kwargs):
+            return list(self.itervalues(*args, **kwargs))
+
+        def keys(self, *args, **kwargs):
+            return list(self.iterkeys(*args, **kwargs))
 
     # Bit more copypaste from UserDict.DictMixin (because most other
     # methods from it are unnecessary)
+
     def pop(self, key, *args):
         if len(args) > 1:
             raise TypeError("pop expected at most 2 arguments, got %r" % (1 + len(args),))
@@ -730,10 +742,18 @@ class MVOD(ODReprMixin, dict):
         WARN: `mvod == od` and `od == mvod` might have different
         results (because OD doesn't handle MVODs).
         """
-        if isinstance(other, (MVOD, OrderedDict)):
+        if isinstance(other, (MVOD_Common, OrderedDict)):
+            # Quicker pre-check:
+            if not dict.__eq__(self, other):
+                return False
             # In the end it comes down to items.
-            return dict.__eq__(self, other) and (self.items() == other.items())
-        return dict.__eq__(self, other)
+            if self._data == tuple(other.items()):
+                return True
+            return False
+        elif _is_MultiValueDict(other):
+            return self._data == tuple(self._lists_ungroup(other.lists()))
+        else:
+            return dict.__eq__(self, other)
 
     def __ne__(self, other):
         return not self == other
@@ -741,6 +761,247 @@ class MVOD(ODReprMixin, dict):
     # __nonzero__ does not need overriding as dict handles that.
 
     # XXX: some other methods?
+
+
+class MVOD(MVOD_Common, dict):
+    """ MultiValuedOrderedDict: A not-very-optimized (most write operations
+    are at least O(N) with the re-hashing cost) somewhat-trivial verison.
+    Stores a tuple of pairs as the actual data (in `_data`), uses it for
+    iteration, caches dict(data) as self for optimized key-access. """
+    # TODO?: support unhashable keys (by skipping them in the cache)
+    # TODO?: make the setitem behaviour configurable per instance
+
+    def __init__(self, *args, **kwds):
+        self.update(*args, **kwds)
+
+    def _update_cache(self):
+        dict.clear(self)
+        dict.update(self, self._data)
+
+    def update_append(self, *args, **kwds):
+        """ ...
+        (the usual equivalent of dict.update)
+
+        WARNING: appends the data; thus, multiple `update`s will cause
+        it to grow; thus, might need to be `.deduplicate`d.
+        """
+        data_new = self._process_upddata(args, kwds)
+        # XXXXX: A dilemma:
+        #  * If self._data is a list, then it can be mutated by the
+        #    user without updating the cache
+        #  * If self._data is a tuple, then it has to be re-created for
+        #    any change (current version).
+        #  * If self._data is a custom proxy to a list... dunno. TODO?
+        #    (similar to the django.utils.datastructures.ImmutableList
+        #    except not tuple-derived)
+        self._data_checked = self._data + data_new
+
+    def update_replace(self, *args, **kwds):
+        """
+        A closer equivalent of dict.update that removes all the
+        previous occurrences of the keys that are updated and appends
+        the new ones to the end. The new keys still can occur multiple
+        times.
+        """
+        data_new = self._process_upddata(args, kwds)
+        keys = set(key for key, val in data_new)
+        pre_data = tuple((key, val) for key, val in self._data
+                         if key not in keys)
+        self._data_checked = pre_data + data_new
+
+    def update_inplace(self, *args, **kwds):
+        """ A closer equivalent of OrderedDict.update that replaces the
+        previous occurrences at the point of first occurrence.  Does not yet
+        support multiple items handling in the updated keys. """
+        data_new = self._process_upddata(args, kwds)
+        news = dict(*args, **kwds)
+        # XXXX/TODO: To update with multiple values will have to do `MVOD(*args,
+        #   **kwds).lists()`, and (configurably) pop either each item from the
+        #   list when it occurs or just one item each time.
+        pre_data = tuple((key, news.pop(key, val))
+                         for key, val in self._data)
+        # Add the non-previously-existing ones.
+        data_new = [(key, val) for key, val in data_new if key in news]
+        self._data_checked = pre_data + tuple(data_new)
+
+    update = update_append
+
+    def __delitem__(self, key):
+        self._data_checked = tuple((k, v) for k, v in self._data if k != key)
+
+    # def __getitem__:  inherited from `dict`
+
+    def __setitem__(self, key, value):
+        return self.update(((key, value),))
+        # self._data_checked = self._data + ((key, value),)
+
+    def deduplicate(self, how='last'):
+        """ ...
+        NOTE: this method is equivalent to deduplicate_last by default. """
+        if how == 'first':
+            pass
+        elif how == 'last':
+            return self.deduplicate_last()
+        else:
+            raise ValueError("Unknown deduplication `how`: %r" % (how,))
+        self._data_checked = tuple(uniq_g(self._data, key=lambda item: item[0]))
+
+    def deduplicate_last(self):
+        data_pre = uniq_g(reversed(self._data), key=lambda item: item[0])
+        data_pre = list(data_pre)
+        self._data_checked = tuple(reversed(data_pre))
+
+    def deduplicated(self, **kwa):
+        cp = self.copy()
+        cp.deduplicate(**kwa)
+        return cp
+
+    def getlist(self, key, default=None):
+        values = [
+            item_val for item_key, item_val in self._iteritems()
+            if item_key == key]
+        if values:
+            return values
+        if default is None:
+            return []
+        return default
+
+    # Copypaste from UserDict.DictMixin
+    def itervalues(self):
+        for _, val in self.iteritems():
+            yield val
+
+    def values(self):
+        return [val for _, val in self.iteritems()]
+
+    def items(self):
+        return list(self.iteritems())
+
+    def keys(self):
+        return [k for k, _ in self.iteritems()]
+
+    def lists(self, **kwa):
+        return list(self.iterlists(**kwa))
+
+
+class MVLOD(MVOD_Common, MultiValueDict):
+    """
+    A Multi-Value Ordered Dict with slow modification and fast
+    value-list access.
+
+    Implemented as MultiValueDict that stores the original/intended
+    items list.
+
+    NOTE: instantiated from `items`, not `key_to_list_mapping`. Use
+    `make_from_key_to_list_mapping` for the MultiValueDict()'s
+    behaviour.
+    """
+
+    _optimised = True
+
+    def __init__(self, *args, **kwds):
+        self.update(*args, **kwds)
+
+    @classmethod
+    def make_from_key_to_list_mapping(cls, key_to_list_mapping=()):
+        return cls(cls._lists_ungroup(key_to_list_mapping))
+
+    @classmethod
+    def make_from_items(cls, items):
+        return cls(items)
+
+    # Core logic
+
+    def _update_cache(self):
+        dict.clear(self)
+        dict.update(self, self._lists_group(self._data))
+
+    def update_append(self, *args, **kwds):
+        """ ...
+        (the usual equivalent of dict.update)
+
+        WARNING: appends the data; thus, multiple `update`s will cause
+        it to grow; thus, might need to be `.deduplicate`d.
+        """
+        data_new = self._process_upddata(args, kwds)
+        data_result = self._data + data_new
+        if not self._optimised:
+            self._data_checked = data_result
+        else:
+            self._data_internal = data_result
+            ktlm_new = self._lists_group(data_new)
+            for key, list_ in ktlm_new.items():
+                try:
+                    target_list = dict.__getitem__(self, key)
+                except KeyError:
+                    dict.__setitem__(self, key, list_)
+                else:
+                    target_list.extend(list_)
+
+    def update_replace(self, *args, **kwds):
+        """
+        A closer equivalent of dict.update that removes all the
+        previous occurrences of the keys that are updated and appends
+        the new ones to the end. The new keys still can occur multiple
+        times.
+        """
+        data_new = self._process_upddata(args, kwds)
+        keys = set(key for key, val in data_new)
+        data_kept = tuple(
+            (key, val) for key, val in self._data
+            if key not in keys)
+        data_result = data_kept + data_new
+        if not self._optimised:
+            self._data_checked = data_result
+        else:  # Optimised cache-dict mangle
+            self._data_internal = data_result
+            ktlm_new = self._lists_group(data_new)
+            # # Should be unnecessary:
+            # for key in keys:
+            #     self.pop(key, None)
+            for key, list_ in ktlm_new.items():
+                dict.__setitem__(self, key, list_)
+                # super(MVLOD, self).setlist(key, list_)
+
+    def setlist(self, key, list_):
+        data_new = self._lists_ungroup([(key, list_)])
+        self.update_replace(data_new)
+
+    def appendlist(self, key, value):
+        self.update_append([(key, value)])
+
+    def __delitem__(self, key):
+        data_result = tuple(
+            (item_key, item_val) for item_key, item_val in self._data
+            if item_key != key)
+        # See if we removed nothing.
+        if len(data_result) == len(self._data):
+            raise KeyError(key)
+        if not self._optimised:
+            self._data_checked = data_result
+        else:
+            self._data_internal = data_result
+            try:
+                dict.__delitem__(self, key)
+            except KeyError:
+                raise Exception("The key should've been there", self, key)
+
+    # The defaults (for setitem, instantiation)
+
+    update = update_append
+
+    def __setitem__(self, key, value):
+        self.update([(key, value)])
+
+    # Other optimisations
+
+    def _iterlists(self, ordered=False):
+        if ordered:
+            return super(MVLOD, self)._iterlists(ordered=ordered)
+        if six.PY3:
+            return dict.items(self)
+        else:
+            return dict.iteritems(self)
 
 
 # NOTE: A simpler form is available in the `base`
