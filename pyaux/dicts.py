@@ -51,7 +51,7 @@ remvdodd(2: 2.6, 'mod': ..., 'u1': 'y', 1: -1, 1: 3)
 remvdodd(2: 2.6, 'mod': ..., 'u1': 'y', 1: -1, 1: 3, 'u1': 'n')
 >>> mod
 remvdodd(2: 2.6, 'mod': ..., 'u1': 'y', 1: -1, 1: 3, 'u1': 'n')
->>> mod.lists()
+>>> list(mod.lists())
 [(2, [2.6]), ('mod', [remvdodd(2: 2.6, 'mod': ..., 'u1': 'y', 1: -1, 1: 3, 'u1': 'n')]), ('u1', ['y', 'n']), (1, [-1, 3])]
 >>> mod.popitem()
 ('u1', 'n')
@@ -84,6 +84,8 @@ remvdodd('mod': ..., 'u1': 'y', 1: 3, 5: 2)
 # not tested:  [iter](keys|values|lists), pop, fromkeys, eq
 # ipy to doctest:  sed -r 's/^In[^:]+: />>> /; s/^Out[^:]+: //; /^ *$/ d'
 # test to locals:  from pyaux import dicts; reload(dicts); from pyaux.dicts import *; exec '\n'.join(v[4:] for v in dicts.__doc__.split('\n\n')[-1].splitlines() if v.startswith('>>> '))
+
+from __future__ import print_function
 
 import six
 import copy
@@ -865,23 +867,6 @@ class MVOD(MVOD_Common, dict):
         if default is None:
             return []
         return default
-
-    # Copypaste from UserDict.DictMixin
-    def itervalues(self):
-        for _, val in self.iteritems():
-            yield val
-
-    def values(self):
-        return [val for _, val in self.iteritems()]
-
-    def items(self):
-        return list(self.iteritems())
-
-    def keys(self):
-        return [k for k, _ in self.iteritems()]
-
-    def lists(self, **kwa):
-        return list(self.iterlists(**kwa))
 
 
 class MVLOD(MVOD_Common, MultiValueDict):

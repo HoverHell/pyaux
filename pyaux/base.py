@@ -2,7 +2,7 @@
 # NOTE: no modules imported here should import `decimal` (otherwise
 #   `use_cdecimal` might become problematic for them)
 
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 
 import os
 import sys
@@ -982,13 +982,13 @@ def configurable_wrapper(wrapper_func):
     >>> @configurable_wrapper
     ... def wrap_stuff(func, **options):
     ...     def wrapped(*ar, **kwa):
-    ...         print "wrapped", func, ar, kwa, "with", options
+    ...         print("wrapped", func, ar, kwa, "with", options)
     ...         return func(*ar, **kwa)
     ...     return wrapped
     ...
     >>> @wrap_stuff
     ... def some_func(*ar, **kwa):
-    ...     print "some_func", ar, kwa
+    ...     print("some_func", ar, kwa)
     ...
     >>> some_func(1, 2, b=3)  #doctest: +ELLIPSIS
     wrapped <function some_func at 0x...> (1, 2) {'b': 3} with {}
@@ -997,7 +997,7 @@ def configurable_wrapper(wrapper_func):
     >>>
     >>> @wrap_stuff(option1="value1")
     ... def another_func(*ar, **kwa):
-    ...     print "another_func", ar, kwa
+    ...     print("another_func", ar, kwa)
     ...
     >>> another_func(4, 5, c=6)  #doctest: +ELLIPSIS
     wrapped <function another_func at 0x...> (4, 5) {'c': 6} with {'option1': 'value1'}
