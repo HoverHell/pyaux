@@ -962,6 +962,65 @@ def _dict_hash_1(dct):
 _dict_hash = _dict_hash_1
 
 
+def configurable_wrapper(wrapper_func):
+    """
+    Wrap a wrapper to make it conveniently configurable.
+
+    The wrapper_func should accept a positional argument
+    `func_to_wrap` and optional keyword arguments
+    (e.g. `some_func = wrapper_func(some_func, option1=123)`).
+
+    The resulting function accepts optional keyword arguments and
+    optional function `func_to_wrap`. If `func_to_wrap` is not
+    specified, it returns a wrapper, otherwise it returns a wrapped
+    function.
+
+    Saves from the need to remember to write `@wrapper()`, making it
+    possible to write both `@wrapper_func` and
+    `@wrapper_func(option1=123)`.
+
+    >>> @configurable_wrapper
+    ... def wrap_stuff(func, **options):
+    ...     def wrapped(*ar, **kwa):
+    ...         print "wrapped", func, ar, kwa, "with", options
+    ...         return func(*ar, **kwa)
+    ...     return wrapped
+    ...
+    >>> @wrap_stuff
+    ... def some_func(*ar, **kwa):
+    ...     print "some_func", ar, kwa
+    ...
+    >>> some_func(1, 2, b=3)  #doctest: +ELLIPSIS
+    wrapped <function some_func at 0x...> (1, 2) {'b': 3} with {}
+    some_func (1, 2) {'b': 3}
+    >>>
+    >>>
+    >>> @wrap_stuff(option1="value1")
+    ... def another_func(*ar, **kwa):
+    ...     print "another_func", ar, kwa
+    ...
+    >>> another_func(4, 5, c=6)  #doctest: +ELLIPSIS
+    wrapped <function another_func at 0x...> (4, 5) {'c': 6} with {'option1': 'value1'}
+    another_func (4, 5) {'c': 6}
+    """
+
+    # TODO?: use `decorator` module here?
+
+    @functools.wraps(wrapper_func)
+    def configurable_wrapper_func(func_to_wrap=None, **options):
+        def configured_wrapper_func(func_to_wrap):
+            return wrapper_func(func_to_wrap, **options)
+
+        # Cases of `@wrapper_func` and `wrapper_func(func, **options)`
+        if func_to_wrap is not None:
+            return configured_wrapper_func(func_to_wrap)
+
+        # Case of `wrapper_func(**options)`
+        return configured_wrapper_func
+
+    return configurable_wrapper_func
+
+
 # TODO?: some clear-all-memos method
 class memoize(object):
 
@@ -999,36 +1058,34 @@ class memoize(object):
         return res
 
 
-def memoize_method(*ar, **cfg):
+@configurable_wrapper
+def memoize_method(func, memo_attr=None, **cfg):
     """ `memoize` for a method, saving the cache on an instance
     attribute.
 
     :param memo_attr: name of the attribute to save the cache on.
+
     :param timelimit: see `memoize`.
     """
 
-    def memoize_method_configured(func):
-        # WARN: might cause infinite recursion in some cases
-        # (e.g. with getattr that blindly returns to this property).
-        memo_attr = cfg.pop('memo_attr', None)
-        if memo_attr is None:
-            memo_attr = '_cached_%s' % (func.__name__,)
+    if memo_attr is None:
+        # Have to use func id because the func can be subclassed, and
+        # will have the same name on the same instance despite
+        # different contents. And figuring out the correct class name
+        # at this point (like `self.__some_attr` does) is not viable.
+        memo_attr = '_cached_%s_%x' % (func.__name__, id(func))
 
-        @functools.wraps(func)
-        def memoized_method(self, *c_ar, **c_kwa):
-            cache = getattr(self, memo_attr, None)
-            if cache is None:
-                cache = memoize(func, **cfg)
-                cache.skip_first_arg = True
-                setattr(self, memo_attr, cache)
+    @functools.wraps(func)
+    def _memoized_method(self, *c_ar, **c_kwa):
+        cache = getattr(self, memo_attr, None)
+        if cache is None:
+            cache = memoize(func, **cfg)
+            cache.skip_first_arg = True
+            setattr(self, memo_attr, cache)
 
-            return cache(self, *c_ar, **c_kwa)
+        return cache(self, *c_ar, **c_kwa)
 
-        return memoized_method
-
-    if ar and callable(ar[0]):
-        return memoize_method_configured(ar[0])
-    return memoize_method_configured
+    return _memoized_method
 
 
 def memoized_property(*ar, **cfg):
@@ -1080,6 +1137,8 @@ def memoized_property(*ar, **cfg):
 
     return mk_property
 
+
+memoize_property = memoized_property
 
 def mkdir_p(path):
     try:
