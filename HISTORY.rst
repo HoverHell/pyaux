@@ -3,6 +3,12 @@
 Release History
 ---------------
 
+1.12.0 (2016-09-01)
++++++++++++++++++++
+
+b' - configurable_wrapper; memoize_method fix for subclassing\n - MultiValueDict variations, MVLOD\n - MultiValueDict.make_from_items'
+
+
 1.11.0 (2016-08-26)
 +++++++++++++++++++
 
