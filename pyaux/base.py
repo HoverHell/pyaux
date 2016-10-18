@@ -891,20 +891,17 @@ def group2(lst, key=lambda v: v[0]):
     return res.items()
 
 
-def mangle_dict(input_dict, include=None, exclude=None, add=None, _return_list=False, dcls=dict):
-    """ Functional-style dict editing """
+def mangle_items(items, include=None, exclude=None, add=None):
+    """ Functional-style dict editing core (working with a list of pairs) """
     include = set(include) if include is not None else None
     exclude = set(exclude) if exclude is not None else None
     if include:
         assert not exclude
 
-    items = input_dict.items()
     if include is not None:
-        res = [(key, val) for key, val in items
-               if key in include]
+        res = [(key, val) for key, val in items if key in include]
     elif exclude is not None:
-        res = [(key, val) for key, val in items
-               if key not in exclude]
+        res = [(key, val) for key, val in items if key not in exclude]
     else:
         res = list(items)
 
@@ -914,6 +911,13 @@ def mangle_dict(input_dict, include=None, exclude=None, add=None, _return_list=F
         if isinstance(add, dict):
             add = add.items()
         res.extend(add)
+    return res
+
+
+def mangle_dict(input_dict, include=None, exclude=None, add=None, _return_list=False, dcls=dict):
+    """ Functional-style dict editing """
+    items = input_dict.items()
+    res = mangle_items(items, include=include, exclude=exclude, add=add)
     if _return_list:
         return res
     return dcls(res)
@@ -1035,6 +1039,9 @@ class memoize(object):
     def __call__(self, *ar, **kwa):
         now = time.time()  # NOTE: before the call
         override = kwa.pop('_memoize_force_new', False)
+        timelimit = kwa.pop('_memoize_timelimit_override', "_")
+        if timelimit == "_":
+            timelimit = self.timelimit
         # TODO?: cleanup obsolete keys here sometimes.
         try:
             if self.skip_first_arg:
@@ -1049,7 +1056,7 @@ class memoize(object):
             self.log.warn("memoize: Trying to memoize unhashable args %r, %r", ar, kwa)
             return self.fn(*ar, **kwa)
         else:
-            if not override and (self.timelimit is None or (now - then) < self.timelimit):
+            if not override and (timelimit is None or (now - then) < timelimit):
                 # Still okay
                 return res
         # KeyError or obsolete result
