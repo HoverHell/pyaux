@@ -891,18 +891,40 @@ def group2(lst, key=lambda v: v[0]):
     return res.items()
 
 
-def mangle_items(items, include=None, exclude=None, add=None):
-    """ Functional-style dict editing core (working with a list of pairs) """
+def mangle_items(items, include=None, exclude=None, add=None, replace=None, replace_inplace=None):
+    """
+    Functional-style dict editing core (working with a list of pairs).
+
+    >>> items = [(1, 2), (3, 4), (5, 6), (7, 8)]
+    >>> mangle_items(items, include=[3, 5], add=[(9, 10)], replace=[(5, 66)])
+    [(1, 2), (3, 4), (7, 8), (9, 10), (5, 66)]
+    >>> mangle_items(items, include=[3, 5], replace_inplace=[(5, 66)])
+    [(3, 4), (5, 66)]
+    >>> mangle_items(items, exclude=[3, 7], add=[(9, 10)])
+    [(1, 2), (5, 6), (9, 10)]
+    """
     include = set(include) if include is not None else None
     exclude = set(exclude) if exclude is not None else None
-    if include:
-        assert not exclude
 
+    if replace is not None:
+        if isinstance(replace, dict):
+            replace = replace.items()
+        add = add + replace
+        exclude = exclude if exclude is not None else set()
+        exclude = exclude | set(key for key, val in replace)
+
+    res = items
     if include is not None:
-        res = [(key, val) for key, val in items if key in include]
-    elif exclude is not None:
-        res = [(key, val) for key, val in items if key not in exclude]
-    else:
+        res = [(key, val) for key, val in res if key in include]
+    if replace_inplace is not None:
+        if not isinstance(replace_inplace, dict):
+            replace_inplace = dict(replace_inplace)
+        res = [(key, replace_inplace.get(key, val)) for key, val in res]
+    if exclude is not None:
+        res = [(key, val) for key, val in res if key not in exclude]
+
+    # Make sure we end up with a copy in any case:
+    if res is items:
         res = list(items)
 
     # ... functional-style `update`.
