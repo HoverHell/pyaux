@@ -254,8 +254,9 @@ def dict_fsetdefault(D, k, d):
 
 
 def split_list(lst, cond):
-    """ Split list items into two into (matching, non_matching) by
-      `cond(item)` callable """
+    """
+    Split list items into `(matching, non_matching)` by `cond(item)` callable.
+    """
     res1, res2 = [], []
     for i in lst:
         if cond(i):
@@ -263,6 +264,22 @@ def split_list(lst, cond):
         else:
             res2.append(i)
     return res1, res2
+
+
+def split_dict(data, cond, cls=dict):
+    """
+    Split dict into `(matching_dict, non_matching_dict)` by `conf(key, val)` callable.
+
+    Shorthand wrapper over `split_list`.
+
+    Processes the `data.items()`, returns items processed with `cls`,
+    making it possible to work with MVOD and such.
+
+    >>> split_dict(dict(a=1, b=-2, c=3), lambda key, val: val > 0)
+    ({'a': 1, 'c': 3}, {'b': -2})
+    """
+    items1, items2 = split_list(data.items(), lambda item: cond(item[0], item[1]))
+    return cls(items1), cls(items2)
 
 
 # ###### Monkey-patching of various things:
