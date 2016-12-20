@@ -43,6 +43,7 @@ setup_kwargs = dict(
             # preferred alias.
             'pyenlzma = pyaux.lzmah:_lzma_main',
             'fjson_yaml = pyaux.bin.fjson_yaml:main',
+            'fyaml_json = pyaux.bin.fyaml_json:main',
             'fjson.py = pyaux.bin.fjson:main',
             'fmsgp_json = pyaux.bin.fmsgp_json:main',
         ],
