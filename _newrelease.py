@@ -210,6 +210,8 @@ def prepare(params):
     git_history = run_sh(
         "git", "log", "%s..HEAD" % (version_tag,),
         "--format=format: - %s")
+    if isinstance(git_history, bytes):
+        git_history = git_history.decode('utf-8', errors='replace')
     _log.debug("Git history: %r", git_history)
 
     new_history_header = "%s (%s)" % (new_version, today)
