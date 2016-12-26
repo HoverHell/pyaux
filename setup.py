@@ -5,7 +5,7 @@ from __future__ import print_function, unicode_literals, absolute_import, divisi
 import os
 from setuptools import setup, find_packages
 
-version = '1.12.0'  # should be the same as pyaux.__version__
+version = '1.13.0'  # should be the same as pyaux.__version__
 
 LONG_DESCRIPTION = """
 Collection of helpers and useful things for Python

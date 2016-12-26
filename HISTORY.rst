@@ -3,10 +3,22 @@
 Release History
 ---------------
 
+1.13.0 (2016-12-26)
++++++++++++++++++++
+
+ - split_dict shorthand
+ - mangle_items extensions
+ - fyaml_json
+ - mangle_items, _memoize_timelimit_override
+ - py3 fixes
+
+
 1.12.0 (2016-09-01)
 +++++++++++++++++++
 
-b' - configurable_wrapper; memoize_method fix for subclassing\n - MultiValueDict variations, MVLOD\n - MultiValueDict.make_from_items'
+ - configurable_wrapper; memoize_method fix for subclassing
+ - MultiValueDict variations, MVLOD
+ - MultiValueDict.make_from_items
 
 
 1.11.0 (2016-08-26)
