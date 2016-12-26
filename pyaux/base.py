@@ -268,15 +268,17 @@ def split_list(lst, cond):
 
 def split_dict(data, cond, cls=dict):
     """
-    Split dict into `(matching_dict, non_matching_dict)` by `conf(key, val)` callable.
+    Split dict into `(matching_dict, non_matching_dict)`
+    by `conf(key, val)` callable.
 
     Shorthand wrapper over `split_list`.
 
     Processes the `data.items()`, returns items processed with `cls`,
-    making it possible to work with MVOD and such.
+    making it possible to work with `MVOD` and such.
 
-    >>> split_dict(dict(a=1, b=-2, c=3), lambda key, val: val > 0)
-    ({'a': 1, 'c': 3}, {'b': -2})
+    >>> split_dict(dict(a=1, b=-2, c=3), lambda key, val: val > 0) == \\
+    ... ({'a': 1, 'c': 3}, {'b': -2})
+    True
     """
     items1, items2 = split_list(data.items(), lambda item: cond(item[0], item[1]))
     return cls(items1), cls(items2)
@@ -914,7 +916,7 @@ def mangle_items(items, include=None, exclude=None, add=None, replace=None, repl
 
     >>> items = [(1, 2), (3, 4), (5, 6), (7, 8)]
     >>> mangle_items(items, include=[3, 5], add=[(9, 10)], replace=[(5, 66)])
-    [(1, 2), (3, 4), (7, 8), (9, 10), (5, 66)]
+    [(3, 4), (9, 10), (5, 66)]
     >>> mangle_items(items, include=[3, 5], replace_inplace=[(5, 66)])
     [(3, 4), (5, 66)]
     >>> mangle_items(items, exclude=[3, 7], add=[(9, 10)])
