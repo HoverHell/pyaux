@@ -7,7 +7,8 @@ A kind-of addition to `itertools`.
 
 from __future__ import print_function, unicode_literals, absolute_import, division
 
-from itertools import chain, repeat
+import os
+from itertools import chain, repeat, islice
 
 
 __all__ = (
@@ -125,6 +126,7 @@ class IterStat(object):
 
     @property
     def std(self):
+        from .base import _sqrt
         return _sqrt(self.variance)
 
 
