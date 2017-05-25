@@ -24,45 +24,19 @@ import six
 from six import text_type as unicode
 from six.moves import xrange, zip as izip
 
-from pyaux import ranges
-from pyaux.ranges import *
 
-from pyaux import interpolate
-from pyaux.interpolate import *
+# Note: no `__all__` here so that for all things defined here, `from pyaux import ...` works too.
 
 
-__all__ = (
-    'bubble',
-    'window',
-    'dotdict',
-    'SmartDict',
-    'DebugPlug', 'repr_call',
-    'dict_fget',
-    'dict_fsetdefault',
-    'split_list',
-    'use_cdecimal',
-    'use_exc_ipdb',
-    'use_exc_log',
-    'use_colorer',
-    'obj2dict',
-    'mk_logging_property',
-    'sign',
-    'try_parse',
-    'human_sort_key',
-    'reversed_blocks',
-    'reversed_lines',
-    'lazystr',
-    'list_uniq',
-    'o_repr',
-    'chunks',
-    'chunks_g',
-    # 'runlib',
-    # 'lzmah',
-    # 'lzcat',
-    # 'psql',
-    'to_bytes',
-    'to_unicode',
-) + ranges.__all__ + interpolate.__all__
+# Compat.
+from . import ranges
+from .ranges import *
+
+from . import interpolate
+from .interpolate import *
+
+from . import iterables
+from .iterables import *
 
 
 def bubble(*args, **kwargs):
@@ -98,25 +72,6 @@ def bubble(*args, **kwargs):
             frame = frame.f_back
         except Exception:
             return
-
-
-# Iterate over a 'window' of adjacent elements
-# http://stackoverflow.com/questions/6998245/iterate-over-a-window-of-adjacent-elements-in-python
-def window(seq, size=2, fill=0, fill_left=False, fill_right=False):
-    """ Returns a sliding window (of width n) over data from the iterable:
-      s -> (s0,s1,...s[n-1]), (s1,s2,...,sn), ...
-    """
-    ssize = size - 1
-    it = chain(
-        repeat(fill, ssize * fill_left),
-        iter(seq),
-        repeat(fill, ssize * fill_right))
-    result = tuple(islice(it, size))
-    if len(result) == size:  # `<=` if okay to return seq if len(seq) < size
-        yield result
-    for elem in it:
-        result = result[1:] + (elem,)
-        yield result
 
 
 class dotdict(dict):
@@ -355,9 +310,11 @@ def obj2dict(obj, add_type=False, add_instance=False, do_lists=True,
 
 
 def mk_logging_property(actual_name, logger_name='_log'):
-    """ Creates a property that logs the value and the caller in the
+    """
+    Creates a property that logs the value and the caller in the
     setter, using logger under `self`'s logger_name, and stores the value
-    under actual_name on `self` """
+    under `actual_name` on `self`.
+    """
 
     def do_get(self):
         return getattr(self, actual_name)
@@ -379,7 +336,10 @@ def mk_logging_property(actual_name, logger_name='_log'):
 
 
 def sign(value):
-    """ Sign of value.
+    """
+    Sign of value.
+
+    One of the many possible ways to implement this.
 
     In [10]: sign(-10)
     Out[10]: -1
@@ -405,7 +365,7 @@ def sign(value):
 # partially from comix/src/filehandler.py
 
 
-def try_parse(val, fn=int):
+def try_parse(val, fn=int):  # NOTE: generally similar to `.madness._try`
     """ 'try parse' (with fn) """
     try:
         return fn(val)
@@ -440,35 +400,6 @@ def human_sort_key(string, normalize=unicodedata.normalize, floats=True):
     string = normalize("NFD", string.lower())
     split_fn = _split_numeric_f if floats else _split_numeric
     return string and split_fn(string)
-
-
-# ###### Reading files backwards
-# http://stackoverflow.com/a/260433/62821
-
-def reversed_blocks(fileobj, blocksize=4096):
-    """ Read blocks of file's contents in reverse order.  """
-    fileobj.seek(0, os.SEEK_END)
-    here = fileobj.tell()
-    while here > 0:
-        delta = min(blocksize, here)
-        fileobj.seek(here - delta, os.SEEK_SET)
-        yield fileobj.read(delta)
-        here -= delta
-
-
-def reversed_lines(fileobj):
-    """ Read the lines of file in reverse order """
-    tail = []           # Tail of the line whose head is not yet read.
-    for block in reversed_blocks(fileobj):
-        # A line is a list of strings to avoid quadratic concatenation.
-        # (And trying to avoid 1-element lists would complicate the code.)
-        linelists = [[line] for line in block.splitlines()]
-        linelists[-1].extend(tail)
-        for linelist in reversed(linelists[1:]):
-            yield ''.join(linelist)
-        tail = linelists[0]
-    if tail:
-        yield ''.join(tail)
 
 
 # ####### ...
@@ -566,11 +497,16 @@ def throttled_call(fn=None, *ar, **kwa):
 
 
 class lazystr(object):
-    """ A simple class for lazy-computed processing into string,
-      e.g. for use in logging.
-    Example: `log(13, "stuff is %r",
-      lazystr(lambda: ', '.join(stuff)))`
-    Note: no caching.
+    """
+    A simple class for lazy-computed processing into string,
+    e.g. for use in logging.
+
+    Example:
+
+        log(13, "stuff is %r",
+            lazystr(lambda: ', '.join(stuff)))
+
+    Note: no caching. Use `memoize` if it is needed.
     """
 
     def __init__(self, fn):
@@ -583,24 +519,15 @@ class lazystr(object):
         return repr(self.fn())
 
 
-def uniq_g(lst, key=lambda v: v):
-    """ Get unique elements of an iterable preserving its order and optionally
-    determining uniqueness by hash of a key """
-    known = set()
-    for v in lst:
-        k = key(v)
-        if k not in known:
-            yield v
-            known.add(k)
-    # ...
+uniq_g = iterables.uniq  # Compat.
 
 
 def uniq(lst, key=lambda v: v):
     """ RTFS """
-    return list(uniq_g(lst, key=key))
+    return list(iterables.uniq(lst, key=key))
 
 
-list_uniq = uniq_g
+list_uniq = uniq_g  # Compat.
 
 
 # Helper for o_repr that displays '???'
@@ -806,78 +733,10 @@ def _sqrt(var):
         return math.sqrt(var)
 
 
-class IterStat(object):
-    """ Iterative single-pass computing of mean and variance.
-
-    Error is on the rate of 1e-08 for 1e6 values in the range of
-    0..1e6, both for mean and for stddev. """
-    # http://www.johndcook.com/standard_deviation.html
-
-    def __init__(self, vals=None, start=0):
-        self.start = start
-        self.old_mean = None
-        self.mean = self.stdx = start
-        self.cnt = 0
-
-        if vals:
-            for val in vals:
-                self.send(val)
-
-    def send(self, val):
-        self.cnt += 1
-        if self.cnt == 1:
-            self.mean = val
-        else:
-            self.mean = self.mean + (val - self.mean) / float(self.cnt)
-            self.stdx = self.stdx + (val - self.old_mean) * (val - self.mean)
-        self.old_mean = self.mean
-
-    @property
-    def variance(self):
-        if self.cnt <= 1:
-            return self.start
-        return self.stdx / (self.cnt)
-
-    @property
-    def std(self):
-        return _sqrt(self.variance)
-
-
-def IterMean(iterable, dtype=float):
-    """ Mean of an iterable """
-    res_sum, cnt = dtype(), dtype()
-    for val in iterable:
-        res_sum += val
-        cnt += 1
-    if cnt == 0:  # NOTE.
-        try:
-            return dtype('nan')
-        except Exception:
-            return float('nan')
-    return res_sum / cnt
-
-
 def chunks(lst, size):
     """ Yield successive chunks from lst. No padding.  """
     for idx in xrange(0, len(lst), size):
         yield lst[idx:idx + size]
-
-
-def chunks_g(iterable, size):
-    """ Same as 'chunks' but works on any iterable.
-
-    Converts the chunks to tuples for simplicity.
-    """
-    # http://stackoverflow.com/a/8991553
-    it = iter(iterable)
-    if size <= 0:
-        yield it
-        return
-    while True:
-        chunk = tuple(islice(it, size))
-        if not chunk:
-            return
-        yield chunk
 
 
 def group(lst, cls=dict):
@@ -1066,21 +925,41 @@ def configurable_wrapper(wrapper_func):
     return configurable_wrapper_func
 
 
-# TODO?: some clear-all-memos method
+# TODO?: some clear-all-global-memos method. By singleton and weakrefs.
 class memoize(object):
 
-    def __init__(self, fn, timelimit=None):  # TODO?: time limit
+    def __init__(
+            self, fn, timelimit=None, single_value=False,
+            force_kwarg='_memoize_force_new', timelimit_kwarg='_memoize_timelimit_override'):
+        """
+        ...
+
+        :param fn: function to memoize.
+
+        :param timelimit: seconds, float: consider the cached value invalid if
+        it is older than that.
+
+        :param single_value: keep only one value memoized, i.e. clear the cache
+        on function call.
+        """
         self.log = logging.getLogger("%s.%r" % (__name__, self))
         self.fn = fn
         self.mem = {}
         self.timelimit = timelimit
+        self.single_value = single_value
+        self.force_kwarg = force_kwarg
+        self.timelimit_kwarg = timelimit_kwarg
+        # Internal attribute, for `memoize_method`.
         self.skip_first_arg = False
         functools.update_wrapper(self, fn)
 
+    def memoize_clear_mem(self):
+        self.mem.clear()
+
     def __call__(self, *ar, **kwa):
         now = time.time()  # NOTE: before the call
-        override = kwa.pop('_memoize_force_new', False)
-        timelimit = kwa.pop('_memoize_timelimit_override', "_")
+        override = kwa.pop(self.force_kwarg, False)
+        timelimit = kwa.pop(self.timelimit_kwarg, "_")
         if timelimit == "_":
             timelimit = self.timelimit
         # TODO?: cleanup obsolete keys here sometimes.
@@ -1097,10 +976,15 @@ class memoize(object):
             self.log.warn("memoize: Trying to memoize unhashable args %r, %r", ar, kwa)
             return self.fn(*ar, **kwa)
         else:
-            if not override and (timelimit is None or (now - then) < timelimit):
-                # Still okay
-                return res
-        # KeyError or obsolete result
+            if override:
+                pass  # asked to ignore the cache
+            elif timelimit is None or (now - then) < timelimit:
+                return res  # valid cache
+            else:
+                pass  # no valid cache
+        # KeyError or obsolete result.
+        if self.single_value:
+            self.memoize_clear_mem()
         res = self.fn(*ar, **kwa)
         self.mem[key] = (now, res)
         return res
@@ -1125,6 +1009,8 @@ def memoize_method(func, memo_attr=None, **cfg):
 
     @functools.wraps(func)
     def _memoized_method(self, *c_ar, **c_kwa):
+        # Has to be done after the instantiation, to make the cache have the
+        # same lifetime as the instance.
         cache = getattr(self, memo_attr, None)
         if cache is None:
             cache = memoize(func, **cfg)
@@ -1291,40 +1177,6 @@ def import_func(func_path, _check_callable=True):
     return func
 
 
-def next_or_fdefault(it, default=lambda: None, skip_empty=False):
-    """
-    `next(it, default_value)` with laziness.
-
-    >>> next_or_fdefault([1], lambda: 1/0)
-    1
-    >>> next_or_fdefault([], lambda: list(xrange(2)))
-    [0, 1]
-    """
-    if skip_empty:
-        it = (val for val in it if val)
-    else:
-        it = iter(it)
-    try:
-        return next(it)
-    except StopIteration:
-        return default()
-
-
-def iterator_is_over(it, ret_value=False):
-    """ Try to consume an item from an iterable `it` and return False
-    if it succeeded (the item stays consumed) """
-    try:
-        val = next(it)
-    except StopIteration:
-        if ret_value:
-            return True, None
-        return True
-    else:
-        if ret_value:
-            return False, val
-        return False
-
-
 def dict_is_subset(
         smaller_dict, larger_dict,
         recurse_iterables=False, structure_match=True):
@@ -1414,7 +1266,7 @@ def find_files(
 
 @memoize
 def get_requests_session():
-    """ Singleton with the common requests session """
+    """ Singleton with the common requests session (for maximal connection reuse) """
     import requests
     return requests.session()
 
@@ -1461,6 +1313,7 @@ def request(
         if isinstance(_callinfo, tuple) and len(_callinfo) == 3:
             _cfile, _cline, _cfunc = _callinfo
         else:
+            # TODO: custom function, extra_depth param.
             _cfile, _cline, _cfunc = logging.Logger('').findCaller()
         _prev_ua = headers.get('User-Agent') or requests.utils.default_user_agent()
         headers.setdefault('User-Agent', '%(ua)s, %(cfile)s:%(cline)s: %(cfunc)s' % dict(
