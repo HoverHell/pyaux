@@ -3,6 +3,17 @@
 Release History
 ---------------
 
+1.14.0 (2017-05-25)
++++++++++++++++++++
+
+ - 'tox'ability
+ - Reorganization (mostly backwards-compatible)
+ - logging formats: enforce 'str' type
+ - datadiff: n
+ - jupyter python highcharts integration
+ - tox tests
+
+
 1.13.0 (2016-12-26)
 +++++++++++++++++++
 
