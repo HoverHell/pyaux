@@ -3,6 +3,10 @@
 Various range-generating funcs.
 """
 
+from __future__ import absolute_import, print_function
+
+
+
 __all__ = (
     'fxrange', 'frange', 'dxrange', 'drange',
     'date_xrange', 'date_range',

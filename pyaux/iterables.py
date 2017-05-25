@@ -5,7 +5,7 @@ Wide variety of helper methods for working with iterables.
 A kind-of addition to `itertools`.
 """
 
-from __future__ import absolute_import, print_function
+from __future__ import print_function, unicode_literals, absolute_import, division
 
 from itertools import chain, repeat
 
@@ -167,7 +167,7 @@ def next_or_fdefault(it, default=lambda: None, skip_empty=False):
 
     >>> next_or_fdefault([1], lambda: 1/0)
     1
-    >>> next_or_fdefault([], lambda: list(xrange(2)))
+    >>> next_or_fdefault([], lambda: list(range(2)))
     [0, 1]
     """
     if skip_empty:
