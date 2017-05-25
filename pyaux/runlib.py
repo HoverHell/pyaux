@@ -48,8 +48,9 @@ def _make_short_levelnames(shortnum=True):
     return _names
 
 
-BASIC_LOG_FORMAT = '%(asctime)s: %(levelname)-13s: %(name)s: %(message)s'
-BASIC_LOG_FORMAT_TD = '%(asctime)s(+%(time_diff)5.3fs): %(levelname)-13s: %(name)s: %(message)s'
+# Current attempt: use bytes in py2, unicode in py3 (i.e. subvert unicode_literals just for these).
+BASIC_LOG_FORMAT = str("%(asctime)s: %(levelname)-13s: %(name)s: %(message)s")
+BASIC_LOG_FORMAT_TD = str("%(asctime)s(+%(time_diff)5.3fs): %(levelname)-13s: %(name)s: %(message)s")
 
 
 def init_logging(*ar, **kwa):
