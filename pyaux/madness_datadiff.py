@@ -61,13 +61,13 @@ def _diff_pre_diff(val, **kwa):
 
 
 def word_diff_color(val1, val2, add='\x1b[32m', rem='\x1b[31;01m',
-                    clear='\x1b[39;49;00m'):
+                    clear='\x1b[39;49;00m', n=3):
     """ Proper-ish word-diff represented by colors """
 
     def _preprocess(val):
         return re.split(r'(?u)(\w+)', val)
 
-    diffs = difflib.unified_diff(_preprocess(val1), _preprocess(val2))
+    diffs = difflib.unified_diff(_preprocess(val1), _preprocess(val2), n=n)
 
     def _postprocess(line):
         if line == '--- \n' or line == '+++ \n':
@@ -86,11 +86,11 @@ def word_diff_color(val1, val2, add='\x1b[32m', rem='\x1b[31;01m',
     print(''.join(diffs_colored))
 
 
-def _diff_datadiff_data(val1, val2, **kwa):
+def _diff_datadiff_data(val1, val2, n=3, **kwa):
     """ Do the diff and return the data """
     val1_p = _diff_pre_diff(val1, **kwa)
     val2_p = _diff_pre_diff(val2, **kwa)
-    res = difflib.unified_diff(val1_p, val2_p)
+    res = difflib.unified_diff(val1_p, val2_p, n=n)
     return res
 
 
