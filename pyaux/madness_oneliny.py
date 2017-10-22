@@ -127,7 +127,10 @@ def _uprint(obj, ret=False):
         from IPython.lib.pretty import pretty
     except Exception:
         from pprint import pformat as pretty
-    print(pretty(obj).decode('unicode-escape'))
+    obj_repr = pretty(obj)
+    if isinstance(obj_repr, bytes):  # py2
+        obj_repr = obj_repr.decode('unicode-escape')
+    print(obj_repr)
     if ret:
         return obj
 
