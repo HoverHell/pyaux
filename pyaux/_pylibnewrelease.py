@@ -13,6 +13,8 @@ import glob
 LOGLEVEL_EVERYTHING = 1
 HISTORY_FILE = os.environ.get('HISTORY_FILE', 'HISTORY.rst')
 HISTORY_TAG = os.environ.get('HISTORY_TAG', r'(\nRelease History\n-+\n)')
+
+# Note: this is similar to what `bumpversion` does.
 HISTORY_VERSION_TAG = os.environ.get(
     'HISTORY_VERSION_TAG',
     # 3 dot-separated numbers or more, ISO datestamp or more
@@ -24,8 +26,9 @@ VERSION_TAG = os.environ.get(
     r'''(\n(?:__)?version(?:__)? = ['"])(?P<version>[0-9a-zA-Z.+-]+)(['"] *(?:#.*)?\n)''')
 SETUP_VERSION_TAG = os.environ.get('SETUP_VERSION_TAG', VERSION_TAG)
 VERSION_FILES = os.environ.get('VERSION_FILES', '*/__init__.py')
-RELEASE_COMMIT_TPL = os.environ.get('RELEASE_COMMIT_TPL', 'Release %(version)s')
 VERSION_TAG_TPL = os.environ.get('VERSION_TAG_TPL', '%(version)s')
+
+RELEASE_COMMIT_TPL = os.environ.get('RELEASE_COMMIT_TPL', 'Release %(version)s')
 
 
 _log = logging.getLogger('_newrelease.py')

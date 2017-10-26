@@ -3,6 +3,14 @@
 Release History
 ---------------
 
+2.0.0 (2017-10-26)
+++++++++++++++++++
+
+ - cleanup of the things that were moved out to pyauxm
+ - _uprint py3
+ - newrelease as a library script
+
+
 1.15.0 (2017-05-25)
 +++++++++++++++++++
 
