@@ -26,9 +26,13 @@ def _dumprepr(val, no_anchors=True, colorize=False, try_ujson=True, **kwa):
             b'NoAliasesSafeDumper', (dumper,),
             dict(ignore_aliases=lambda self, data: True))
 
-    params = dict(default_flow_style=False, allow_unicode=True,
-                  encoding=None,  # return text
-                  Dumper=dumper)
+    params = dict(
+        # Convenient upper-level kwarg for the most often overridden thing:
+        default_flow_style=kwa.pop('default_flow_style', False),
+        allow_unicode=True,
+        encoding=None,  # return text
+        Dumper=dumper,
+    )
     params.update(kwa.get('yaml_kwa', {}))
 
     def maybe_colorize(text):
