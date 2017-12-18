@@ -3,6 +3,17 @@
 Release History
 ---------------
 
+2.1.0 (2017-12-18)
+++++++++++++++++++
+
+ - deprecation notice
+ - pyaux.dicts.DotOrderedDict fix
+ - tox addopts cleanup
+ - pyaux.dicts.DotOrderedDict
+ - pyaux.dicts.OrderedDict repr mixin fix
+ - iterables.with_last annotator
+
+
 2.0.0 (2017-10-26)
 ++++++++++++++++++
 
