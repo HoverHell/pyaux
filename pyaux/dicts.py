@@ -264,6 +264,10 @@ class OrderedDict(ODReprMixin, dict, DictMixin):
         return not self.__eq__(other)  # not self == other
 
 
+class DotOrderedDict(dotdictx, OrderedDict):
+    """ ... """
+
+
 # ###
 # MultiValueDict from django.utils.datastructures
 # ###
