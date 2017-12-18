@@ -1,4 +1,8 @@
-""" Entry-module for the pyx-compiled `_datadeque` module """
+"""
+Entry-module for the pyx-compiled `_datadeque` module.
+
+WARNING: this module will be moved to `pyauxm`.
+"""
 
 try:
     from . import _datadeque

@@ -1,4 +1,7 @@
 # coding: utf8
+"""
+WARNING: this module will be moved to `pyauxm`.
+"""
 
 from collections import deque
 import pandas
