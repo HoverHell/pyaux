@@ -152,7 +152,7 @@ class ODReprMixin(object):
 # https://pypi.python.org/pypi/ordereddict
 # or /usr/lib/python2.7/collections.py
 # with modifications
-class OrderedDict(dict, ODReprMixin, DictMixin):
+class OrderedDict(ODReprMixin, dict, DictMixin):
 
     __end = None
     __map = None
