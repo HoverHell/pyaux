@@ -264,10 +264,6 @@ class OrderedDict(ODReprMixin, dict, DictMixin):
         return not self.__eq__(other)  # not self == other
 
 
-class DotOrderedDict(dotdictx, OrderedDict):
-    """ ... """
-
-
 # ###
 # MultiValueDict from django.utils.datastructures
 # ###
@@ -1011,6 +1007,10 @@ class dotdictx(dict):
         if name.startswith('_'):
             return super(dotdictx, self).__setattr__(name, value)
         self[name] = value
+
+
+class DotOrderedDict(dotdictx, OrderedDict):
+    """ ... """
 
 
 class defaultdictx(dict):
