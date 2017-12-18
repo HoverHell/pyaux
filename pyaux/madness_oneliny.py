@@ -3,6 +3,7 @@
 
 from __future__ import print_function, unicode_literals, absolute_import, division
 
+import six
 import sys
 import traceback
 from .base import o_repr
@@ -138,7 +139,10 @@ def _uprint(obj, ret=False):
 def _yprint(obj, ret=False, **kwa):
     kwa.setdefault('colorize', True)
     kwa.setdefault('no_anchors', False)
-    print(_dumprepr(obj, **kwa))
+    res_text = _dumprepr(obj, **kwa)
+    if six.PY2 and isinstance(res_text, six.text_type):
+        res_text = res_text.encode("utf-8")
+    print(res_text)
     if ret:
         return obj
 
