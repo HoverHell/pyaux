@@ -197,3 +197,25 @@ def iterator_is_over(it, ret_value=False):
         if ret_value:
             return False, val
         return False
+
+
+def with_last(it):  # TODO: move to pyaux
+    """
+    Wrap an iterable yielding an `is_last, value`.
+
+    >>> list(with_last([]))
+    []
+    >>> list(with_last([1]))
+    [(True, 1)]
+    >>> list(with_last([1, 2]))
+    [(False, 1), (True, 2)]
+    >>> list(with_last([1, 2, 3]))
+    [(False, 1), (False, 2), (True, 3)]
+    """
+    it = iter(it)
+    prev_value = next(it)  # StopIteration will be passed through
+    value = prev_value
+    for value in it:
+        yield False, prev_value
+        prev_value = value
+    yield True, value
