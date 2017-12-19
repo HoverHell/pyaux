@@ -57,7 +57,7 @@ def reversed_blocks(fileobj, blocksize=4096):
         here -= delta
 
 
-def reversed_lines(fileobj):
+def reversed_lines(fileobj, sep=b''):
     """ Read the lines of file in reverse order """
     tail = []           # Tail of the line whose head is not yet read.
     for block in reversed_blocks(fileobj):
@@ -66,10 +66,10 @@ def reversed_lines(fileobj):
         linelists = [[line] for line in block.splitlines()]
         linelists[-1].extend(tail)
         for linelist in reversed(linelists[1:]):
-            yield ''.join(linelist)
+            yield sep.join(linelist)
         tail = linelists[0]
     if tail:
-        yield ''.join(tail)
+        yield sep.join(tail)
 
 
 def uniq_g(lst, key=lambda value: value):
