@@ -3,6 +3,15 @@
 Release History
 ---------------
 
+2.2.0 (2017-12-20)
+++++++++++++++++++
+
+ - reversed_lines: bytes (non-text) joiner by default
+ - _uprint default_flow_style upper-level kwarg support
+ - _yprint: py23
+ - fmsgp_json: support multiple items
+
+
 2.1.0 (2017-12-18)
 ++++++++++++++++++
 
