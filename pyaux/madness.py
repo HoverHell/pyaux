@@ -7,6 +7,7 @@ Also, things that are useful in an ipython interactice shell.
 from __future__ import print_function, unicode_literals, absolute_import, division
 
 from six.moves import builtins
+from .base import PY_3
 from . import madness_datadiff
 from .madness_datadiff import *
 from . import madness_oneliny
@@ -26,6 +27,12 @@ __all__ += madness_datadiff.__all__
 __all__ += madness_oneliny.__all__
 __all__ += madness_reprstuff.__all__
 __all__ += madness_stuffstuff.__all__
+
+
+if PY_3:
+    from . import aio
+    from .aio import *
+    __all__ += aio.__all__
 
 
 # # Builtin-madness # #
