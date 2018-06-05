@@ -39,6 +39,11 @@ from . import iterables
 from .iterables import *
 
 
+PY_3 = sys.version_info >= (3,)
+PY_35 = sys.version_info >= (3, 5)
+PY_352 = sys.version_info >= (3, 5, 2)
+
+
 def bubble(*args, **kwargs):
     """ Prettified super():
     Calls `super(ThisClass, this_instance).this_method(...)`.
