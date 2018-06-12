@@ -54,7 +54,6 @@ def _await(*args, **kwargs):
         else:
             call_result.set_result(result)
 
-
     try:
         main_loop = asyncio.get_event_loop()
     except RuntimeError:
