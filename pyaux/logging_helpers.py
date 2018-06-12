@@ -3,71 +3,81 @@
 import time
 import logging
 from logging import handlers
+from .base import to_bytes
 
 
 __all__ = (
-    'LoggingHandlerTDMixin',
-    'LoggingStreamHandlerTD',
+    'TaggedSysLogHandlerBase',
     'TaggedSysLogHandler',
 )
 
 
-class LoggingHandlerTDMixin(object):
-    """ A logging handler mixin that adds 'time_diff' to the record
-    (time since the last message from that handler).
-
-    It is recommended to add it as the first mixin (for timing
-    precision). """
-
-    def __init__(self, *ar, **kwa):
-        super(LoggingHandlerTDMixin, self).__init__(*ar, **kwa)
-        self.last_ts = time.time()
-
-    def emit(self, record):
-        now = time.time()
-        prev = self.last_ts
-        record.time_diff = (now - prev)
-        self.last_ts = now
-        return super(LoggingHandlerTDMixin, self).emit(record)
-
-
-class LoggingStreamHandlerTD(LoggingHandlerTDMixin, logging.StreamHandler):
-    """ StreamHandler-based LoggingStreamHandlerTDMixin """
-
-
-class TaggedSysLogHandler(handlers.SysLogHandler):
-    """ A version of SysLogHandler that adds a tag to the logged line
+class TaggedSysLogHandlerBase(handlers.SysLogHandler):
+    """
+    A version of SysLogHandler that adds a tag to the logged line
     so that it can be sorted by the syslog daemon into files.
 
     Generally equivalent to using a formatter but semantically more
     similar to FileHandler's `filename` parameter.
 
     Example rsyslog config:
-    In `/etc/rsyslog.d/01-message-size.conf`:
-    # WARN: global setting.
-    $MaxMessageSize 256k
+    In `/etc/rsyslog.d/01-dynamic-app-logging.conf`:
 
-    In `/etc/rsyslog.d/11-some-app.conf`:
-    # WARN: global setting.
-    $EscapeControlCharactersOnReceive off
-    $FileCreateMode 0644
-    $template PlainFormat,"%msg:2:$%\n"
-    # # tag -> file mappings.
-    :syslogtag, isequal, "some_log:" /var/log/some_app/some_log.log;PlainFormat
-    # NOTE: ampersand-tilde tells rsyslog to drop the lines that passed the last filter line; i.e. kind-of 'propagate=False'
-    & ~
+        # WARN: global settings.
+        $MaxMessageSize 2049k
+        $EscapeControlCharactersOnReceive off  # In case your logs aren't quite text.
+        $RepeatedMsgReduction off
+        $SystemLogRateLimitInterval 0
+        $SystemLogRateLimitBurst 0
+        # File permissions:
+        $umask 0000
+        $FileOwner syslog
+        $DirOwner syslog
+        # Makes it possible to set a group on the logging directory to give
+        # write access to it.
+        $FileCreateMode 0664
+        $DirCreateMode 2775
+        $CreateDirs on
 
-    :syslogtag, isequal, "some_other_log:" /var/log/some_app/some_other_log.log;PlainFormat
-    & ~
+        $template LogFormatPlain,"%msg:2:$%\n"
+        # Make it possible to specify the target filename in the syslog tag.
+        # NOTE: The root directory creation has to be done outside syslog, as
+        # syslog normally doesn't have access to `mkdir /var/log/something`.
+        # NOTE: the '.log' is appended automatically.
+        $template LogDynFileAUTO,"/var/log/%syslogtag:R,ERE,1,DFLT:file__([a-zA-Z0-9_/.-]*)--end%.log"
+        :syslogtag, regex, "file__[a-zA-Z0-9_/.-]*" ?LogDynFileAUTO;LogFormatPlain
 
-    # Return the setting back, supposedly.
-    $FileCreateMode 0640
+        # NOTE: ampersand-tilde tells rsyslog to drop the lines that passed the
+        # last filter line; i.e. kind-of 'propagate=False'
+        & ~
+
     """
 
     def __init__(self, *args, **kwargs):
-        self.syslog_tag = kwargs.pop('syslog_tag', 'unknown:')
+        syslog_tag = kwargs.pop('syslog_tag')
+        syslog_tag = to_bytes(syslog_tag)
+        self.syslog_tag = syslog_tag
         super(TaggedSysLogHandler, self).__init__(*args, **kwargs)
 
     def format(self, *args, **kwargs):
         res = super(TaggedSysLogHandler, self).format(*args, **kwargs)
+        assert isinstance(res, bytes)
         return self.syslog_tag + " " + res
+
+
+class TaggedSysLogHandler(TaggedSysLogHandlerBase):
+    """
+    An addition to TaggedSysLogHandlerBase that sets the SO_SNDBUF to a large
+    value to allow large log lines.
+    """
+
+    _sndbuf_size = 5 * 2**20  # 5 MiB
+
+    def __init__(self, *args, **kwargs):
+        self._sbdbuf_size = kwargs.pop('sbdbuf_size', self._sndbuf_size)
+        super(TaggedSysLogHandler, self).__init__(*args, **kwargs)
+        self.configure_socket(self.socket)
+
+    def configure_socket(self, sock):
+        import socket
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, self._sndbuf_size)
