@@ -7,7 +7,7 @@ import json
 import yaml
 import argparse
 from pyaux.base import colorize_yaml as colorize
-from pyaux.base import to_bytes
+from pyaux.base import to_text
 
 
 def cmd_make_parser(**kwa):
@@ -100,7 +100,7 @@ def main():
         out = colorize(out)
 
     # TODO?: support output file
-    sys.stdout.write(to_bytes(out))
+    sys.stdout.write(to_text(out))
     if out[-1] != '\n':  # Just in case
         sys.stdout.write('\n')
     sys.stdout.flush()
