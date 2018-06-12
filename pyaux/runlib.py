@@ -11,7 +11,6 @@ import logging
 import signal
 import atexit
 import traceback
-from pyaux.logging_helpers import LoggingStreamHandlerTD
 from six.moves import xrange
 
 
@@ -53,33 +52,52 @@ BASIC_LOG_FORMAT = str("%(asctime)s: %(levelname)-13s: %(name)s: %(message)s")
 BASIC_LOG_FORMAT_TD = str("%(asctime)s(+%(time_diff)5.3fs): %(levelname)-13s: %(name)s: %(message)s")
 
 
-def init_logging(*ar, **kwa):
+def init_logging(*args, **kwargs):
     """ Simple shorthand for neat and customizable logging init """
-    _td = kwa.pop('_td', False)
+    _td = kwargs.pop('_td', False)
+    # Support for https://pypi.python.org/pypi/coloredlogs
+    # Also, notable: https://pypi.python.org/pypi/verboselogs (but no special support here at the moment)
+    _try_coloredlogs = kwargs.pop('_try_coloredlogs', False)
 
-    colored = kwa.pop('colored', True)
-    if colored:
+    if _try_coloredlogs:
+        try:
+            import coloredlogs
+        except Exception:
+            coloredlogs = None
+            _try_coloredlogs = False
+
+    colored = kwargs.pop('colored', True)
+    if colored and not _try_coloredlogs:
         from . import use_colorer
         use_colorer()
-    short_levelnames = kwa.pop('short_levelnames', True)
+
+    short_levelnames = kwargs.pop('short_levelnames', True)
     if short_levelnames:
         _names = _make_short_levelnames()
         for lvl, name in _names.items():
             logging.addLevelName(lvl, str(name))
-    kwa.setdefault('level', logging.DEBUG)
-    logformat = BASIC_LOG_FORMAT if not _td else BASIC_LOG_FORMAT_TD
-    kwa.setdefault('format', logformat)
+
+    kwargs.setdefault('level', logging.DEBUG)
+
+    logformat = BASIC_LOG_FORMAT
+    if _td:
+        logformat = BASIC_LOG_FORMAT_TD
+    kwargs.setdefault('format', logformat)
+
+    if _try_coloredlogs:
+        kwargs['fmt'] = kwargs['format']
+        coloredlogs.install(*args, **kwargs)
+    else:
+        logging.basicConfig(*args, **kwargs)
 
     if _td:
-        # # can't give it a custom handler class
-        # logging.basicConfig(*ar, **kwa)
-        hdlr = LoggingStreamHandlerTD(kwa.get('stream'))
-        fmt = logging.Formatter(kwa.get('format'), kwa.get('datefmt'))
-        hdlr.setFormatter(fmt)
-        logging.root.addHandler(hdlr)
-        logging.root.setLevel(kwa.get('level', logging.INFO))
-    else:
-        logging.basicConfig(*ar, **kwa)
+        # XX: do the same for all `logging.Logger.manager.loggerDict.values()`?
+        from .logging_annotators import time_diff_annotator
+        flt = time_diff_annotator()
+        logging.root.addFilter(flt)
+        for logger in logging.Logger.manager.loggerDict.values():
+            if hasattr(logger, 'addFilter'):
+                logger.addFilter(flt)
 
 
 def argless_wrap(fn):
