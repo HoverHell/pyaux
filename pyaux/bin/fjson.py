@@ -26,7 +26,7 @@ def main():
     def bailout(msg):
         sys.stderr.write(
             "ERROR: fjson.py: %s; original data as follows (on stdout)\n" % (msg,))
-        outbuf.write(data_in)
+        outbuf.write(to_bytes(data_in))
         return 13
 
     try:
