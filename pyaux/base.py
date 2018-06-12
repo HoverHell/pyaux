@@ -930,6 +930,30 @@ def configurable_wrapper(wrapper_func):
     return configurable_wrapper_func
 
 
+def simple_memoize_argless(func):
+    """
+    A very simple memoizer that saves the first call result permanently
+    (ignoring the argument values).
+    """
+
+    _cache = {}
+    _sentinel = object()
+
+    @functools.wraps(func)
+    def simple_cached_wrapped(*args, **kwargs):
+        result = _cache.get(None, _sentinel)
+        if result is not _sentinel:
+            return result
+
+        result = func(*args, **kwargs)
+        _cache[None] = result
+        return result
+
+    # Make the cache more easily accessible
+    simple_cached_wrapped._cache = _cache
+    return simple_cached_wrapped
+
+
 # TODO?: some clear-all-global-memos method. By singleton and weakrefs.
 class memoize(object):
 
@@ -1123,13 +1147,16 @@ def to_bytes(st, default=(lambda val: val), **kwa):
     return st.encode(**kwa)
 
 
-def to_unicode(st, default=(lambda val: val), **kwa):
+def to_text(st, default=(lambda val: val), **kwa):
     if isinstance(st, unicode):
         return st
     if not isinstance(st, bytes):
         return default(st)
     kwa.setdefault('encoding', 'utf-8')
     return st.decode(**kwa)
+
+
+to_unicode = to_text  # compat
 
 
 def import_module(name, package=None):
