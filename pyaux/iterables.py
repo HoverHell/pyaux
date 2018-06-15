@@ -213,7 +213,10 @@ def with_last(it):  # TODO: move to pyaux
     [(False, 1), (False, 2), (True, 3)]
     """
     it = iter(it)
-    prev_value = next(it)  # StopIteration will be passed through
+    try:
+        prev_value = next(it)
+    except StopIteration:
+        return
     value = prev_value
     for value in it:
         yield False, prev_value
