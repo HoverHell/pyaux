@@ -667,22 +667,26 @@ def stdin_lines(strip_newlines=True):
     """ Iterate over stdin lines in a 'line-buffered' way """
     while True:
         try:
-            l = sys.stdin.readline()
+            line = sys.stdin.readline()
         except KeyboardInterrupt:
+            # Generally, there's no point in dropping a traceback in a
+            # script within an interrupted shell pipe.
             return
-        if not l:
+        if not line:
+            # No more data to read (otherwise it would at least have an "\n")
             break
         # This might not be the case if the stream terminates with a non-newline at the end.
-        if strip_newlines and l[-1] == '\n':
-            l = l[:-1]
-        yield l
+        if strip_newlines and line[-1] == '\n':
+            line = line[:-1]
+        yield line
 
 
-def stdout_lines(gen):
+def stdout_lines(gen, flush=True):
     """ Send lines from a generator / iterable to stdout in a line-buffered way. """
-    for l in gen:
-        sys.stdout.write("%s\n" % (l,))
-        sys.stdout.flush()
+    for line in gen:
+        sys.stdout.write("%s\n" % (line,))
+        if flush:
+            sys.stdout.flush()
 
 
 def dict_merge(target, source, instancecheck=None, dictclass=dict,
