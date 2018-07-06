@@ -1160,7 +1160,13 @@ def to_text(st, default=(lambda val: val), **kwa):
     return st.decode(**kwa)
 
 
-to_unicode = to_text  # compat
+to_unicode = to_text  # legacy name
+
+
+if PY_3:
+    to_str = to_text
+else:
+    to_str = to_bytes
 
 
 if PY_3:
