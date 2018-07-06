@@ -16,6 +16,7 @@ __all__ = (
 )
 
 
+# See also: https://pypi.org/project/yarl/
 class Url(dotdict):
     """ urlparse.ParseResult and parse_qs[l] in a dict-like non-lazy form """
     _components = (

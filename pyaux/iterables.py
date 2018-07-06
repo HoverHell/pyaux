@@ -199,7 +199,7 @@ def iterator_is_over(it, ret_value=False):
         return False
 
 
-def with_last(it):  # TODO: move to pyaux
+def with_last(it):
     """
     Wrap an iterable yielding an `is_last, value`.
 
