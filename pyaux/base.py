@@ -1163,6 +1163,12 @@ def to_text(st, default=(lambda val: val), **kwa):
 to_unicode = to_text  # compat
 
 
+if PY_3:
+    to_str = to_text
+else:
+    to_str = to_bytes
+
+
 def import_module(name, package=None):
     """ ...
 
