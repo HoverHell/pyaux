@@ -3,6 +3,25 @@
 Release History
 ---------------
 
+2.3.0 (2018-07-18)
+++++++++++++++++++
+
+ - to_str, for use in e.g. type()
+ - minor notes
+ - stdin_lines, stdout_lines: refactoring and improvements
+ - iterables.with_last: py3.7 fix
+ - minor style fix
+ - yet another py23 fix
+ - logging annotators support in the .runlib.init_logging
+ - yet another py23 fix
+ - WARN: refactor logging annotating filters into a separate module, insta-deprecate the time-diff-supporting logging handlers
+ - simple_memoize_argless
+ - aio: _await for debugging the asyncs
+ - PY_3 and such shortcut-flags
+ - yet another py3 fix
+ - tests: themattrix/tox docker-based tests
+
+
 2.2.0 (2017-12-20)
 ++++++++++++++++++
 
