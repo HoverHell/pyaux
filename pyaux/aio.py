@@ -3,7 +3,7 @@
 ...
 """
 
-from __future__ import generator_stop, annotations
+# from __future__ import generator_stop, annotations
 
 import signal
 import asyncio
