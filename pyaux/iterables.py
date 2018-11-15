@@ -77,7 +77,6 @@ def uniq_g(lst, key=lambda value: value):
     Get unique elements of an iterable preserving its order and optionally
     determining uniqueness by hash of a key.
     """
-    # TODO?: try `key=lambda value: hash(value)`, check the memory and speed performance.
     known = set()
     for value in lst:
         value_key = key(value)

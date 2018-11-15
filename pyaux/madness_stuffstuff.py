@@ -56,6 +56,9 @@ def IPNBDFDisplay(df, *ar, **kwa):
     :param head: (default 200) runs df = df.head(head); has default to
         avoid accidentally outputing too much; needs explicit
         `head=None` to disable.
+
+    :param cutlinks: automatically converts all URLs in the resulting HTML
+    to shortened values leading to the same addresses.
     """
     from IPython.display import display, HTML
     kwa.setdefault('float_format', lambda v: '%.6f' % (v,))
@@ -82,7 +85,8 @@ def IPNBDFDisplay(df, *ar, **kwa):
         cutlinks = 80 if cutlinks is True else cutlinks
 
         def cutlink(link):
-            return '<a href="%s">%s</a>' % (link, _cut(link, cutlinks))
+            result = '<a href="%s">%s</a>' % (link, _cut(link, cutlinks))
+            return result
 
         html = re.sub(
             _url_re,
@@ -91,10 +95,10 @@ def IPNBDFDisplay(df, *ar, **kwa):
 
     # TODO?: option to insert copious '<wb/>'s in all cells
 
+    result = HTML(html)
     if do_display:
-        display(HTML(html))
-    else:
-        return HTML(html)
+        display(result)
+    return result
 
 
 def _re_largest_matching_start(regex, value, return_regexp=False):
