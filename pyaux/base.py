@@ -1473,6 +1473,17 @@ def get_env_flag(name, default=False, falses=('0',)):
     return value  # Still can be e.g. an empty string.
 
 
+try:
+    monotonic_now = time.monotonic
+except Exception:
+    try:
+        import monotonic
+        monotonic_now = monotonic.monotonic
+    except Exception:
+        # No proper implementation available.
+        monotonic_now = time.time
+
+
 if __name__ == '__main__':
     import doctest
     doctest.testmod()
