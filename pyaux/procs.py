@@ -129,6 +129,8 @@ def run_cmd(
         tag_to_cb[tag](data, timestamp=timestamp, proc=proc, outputs=outputs)
 
     ret = proc.poll()
+    # Might or might not be required for the pipes to get closed:
+    proc.communicate()
     if ret:
         raise NonzeroExit(ret)
 
@@ -145,4 +147,5 @@ def main():
 
 
 if __name__ == '__main__':
+    # python -m pyaux.procs ping -c 4 -i 0.2 1.1.1.1
     main()
