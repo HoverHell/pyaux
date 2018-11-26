@@ -3,7 +3,7 @@
 A collection of useful helpers.
  """
 
-__version__ = "2.3.1"
+__version__ = "2.4.0"
 
 # Note: no modules imported here should import `decimal` (otherwise
 # `use_cdecimal` might become problematic for them)

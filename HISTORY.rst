@@ -3,6 +3,15 @@
 Release History
 ---------------
 
+2.4.0 (2018-11-26)
+++++++++++++++++++
+
+ - _dict_hashable fix
+ - procs: minor improvement
+ - procs: subprocess helpers: run_cmd, poll_fds
+ - Minor changes and cleanups
+
+
 2.3.1 (2018-10-04)
 ++++++++++++++++++
 
