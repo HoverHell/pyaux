@@ -868,11 +868,11 @@ def colorize_diff(text, **kwa):
     return colorize(text, 'diff', **kwa)
 
 
-def _dict_hash_1(dct):
-    """ Simple non-recursive dict -> hash """
-    return hash(tuple(sorted(dct.items())))
+def _dict_hashable_1(dct):
+    """ Simple non-recursive dict -> hashable """
+    return tuple(sorted(dct.items()))
 
-_dict_hash = _dict_hash_1
+_dict_hashable = _dict_hashable_1
 
 
 def configurable_wrapper(wrapper_func):
@@ -998,9 +998,9 @@ class memoize(object):
         # TODO?: cleanup obsolete keys here sometimes.
         try:
             if self.skip_first_arg:
-                key = (ar[1:], _dict_hash(kwa))
+                key = (ar[1:], _dict_hashable(kwa))
             else:
-                key = (ar, _dict_hash(kwa))
+                key = (ar, _dict_hashable(kwa))
             # XXX/TODO: make `key` a weakref
             then, res = self.mem[key]
         except KeyError:
