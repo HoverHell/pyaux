@@ -8,6 +8,7 @@ import json
 import random
 import string
 import time
+import datetime
 from IPython.display import HTML
 from pyaux.base import dict_merge, group
 
@@ -18,16 +19,16 @@ def mk_uid():
         for _ in range(15))
 
 
-def Highcharts(
+def Highcharts_old(
         chart_def=None, chart_def_json=None, height=400, min_width=400, uid=None,
         highstock=True):
     assert chart_def or chart_def_json
     unique_id = mk_uid() if uid is None else uid
     chart_def_json = json.dumps(chart_def) if chart_def_json is None else chart_def_json
     if highstock:
-        hsscript = "http://code.highcharts.com/stock/highstock.js"
+        hsscript = "http://code.highcharts.com/stock/highstock.src.js"
     else:
-        hsscript = "http://code.highcharts.com/highcharts.js"
+        hsscript = "http://code.highcharts.com/highcharts.src.js"
     context = dict(
         chart_def_json=chart_def_json, chart_def=chart_def,
         min_width=min_width, height=height,
@@ -36,7 +37,7 @@ def Highcharts(
     )
     html = '''
     <script src="%(hsscript)s"></script>
-    <script src="http://code.highcharts.com/modules/exporting.js"></script>
+    <script src="http://code.highcharts.com/modules/exporting.src.js"></script>
 
     <div id="chart_%(unique_id)s" style="min-width: %(min_width)spx; height: %(height)ipx; margin: 0 auto">Re-run cell if chart is not shown ...</div>
     <script>
@@ -51,31 +52,60 @@ def Highcharts(
     return res
 
 
-def RunJS(js):
-    context = dict(js=js, unique_id=mk_uid())
-    html = '''
-    <script>
-    %(js)s
-    </script>
-    ''' % context
-    html_v2 = '''
-    <script>
-      <script>
-        tmp_run_%(unique_id)s = function() {
-            %(js)s
-        }
-        setTimeout("tmp_run_%(unique_id)s()", 50)
-    </script>
-    ''' % context
-    # TODO: test which one works better
+
+
+def RunJS(js, delayed=50):
+    context = dict(js=js, unique_id=mk_uid(), delayed=delayed)
+    if not delayed:
+        html = '''
+        <script>
+        %(js)s
+        </script>
+        ''' % context
+    else:
+        html = '''
+        <script>
+            tmp_run_%(unique_id)s = function() {
+                %(js)s
+            }
+            setTimeout("tmp_run_%(unique_id)s()", %(delayed)d)
+        </script>
+        ''' % context
     return HTML(html)
+
+
+def Highcharts(
+        chart_def=None,
+        width=1800,
+        height=800,
+        highstock=True,
+        **kwargs):
+    if highstock:
+        from highcharts import Highstock
+        chart = Highstock()
+    else:
+        from highcharts import Highchart
+        chart = Highchart()
+    chart_def = chart_def.copy()
+    chart_def['chart'] = (chart_def.get('chart') or {}).copy()
+    chart_def['chart']['width'] = width
+    chart_def['chart']['height'] = height
+
+    series = chart_def.pop('series')
+    chart.set_dict_options(chart_def)
+
+    for line in series:
+        chart.add_data_set(**line)
+
+    # Note: this one essentially uses an iframe (in jupyter).
+    return chart
 
 
 def mk_chart_def(
         df=None, kwa=None, series=None, chart_type='line',
         timestamp_in_idx=False,
         marginRight=130, marginBottom=25, title='', subtitle='',
-        xlabel='', ylabel=''):
+        xlabel='', ylabel='', zip_idx=True):
     """
     Convert a Pandas dataframe (or something else) to a highcharts
     chart definition.
@@ -111,8 +141,13 @@ def mk_chart_def(
     )
 
     if df is not None:
-        if timestamp_in_idx:
-            idx = [dt_to_hc(val.to_datetime()) for val in df.index]
+        df = df.applymap(lambda val: dt_to_hc(val) if isinstance(val, (datetime.date, datetime.datetime)) else val)
+        idx = df.index
+        if isinstance(idx[0], datetime.date) or timestamp_in_idx:
+            idx = [dt_to_hc(val) for val in idx]
+            zip_idx = True
+
+        if zip_idx:
             series.extend(
                 dict(name=column, data=zip(idx, list(df[column])))
                 for column in df.columns)
@@ -122,7 +157,6 @@ def mk_chart_def(
                 for column in df.columns)
 
     if kwa:
-        from pyaux.base import dict_merge
         res = dict_merge(res, kwa, _copy=False)
 
     return res
@@ -130,7 +164,7 @@ def mk_chart_def(
 
 def dt_to_hc(dt):
     """ datetime -> highcharts value """
-    return int(time.mktime(dt.timetuple()) * 1e3)
+    return int(time.mktime(dt.timetuple()) * 1e3 + dt.microsecond / 1e3)
 
 
 def ohlc_to_data(df, cols='o h l c'.split(), **kwa):
@@ -145,7 +179,7 @@ def ohlc_to_data(df, cols='o h l c'.split(), **kwa):
 def ohlc_to_serie(df, name=None, extra=None, grouping_units=None, **kwa):
     """ Helper to convert OHLC data to highcharts series """
     if grouping_units is None:
-        grouping_units=[
+        grouping_units = [
             # unit name, [allowed multiples],
             ['week', [1]],
             ['month', [1, 2, 3, 4, 6]],
@@ -157,9 +191,24 @@ def ohlc_to_serie(df, name=None, extra=None, grouping_units=None, **kwa):
         data=ohlc_to_data(df, **kwa),
         dataGrouping=dict(units=grouping_units))
     if extra:
-        from pyaux.base import dict_merge
         res_candle = dict_merge(res_candle, extra, _copy=False)
     return res_candle
+
+
+def interleave(joiner, iterable):
+    """
+    Similar to `str.join` but for lists.
+
+    >>> interleave([1], [2, 3, 4])
+    [2, 1, 3, 1, 4]
+    """
+    try:
+        yield next(iterable)
+    except StopIteration:  # empty
+        return
+    for item in iterable:
+        yield joiner
+        yield item
 
 
 def ohlcv_to_cdef(df, name, volume='v', pois=None, poi_to_color='default', **kwa):
@@ -195,7 +244,7 @@ def ohlcv_to_cdef(df, name, volume='v', pois=None, poi_to_color='default', **kwa
                  offset=0, lineWidth=2),
             ])
     if pois:
-        breakpoint = [None, None]
+        breakpointer = [None, None]
 
         def poi_to_color_default(poi):
             # red if downwards else green
@@ -208,7 +257,7 @@ def ohlcv_to_cdef(df, name, volume='v', pois=None, poi_to_color='default', **kwa
             poi_data = [
                 (dt_to_hc(point_ts) if point_ts else None,
                  point_val)
-                for poi in interleave([breakpoint], poi_group)
+                for poi in interleave([breakpointer], poi_group)
                 for point_ts, point_val in poi]
             series.append(dict(
                 type='line', name='POI', data=poi_data,
