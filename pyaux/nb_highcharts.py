@@ -26,9 +26,9 @@ def Highcharts_old(
     unique_id = mk_uid() if uid is None else uid
     chart_def_json = json.dumps(chart_def) if chart_def_json is None else chart_def_json
     if highstock:
-        hsscript = "http://code.highcharts.com/stock/highstock.src.js"
+        hsscript = "http://code.highcharts.com/stock/highstock.js"
     else:
-        hsscript = "http://code.highcharts.com/highcharts.src.js"
+        hsscript = "http://code.highcharts.com/highcharts.js"
     context = dict(
         chart_def_json=chart_def_json, chart_def=chart_def,
         min_width=min_width, height=height,
@@ -102,10 +102,18 @@ def Highcharts(
 
 
 def mk_chart_def(
-        df=None, kwa=None, series=None, chart_type='line',
-        timestamp_in_idx=False,
-        marginRight=130, marginBottom=25, title='', subtitle='',
-        xlabel='', ylabel='', zip_idx=True):
+        df=None,
+        kwa=None,
+        series=None,
+        chart_type='line',
+        timestamp_in_idx='auto',
+        margin_right=130,
+        margin_bottom=25,
+        title='',
+        subtitle='',
+        xlabel='',
+        ylabel='',
+        zip_idx=True):
     """
     Convert a Pandas dataframe (or something else) to a highcharts
     chart definition.
@@ -114,36 +122,61 @@ def mk_chart_def(
     """
     series = [] if series is None else copy.copy(series)
     res = dict(
-        chart=dict(
-            type=chart_type, marginRight=marginRight,
-            marginBottom=marginBottom),
-        title=dict(
-            text=title,
-            # center, supposedly
-            x=-20),
-        subtitle=dict(
-            text=subtitle,
-            x=-20),
-        xAxis=dict(title=dict(text=xlabel)),
-        yAxis=dict(
-            title=dict(text=ylabel),
-            # plotLines=[dict(value=0, width=1, color='#808080')],
-        ),
-        tooltip=dict(
-            # valueSuffix=u'°C',
-        ),
+        chart={},
+        title={},
+        subtitle={},
+        xAxis={},
+        yAxis={},
+        tooltip={},
         legend=dict(
             layout='vertical',
-            align='right', verticalAlign='top',
-            x=-10, y=100, borderWidth=0,
+            align='right',
+            verticalAlign='top',
+            x=-10,
+            y=100,
+            borderWidth=0,
+        ),
+        plotOptions=dict(
+            series=dict(
+                animation=False,
+                marker=dict(
+                    enabled=True,
+                ),
+            ),
         ),
         series=series,
     )
+    if chart_type is not None:
+        res['chart']['type'] = chart_type
+    if margin_right is not None:
+        res['chart']['marginRight'] = margin_right
+    if margin_bottom is not None:
+        res['chart']['marginBottom'] = margin_bottom
+    if title:
+        res['title'].update(
+            text=title,
+            # center, supposedly
+            x=-20)
+    if subtitle:
+        res['subtitle'].update(
+            text=subtitle,
+            x=-20)
+    if xlabel:
+        res['xAxis']['title'] = dict(text=xlabel)
+    if ylabel:
+        res['yAxis']['title'] = dict(text=ylabel)
 
     if df is not None:
-        df = df.applymap(lambda val: dt_to_hc(val) if isinstance(val, (datetime.date, datetime.datetime)) else val)
         idx = df.index
-        if isinstance(idx[0], datetime.date) or timestamp_in_idx:
+
+        if timestamp_in_idx == 'auto':
+            timestamp_in_idx = isinstance(idx[0], datetime.date)
+
+        if timestamp_in_idx:
+            res['xAxis']['type'] = 'datetime'
+
+        df = df.applymap(lambda val: dt_to_hc(val) if isinstance(val, (datetime.date, datetime.datetime)) else val)
+        if timestamp_in_idx:
             idx = [dt_to_hc(val) for val in idx]
             zip_idx = True
 
