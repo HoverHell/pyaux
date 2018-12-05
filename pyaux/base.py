@@ -1220,49 +1220,76 @@ def import_func(func_path, _check_callable=True):
 
 
 def dict_is_subset(
-        smaller_dict, larger_dict,
-        recurse_iterables=False, structure_match=True):
+        smaller_obj,
+        larger_obj,
+        recurse_iterables=False,
+        require_structure_match=True):
     """ Recursive check "smaller_dict's keys are subset of
     larger_dict's keys.
 
     NOTE: in practice, supports non-dict values at top.
+
+    >>> value = {"a": 1, "b": [2, {"c": 3, "d": None}]}
+    >>> dict_is_subset({}, value)
+    True
+    >>> dict_is_subset({"a": 1}, value)
+    True
+    >>> dict_is_subset({"a": 2}, value)
+    False
+    >>> dict_is_subset({"a": {"x": 4}}, value, require_structure_match=False)
+    True
+    >>> dict_is_subset({"b": [2]}, value, recurse_iterables=False)
+    False
+    >>> dict_is_subset({"b": [2]}, value, recurse_iterables=True, require_structure_match=True)
+    False
+    >>> dict_is_subset({"b": [2]}, value, recurse_iterables=True, require_structure_match=False)
+    True
+    >>> dict_is_subset({"b": [2, {}]}, value, recurse_iterables=True)
+    True
+    >>> dict_is_subset({"b": [2, {"c": 3}]}, value, recurse_iterables=True)
+    True
+    >>> dict_is_subset({"b": [2, {"c": 4}]}, value, recurse_iterables=True)
+    False
     """
     kwa = dict(
         recurse_iterables=recurse_iterables,
-        structure_match=structure_match,
+        require_structure_match=require_structure_match,
     )
-    if isinstance(smaller_dict, dict):
-        if not isinstance(larger_dict, dict):
-            if structure_match:
-                return False
-            return True
+    if isinstance(smaller_obj, dict):
+        if not isinstance(larger_obj, dict):
+            return False if require_structure_match else True
+
         # Both are dicts.
-        for key, val in smaller_dict.items():
+        for key, val in smaller_obj.items():
             try:
-                lval = larger_dict[key]
+                lval = larger_obj[key]
             except KeyError:
                 return False
             # 'compare' the values whatever they are
             if not dict_is_subset(val, lval, **kwa):
                 return False
-    elif recurse_iterables and hasattr(smaller_dict, '__iter__'):
-        if not hasattr(larger_dict, '__iter__'):
-            if structure_match:
-                return False
-            return True
+
+        return True
+
+    elif recurse_iterables and hasattr(smaller_obj, '__iter__'):
+        if not hasattr(larger_obj, '__iter__'):
+            return False if require_structure_match else True
         # smaller_value_iter, larger_value_iter
-        svi = iter(smaller_dict)
-        lvi = iter(larger_dict)
+        svi = iter(smaller_obj)
+        lvi = iter(larger_obj)
         for sval, lval in izip(svi, lvi):
             if not dict_is_subset(sval, lval, **kwa):
                 return False
-        if structure_match:
+        if require_structure_match:
             if not iterator_is_over(svi) or not iterator_is_over(lvi):
                 # One of the iterables was longer and thus was not
                 # consumed entirely by the izip
                 return False
+        return True
 
-    return True
+    # else:
+    # elif not dict or iterable:
+    return smaller_obj == larger_obj
 
 
 def find_files(
