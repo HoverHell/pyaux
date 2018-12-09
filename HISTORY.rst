@@ -3,6 +3,15 @@
 Release History
 ---------------
 
+2.5.0 (2018-12-09)
+++++++++++++++++++
+
+ - sre_tools: find_matching_subregexes (AST-based)
+ - nb_highcharts: some improvements
+ - dict_is_subset fixed version
+ - nb_highcharts: update to use a currently working library; requires python-highcharts now
+
+
 2.4.1 (2018-11-26)
 ++++++++++++++++++
 
