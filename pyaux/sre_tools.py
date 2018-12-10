@@ -56,6 +56,7 @@ def _flags_to_list(flags):
     return result
 
 
+# TODO: re.VERBOSE autoindented version.
 def rast_to_pattern(rast, _parent_type=None, **kwargs):
     r"""
     Inverse of `sre_parse._parse`.
@@ -679,14 +680,18 @@ def cutoff_rast(rast, **kwargs):
                 subsubpattern_params = item_value[:-1]
                 subsubpatterns = item_value[-1]
                 subsubpatterns = subsubpatterns[:]
-                for idx, subsubpattern in reversed(list(enumerate(subsubpatterns))):
+                for spidx, subsubpattern in reversed(list(enumerate(subsubpatterns))):
                     for subcutoff in cutoff_rast(subsubpattern, **kwargs):
                         # Mutating so that when a subsubpattern is exhausted it
                         # remains in the minimal form.
-                        subsubpatterns[idx] = subcutoff
+                        subsubpatterns[spidx] = subcutoff
                         cutoff_rec = base_rast + [(item_type, subsubpattern_params + (subsubpatterns[:],))]
                         yield make_cutoff_obj(cutoff_rec)
 
+
+def normalize_pattern(pattern, flags=0):
+    rast = sre_parse.parse(pattern, flags=flags)
+    return rast_to_pattern(rast)
 
 
 def find_matching_subregexes(pattern, string, flags=0, verbose=False):
@@ -696,7 +701,7 @@ def find_matching_subregexes(pattern, string, flags=0, verbose=False):
         match = subpattern.search(string)
         if match:
             # Otherwise unusable:
-            pattern_round = re.compile(rast_to_pattern(cutoff, flags=flags), flags=flags)
+            pattern_round = re.compile(rast_to_pattern(cutoff), flags=flags)
             if verbose:
                 yield dict(
                     cutoff=cutoff,
@@ -704,6 +709,7 @@ def find_matching_subregexes(pattern, string, flags=0, verbose=False):
                     pattern_round=pattern_round,
                     match=match,
                     substring=match.group(0),
+                    substring_unmatched=string[match.end(0):],
                 )
             else:
                 yield pattern_round
