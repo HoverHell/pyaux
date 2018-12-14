@@ -5,6 +5,7 @@ import re
 from six.moves import urllib_parse as urlparse
 from six.moves import xrange
 from pyaux import dotdict
+from pyaux.dicts import MVOD
 from pyaux.base import repr_cut as _cut
 
 
@@ -24,6 +25,9 @@ class Url(dotdict):
         # from ResultMixin
         'username', 'password', 'hostname', 'port',
     )  # <scheme>://<netloc>/<path>;<params>?<query>#<fragment>
+    _base_components = (
+        'scheme', 'netloc', 'path', 'params', 'query', 'fragment',
+    )
 
     # TODO: urlunescaped parts
 
@@ -36,8 +40,14 @@ class Url(dotdict):
 
         self.query_str = urldata.query
         self.queryl = urlparse.parse_qs(urldata.query)
-        self.query = dict(urlparse.parse_qsl(urldata.query))
+        self.query = MVOD(urlparse.parse_qsl(urldata.query))
         # TODO?: self.query = pyaux.dicts.MVOD(urldata.query)
+
+    def to_string(self):
+        query_str = urlparse.urlencode(list(self.query.items()))
+        return urlparse.urlunparse((
+            self[key] if key != 'query' else query_str
+            for key in self._base_components))
 
 
 _url_re = (
