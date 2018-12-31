@@ -72,7 +72,7 @@ def make_parser():
 
 
 def run_sh(*full_command):
-    _log.debug("Running command: %r", full_command)
+    _log.info("Running command: %r", full_command)
     process = subprocess.Popen(
         full_command,
         stdin=subprocess.PIPE,
@@ -286,7 +286,9 @@ def finalise(params):
         run_sh('git', 'commit', '-a', '-m', release_msg)
 
     run_sh_cmd('python setup.py sdist')
-    run_sh_cmd('python setup.py sdist upload')
+    run_sh_cmd('python setup.py bdist_wheel')
+    run_sh_cmd('twine upload ')
+
     version_tag = VERSION_TAG_TPL % tpl_env
     run_sh('git', 'tag', '-a', version_tag, '-m', release_msg)
     run_sh_cmd('git push')
