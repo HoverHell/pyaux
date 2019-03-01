@@ -16,10 +16,10 @@ PY3 = PY_3
 if PY_3:
     import urllib.parse as urllib_parse
 
+    izip = zip
     unicode = str
     text_type = str
     xrange = range
-    izip = zip
 
     def reraise(exc_type, exc_value, exc_traceback):  # pylint: disable=unused-argument
         try:
@@ -34,6 +34,7 @@ else:
 
     from itertools import izip  # pylint: disable=no-name-in-module
 
+    unicode = unicode
     text_type = unicode
     xrange = xrange
 
