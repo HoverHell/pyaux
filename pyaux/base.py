@@ -1,4 +1,6 @@
 # coding: utf8
+# pylint: disable=unused-import,wildcard-import,unused-wildcard-import,useless-object-inheritance
+
 # NOTE: no modules imported here should import `decimal` (otherwise
 #   `use_cdecimal` might become problematic for them)
 
@@ -20,13 +22,10 @@ import time
 import traceback
 import unicodedata
 
-import six
-from six import text_type as unicode
-from six.moves import xrange, zip as izip
-
 
 # Note: no `__all__` here so that for all things defined here, `from pyaux import ...` works too.
 
+from .minisix import PY3, PY_3, text_type, unicode, izip, xrange, reraise
 
 # Compat.
 from . import ranges
@@ -38,14 +37,15 @@ from .interpolate import *
 from . import iterables
 from .iterables import *
 
-
-PY_3 = sys.version_info >= (3,)
+from . import monkeys
+from .monkeys import *
 PY_35 = sys.version_info >= (3, 5)
 PY_352 = sys.version_info >= (3, 5, 2)
 
 
 def bubble(*args, **kwargs):
-    """ Prettified super():
+    """
+    Prettified super():
     Calls `super(ThisClass, this_instance).this_method(...)`.
 
     Not super-performant but quite prettifying ("Performance is 5
@@ -62,6 +62,7 @@ def bubble(*args, **kwargs):
                 method_fun = getattr(cls, method_name)
                 if method_fun.im_func.func_code is code:
                     return cls
+        raise Exception("Should not have ended here")
 
     frame = inspect.currentframe().f_back
     back_self = frame.f_locals['self']
@@ -76,7 +77,8 @@ def bubble(*args, **kwargs):
         try:
             frame = frame.f_back
         except Exception:
-            return
+            return None
+    raise Exception("Went too far")
 
 
 class dotdict(dict):
@@ -88,7 +90,7 @@ class dotdict(dict):
         except KeyError:
             # A little less confusing way:
             _et, _ev, _tb = sys.exc_info()
-            six.reraise(AttributeError, _ev, _tb)
+            reraise(AttributeError, AttributeError(*_ev.args), _tb)
 
     def __setattr__(self, name, value):
         self[name] = value
@@ -135,7 +137,7 @@ def repr_call(args, kwargs):
     if kwargs:
         if res:
             res += ', '
-        res + ', '.join('%s=%r' % (key, val) for key, val in kwargs.items())
+        res += ', '.join('%s=%r' % (key, val) for key, val in kwargs.items())
     return res
 
 
@@ -166,7 +168,7 @@ def DebugPlug(name, mklogger=None):
         """ An actual internal class of the DebugPlug """
 
         def __call__(self, *ar, **kwa):
-            log("called with (%s)" % repr_call(ar, kwa))
+            log("called with (%s)", repr_call(ar, kwa))
             global dbgs  ## Just to note it
             dbgs.setdefault(name, {})
             dbgs[name]['__call__'] = (ar, kwa)
@@ -180,7 +182,7 @@ def DebugPlug(name, mklogger=None):
             return dpchild
 
         def __setattr__(self, attname, value):
-            log("setattr: %s = %r" % (attname, value))
+            log("setattr: %s = %r", attname, value)
             global dbgs
             dbgs.setdefault(name, {})
             dbgs[name][attname] = value
@@ -213,74 +215,37 @@ def dict_fsetdefault(D, k, d):
     return v
 
 
-def split_list(lst, cond):
+
+def split_list(iterable, condition):
     """
     Split list items into `(matching, non_matching)` by `cond(item)` callable.
     """
-    res1, res2 = [], []
-    for i in lst:
-        if cond(i):
-            res1.append(i)
+    matching = []
+    non_matching = []
+    for item in iterable:
+        if condition(item):
+            matching.append(item)
         else:
-            res2.append(i)
-    return res1, res2
+            non_matching.append(item)
+    return matching, non_matching
 
 
-def split_dict(data, cond, cls=dict):
-    """
-    Split dict into `(matching_dict, non_matching_dict)`
-    by `conf(key, val)` callable.
-
-    Shorthand wrapper over `split_list`.
-
-    Processes the `data.items()`, returns items processed with `cls`,
-    making it possible to work with `MVOD` and such.
-
-    >>> split_dict(dict(a=1, b=-2, c=3), lambda key, val: val > 0) == \\
-    ... ({'a': 1, 'c': 3}, {'b': -2})
-    True
-    """
-    items1, items2 = split_list(data.items(), lambda item: cond(item[0], item[1]))
-    return cls(items1), cls(items2)
+def dict_maybe_items(value):
+    items = getattr(value, 'items', None)
+    if items is not None:
+        return items()
+    return value
 
 
-# ###### Monkey-patching of various things:
-
-def use_cdecimal():
-    """ Do a hack-in replacement of `decimal` with `cdecimal`.
-    Should be done before importing other modules.
-
-    Also see
-    http://adamj.eu/tech/2015/06/06/swapping-decimal-for-cdecimal-on-python-2/
-    for a possibly more reliable way.
-    """
-    import decimal  # maybe not needed
-    import cdecimal
-    sys.modules['decimal'] = cdecimal
-
-
-def use_exc_ipdb():
-    """ Set unhandled exception handler to automatically start ipdb """
-    import pyaux.exc_ipdb as exc_ipdb
-    exc_ipdb.init()
-
-
-def use_exc_log():
-    """ Set unhandled exception handler to verbosely log the exception """
-    import pyaux.exc_log as exc_log
-    exc_log.init()
-
-
-def use_colorer():
-    """ Wrap logging's StreamHandler.emit to add colors to the logged
-      messages based on log level """
-    # TODO: make a ColorerHandlerMixin version
-    import pyaux.Colorer as Colorer
-    Colorer.init()
+def split_dict(source, condition, cls=dict):
+    source = dict_maybe_items(source)
+    matching, nonmatching = split_list(
+        source,
+        lambda item: condition(item[0], item[1]))
+    return cls(matching), cls(nonmatching)
 
 
 # ...
-
 # TODO: make a recurser that supports and recurses, maintains,
 # optionally-replaces various classes such as tuple, defaultdict, and
 # other containers. Possibly use pickle/deepcopy's logic.
@@ -302,13 +267,16 @@ def obj2dict(obj, add_type=False, add_instance=False, do_lists=True,
         if add_instance:
             res['__instance__'] = obj
         return res
+
     # Recurse through other types too:
     # NOTE: There might be subclasses of these that would not be
     # processed here.
-    elif isinstance(obj, dict):
-        return dict_class((key, obj2dict(val, **kwa))
-                          for key, val in obj.items())
-    elif isinstance(obj, list):
+    if isinstance(obj, dict):
+        return dict_class(
+            (key, obj2dict(val, **kwa))
+            for key, val in obj.items())
+
+    if isinstance(obj, list):
         return [obj2dict(val, **kwa) for val in obj]
 
     return obj  # something else - return as-is.
@@ -357,12 +325,11 @@ def sign(value):
     """
     if value == 0:
         return 0
-    elif value > 0:
+    if value > 0:
         return 1
-    elif value < 0:
+    if value < 0:
         return -1
-    else:
-        raise ValueError("Inconsistent value")
+    raise ValueError("Inconsistent value")
 
 
 # #######  "Human" sorting, advanced #######
@@ -401,7 +368,7 @@ def _split_numeric(string):
 # Primary function:
 def human_sort_key(string, normalize=unicodedata.normalize, floats=True):
     """ Sorting key for 'human' sorting """
-    string = to_unicode(string)
+    string = to_text(string)
     string = normalize("NFD", string.lower())
     split_fn = _split_numeric_f if floats else _split_numeric
     return string and split_fn(string)
@@ -476,6 +443,7 @@ class ThrottledCall(object):
             if fn is None:
                 fn = self.fn
             return self.call_something(fn, *ar, **kwa)
+        return None
 
     def __repr__(self):
         return "<throttled_call(%r)>" % (self.fn,)
@@ -488,17 +456,20 @@ class ThrottledCall(object):
 
 
 @functools.wraps(ThrottledCall)
-def throttled_call(fn=None, *ar, **kwa):
+def throttled_call(*args, **kwargs):
     """ Wraps the supplied function with ThrottledCall (or generates a
     wrapper with the supplied parameters). """
-    if fn is not None:
-        if callable(fn):
+    if args:
+        func = args[0]
+        args = args[1:]
+        if callable(func):
             # mimickry, v3
-            return functools.wraps(fn)(ThrottledCall(fn, *ar, **kwa))
-        else:  # supplied some arguments as positional?
-            # XX: make a warning?
-            ar = (fn,) + ar
-    return lambda fn: functools.wraps(fn)(ThrottledCall(fn, *ar, **kwa))
+            return functools.wraps(func)(ThrottledCall(func, *args, **kwargs))
+        # else:  # supplied some arguments as positional?
+        # TODO: make a warning
+        args = (func,) + args
+
+    return lambda func: functools.wraps(func)(ThrottledCall(func, *args, **kwargs))
 
 
 class lazystr(object):
@@ -524,15 +495,34 @@ class lazystr(object):
         return repr(self.fn())
 
 
+class LazyRepr(object):
+    """
+    Alternative of `lazystr` that does not do additional `repr()`ing, i.e. the
+    `func` must return a string.
+    """
+
+    def __init__(self, func):
+        self.func = func
+
+    def __repr__(self):
+        return to_str(self.func())
+
+    def __str__(self):
+        return to_str(self.func())
+
+    def __unicode__(self):
+        return to_text(self.func())
+
+
 uniq_g = iterables.uniq  # Compat.
 
 
-def uniq(lst, key=lambda v: v):
+def uniq(lst, key=lambda v: v):  # pylint: disable=function-redefined
     """ RTFS """
     return list(iterables.uniq(lst, key=key))
 
 
-list_uniq = uniq_g  # Compat.
+list_uniq = uniq_g  # Compat.  # pylint: disable=invalid-name
 
 
 # Helper for o_repr that displays '???'
@@ -1006,7 +996,7 @@ class memoize(object):
         except KeyError:
             pass
         except TypeError:  # e.g. unhashable args
-            self.log.warn("memoize: Trying to memoize unhashable args %r, %r", ar, kwa)
+            self.log.warning("memoize: Trying to memoize unhashable args %r, %r", ar, kwa)
             return self.fn(*ar, **kwa)
         else:
             if override:
@@ -1142,31 +1132,33 @@ def group3(items, to_hashable=_dict_to_hashable_json):
     return [(hashes[keyhash], lst) for keyhash, lst in groups]
 
 
-def to_bytes(st, default=(lambda val: val), **kwa):
-    if isinstance(st, bytes):
-        return st
-    if not isinstance(st, unicode):
-        return default(st)  # normally the value itself
-    kwa.setdefault('encoding', 'utf-8')
-    return st.encode(**kwa)
+def to_bytes(value, default=None, encoding='utf-8', errors='strict'):
+    if isinstance(value, bytes):
+        return value
+    if isinstance(value, text_type):
+        return value.encode(encoding, errors)
+    if default is not None:
+        return default(value)
+    return value
 
 
-def to_text(st, default=(lambda val: val), **kwa):
-    if isinstance(st, unicode):
-        return st
-    if not isinstance(st, bytes):
-        return default(st)
-    kwa.setdefault('encoding', 'utf-8')
-    return st.decode(**kwa)
+def to_text(value, default=None, encoding='utf-8', errors='strict'):
+    if isinstance(value, text_type):
+        return value
+    if isinstance(value, bytes):
+        return value.decode(encoding, errors)
+    if default is not None:
+        return default(value)
+    return value
 
 
-to_unicode = to_text  # legacy name
+to_unicode = to_text  # legacy name  # pylint: disable=invalid-name
 
 
 if PY_3:
-    to_str = to_text
+    to_str = to_text  # pylint: disable=invalid-name
 else:
-    to_str = to_bytes
+    to_str = to_bytes  # pylint: disable=invalid-name
 
 
 def import_module(name, package=None):
@@ -1271,7 +1263,8 @@ def dict_is_subset(
 
         return True
 
-    elif recurse_iterables and hasattr(smaller_obj, '__iter__'):
+    # else:
+    if recurse_iterables and hasattr(smaller_obj, '__iter__'):
         if not hasattr(larger_obj, '__iter__'):
             return False if require_structure_match else True
         # smaller_value_iter, larger_value_iter
@@ -1301,7 +1294,7 @@ def find_files(
     walk = os.walk(in_dir)
     if _prewalk:
         walk = list(walk)
-    for dir_name, dir_list, file_list in walk:
+    for dir_name, _, file_list in walk:
         if fname_re is not None:
             file_list = (val for val in file_list if re.match(fname_re, val))
 
@@ -1335,7 +1328,11 @@ def find_files(
 
 @memoize
 def get_requests_session():
-    """ Singleton with the common requests session (for maximal connection reuse) """
+    """
+    Singleton with the common requests session (for maximal connection reuse).
+
+    WARNING: Effectively deprecated; see `pyaux.req`.
+    """
     import requests
     return requests.session()
 
@@ -1354,9 +1351,11 @@ def request(
     :param _w_method: method to use for writing (if `data` or `files` are present).
     :param _dataser: data-dict serialization format (WARN: default is 'json'). 'json' or 'url'.
     :param _callinfo: add the caller file and line to the user-agent.
+
+    WARNING: Effectively deprecated; see `pyaux.req`.
     """
     import requests
-    from six.moves import urllib_parse as urlparse
+    from .minisix import urllib_parse
     log = logging.getLogger('request')
 
     # Different default, basically.
@@ -1367,7 +1366,7 @@ def request(
             raise Exception("Must specify _default_host for host-relative URLs")
         if '://' not in _default_host:
             _default_host = 'http://%s' % _default_host
-        url = urlparse.urljoin(_default_host, url)
+        url = urllib_parse.urljoin(_default_host, url)
 
     params = kwa.get('params') or {}
     if _extra_params:
@@ -1500,11 +1499,53 @@ def get_env_flag(name, default=False, falses=('0',)):
     return value  # Still can be e.g. an empty string.
 
 
+def current_frame(depth=1):
+    """
+    (from logging/__init__.py)
+    """
+    func = getattr(sys, '_getframe', None)
+    if func is not None:
+        return func(depth)
+    # fallback; probably not relevant anymore.
+    try:
+        raise Exception
+    except Exception:  # pylint: disable=broad-except
+        frame = sys.exc_info()[2].tb_frame
+        for _ in range(depth):
+            frame = frame.f_back
+
+
+def find_caller(extra_depth=1, skip_packages=()):
+    """
+    Find the stack frame of the caller so that we can note the source
+    file name, line number and function name.
+
+    Mostly a copypaste from `logging`.
+
+    :param skip_packages: ...; example: `[getattr(logging, '_srcfile', None)]`.
+    """
+    cur_frame = current_frame(depth=2 + extra_depth)  # our caller, i.e. parent frame
+    frame = cur_frame
+    # On some versions of IronPython, currentframe() returns None if
+    # IronPython isn't run with -X:Frames.
+    result = "(unknown file)", 0, "(unknown function)"
+    while hasattr(frame, "f_code"):
+        codeobj = frame.f_code
+        filename = os.path.normcase(codeobj.co_filename)
+        # Additionally skip
+        if any(filename.startswith(pkg) for pkg in skip_packages if pkg):
+            frame = frame.f_back
+            continue
+        result = (codeobj.co_filename, frame.f_lineno, codeobj.co_name)
+        break
+    return result
+
+
 try:
     monotonic_now = time.monotonic
 except Exception:
     try:
-        import monotonic
+        import monotonic  # pylint: disable=import-error
         monotonic_now = monotonic.monotonic
     except Exception:
         # No proper implementation available.

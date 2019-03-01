@@ -48,17 +48,18 @@ setup_kwargs = dict(
             'fmsgp_json = pyaux.bin.fmsgp_json:main',
         ],
     },
-    install_requires=['six'],
-    extras_require={
+    install_requires=[],
+    extras_require=dict(
         # Things that are useful to simply have around:
-        'recommended': [
+        recommended=[
             'ipython', 'ipdb', 'PyYAML',
             'atomicfile', 'cdecimal',
             # 'requests', 'pycurl',
+            'simplejson',
         ],
         # All things that are known to be used in some part of this
         # library or another.
-        'known': [
+        known=[
             'django',  # in the psql helper
             'Twisted',  # bunch of twisted stuff here
             'Cython',  # at least one pyx module
@@ -70,7 +71,11 @@ setup_kwargs = dict(
             'line_profiler',
             # 'pyzmq',  # also too rare
         ],
-    },
+        req=[
+            'requests[ssl]',
+            'six',
+        ],
+    ),
     dependency_links=[
         # 'https://github.com/sashka/atomicfile/tarball/master#egg=atomicfile',  # on pypi now
     ],

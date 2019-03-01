@@ -11,6 +11,7 @@ disable=
   missing-docstring,
   fixme,
   too-many-ancestors,
+  useless-object-inheritance,
 
 
 [REPORTS]
