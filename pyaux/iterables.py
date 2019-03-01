@@ -43,6 +43,41 @@ def window(seq, size=2, fill=0, fill_left=False, fill_right=False):
         yield result
 
 
+def pair_window(iterable):
+    """
+    A more simple version of `window` for size=2.
+
+    >>> list(window([11, 22, 33, 44]))
+    [(11, 22), (22, 33), (33, 44)]
+    """
+    iterable = iter(iterable)
+    try:
+        prev_value = next(iterable)
+    except StopIteration:
+        return
+    for item in iterable:
+        yield prev_value, item
+        prev_value = item
+
+
+def cumsum(iterable):
+    """
+    Cumulative sum.
+
+    >>> list(cumsum([1.2, 3.4, 5.6]))
+    [1.2, 4.6, 10.2]
+    """
+    iterable = iter(iterable)
+    try:
+        value = next(iterable)
+    except StopIteration:
+        return
+    yield value
+    for item in iterable:
+        value += item
+        yield value
+
+
 # ###### Reading files backwards
 # http://stackoverflow.com/a/260433/62821
 
@@ -221,3 +256,8 @@ def with_last(it):
         yield False, prev_value
         prev_value = value
     yield True, value
+
+
+if __name__ == '__main__':
+    import doctest
+    doctest.testmod()
