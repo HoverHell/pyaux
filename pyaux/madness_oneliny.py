@@ -3,9 +3,9 @@
 
 from __future__ import print_function, unicode_literals, absolute_import, division
 
-import six
 import sys
 import traceback
+import six
 from .base import o_repr
 from .madness_reprstuff import GenReprWrapWrap
 from .madness_datadiff import _dumprepr
@@ -35,17 +35,17 @@ def _try(*ar, **kwa):
     return _try2(*ar, **kwa)[0]
 
 
-def _iter_ar(*ar):
+def _iter_ar(*args):
     """ Helper to get an iterable (mostly tuple) out of some arguments """
-    if len(ar) == 0:
+    if not args:
         raise TypeError("At least one argument was required")
-    elif len(ar) > 1:
-        return ar
-    else:
-        ar0 = ar[0]
-        if hasattr(ar0, '__iter__'):
-            return ar0
-        return (ar0,)
+    if len(args) > 1:
+        return args
+
+    first_arg = args[0]
+    if hasattr(first_arg, '__iter__'):
+        return first_arg
+    return args
 
 
 @GenReprWrapWrap
@@ -134,17 +134,21 @@ def _uprint(obj, ret=False):
     print(obj_repr)
     if ret:
         return obj
+    return None
 
 
 def _yprint(obj, ret=False, **kwa):
     kwa.setdefault('colorize', True)
     kwa.setdefault('no_anchors', False)
+    kwa.setdefault('default_flow_style', None)
+    kwa.setdefault('allow_unsorted_dicts', True)
     res_text = _dumprepr(obj, **kwa)
     if six.PY2 and isinstance(res_text, six.text_type):
         res_text = res_text.encode("utf-8")
     print(res_text)
     if ret:
         return obj
+    return None
 
 
 def _mrosources(cls, attname, raw=False, colorize=False):
