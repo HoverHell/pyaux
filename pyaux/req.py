@@ -480,11 +480,14 @@ class Requester(
 
 class APIRequester(Requester):
 
-    def __init__(self, **kwargs):
-        kwargs.setdefault('session', SESSION_ZEALOUS)
+    def __init__(self, session=True, **kwargs):
+        if session is True:
+            session = SESSION_ZEALOUS
+        elif session is None:
+            session = configure_session(requests.Session())
         kwargs.setdefault('default_timeout', 120)
         kwargs.setdefault('default_allow_redirects', False)
-        super(APIRequester, self).__init__(**kwargs)
+        super(APIRequester, self).__init__(session=session, **kwargs)
 
     def raise_for_status(self, response):
         if response.status not in (200, 201):
