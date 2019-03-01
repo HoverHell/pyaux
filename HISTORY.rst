@@ -3,6 +3,19 @@
 Release History
 ---------------
 
+2.6.0 (2019-03-01)
+++++++++++++++++++
+
+ - req: APIRequester: support session=None better
+ - iterables: pair_window, cumsum
+ - Tests fixes
+ - Requester module and various refactorings
+ - _yprint: allow keeping the dicts order in py3.7+; minor cleanup and linting
+ - pylibnewrelease over twine
+ - Url: query MVOD, to_string method
+ - sre_tools: minor improvements and additions
+
+
 2.5.0 (2018-12-09)
 ++++++++++++++++++
 
