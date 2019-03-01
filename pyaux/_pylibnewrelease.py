@@ -285,14 +285,15 @@ def finalise(params):
     if not params.no_commit:
         run_sh('git', 'commit', '-a', '-m', release_msg)
 
-    run_sh_cmd('python setup.py sdist')
-    run_sh_cmd('python setup.py bdist_wheel')
-    run_sh_cmd('twine upload ')
-
     version_tag = VERSION_TAG_TPL % tpl_env
     run_sh('git', 'tag', '-a', version_tag, '-m', release_msg)
     run_sh_cmd('git push')
     run_sh_cmd('git push --tags')
+
+    run_sh_cmd('python setup.py sdist')
+    run_sh_cmd('python setup.py bdist_wheel')
+    run_sh_cmd('twine upload ./dist/*')
+
     _log.debug("Done.")
 
 
