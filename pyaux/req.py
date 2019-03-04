@@ -342,6 +342,14 @@ class RequesterAutoRaiseForStatus(RequesterBase):
     raise_with_content = True
     raise_content_cap = 1800
 
+    def prepare_request(self, kwargs, **etcetera):
+        # This could be done by auto-merging `send_request_keys` by the MRO /
+        # property, but for a single case this is easier:
+        require = kwargs.pop('require', True)
+        request, send_kwargs = super(RequesterAutoRaiseForStatus, self).prepare_request(kwargs, **etcetera)
+        send_kwargs['require'] = require
+        return request, send_kwargs
+
     def send_request(self, request, **kwargs):
         require = kwargs.pop('require', True)
         response = super(RequesterAutoRaiseForStatus, self).send_request(request, **kwargs)
@@ -490,7 +498,7 @@ class APIRequester(Requester):
         super(APIRequester, self).__init__(session=session, **kwargs)
 
     def raise_for_status(self, response):
-        if response.status not in (200, 201):
+        if response.status_code not in (200, 201):
             self.raise_for_status_forced(response)
 
 
