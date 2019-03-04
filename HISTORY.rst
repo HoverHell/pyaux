@@ -3,6 +3,13 @@
 Release History
 ---------------
 
+2.7.0 (2019-03-04)
+++++++++++++++++++
+
+ - req.APIRequester fixes
+ - pylibnewrelease: push then twine for easier intermittent-error recovery
+
+
 2.6.0 (2019-03-01)
 ++++++++++++++++++
 
