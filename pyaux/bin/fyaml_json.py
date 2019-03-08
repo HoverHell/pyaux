@@ -1,18 +1,19 @@
 #!/usr/bin/env python
+# pylint: disable=broad-except
 """ yaml -> json for pretty-writing. """
 
-import os
+# import os
 import sys
+import argparse
 try:
     import simplejson as json
 except Exception:
     import json
 import yaml
-import argparse
-from pyaux.base import to_bytes
+from pyaux.base import to_str
 
 
-def cmd_make_parser(**kwa):
+def cmd_make_parser():
     parser = argparse.ArgumentParser(
         description=(
             "yaml -> json for pretty-writing"
@@ -60,24 +61,25 @@ def main():
     except Exception as exc:
         return bailout("Error parsing as yaml: %s" % (exc,))
 
-    kwa = dict(
+    json_kwargs = dict(
         ensure_ascii=params.ensure_ascii,
     )
     if params.indent is None:
-        kwa['indent'] = None if params.compact else 2
+        json_kwargs['indent'] = None if params.compact else 2
     elif params.indent == '-':
-        kwa['indent'] = None
+        json_kwargs['indent'] = None
     else:
-        kwa['indent'] = int(params.indent)
-    kwa['separators'] = (',', ':') if params.compact else None
+        json_kwargs['indent'] = int(params.indent)
+    if params.compact:
+        json_kwargs['separators'] = (',', ':')
 
     try:
-        out = json.dumps(data_data, **kwa)
+        out = json.dumps(data_data, **json_kwargs)
     except Exception as exc:
         return bailout("Error dumping as json: %s" % (exc,))
 
     # TODO?: support output file
-    sys.stdout.write(to_bytes(out))
+    sys.stdout.write(to_str(out))
     if out[-1] != '\n':  # Just in case
         sys.stdout.write('\n')
     sys.stdout.flush()
