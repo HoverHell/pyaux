@@ -46,6 +46,7 @@ setup_kwargs = dict(
             'fyaml_json = pyaux.bin.fyaml_json:main',
             'fjson.py = pyaux.bin.fjson:main',
             'fmsgp_json = pyaux.bin.fmsgp_json:main',
+            'f_convert = pyaux.bin.f_convert:main',
         ],
     },
     install_requires=[],
