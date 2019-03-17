@@ -200,12 +200,20 @@ def parse_yaml(data_in):
     return yaml.load_all(data_in, Loader=Loader)
 
 
-def parse_msgp(data_in, input_encoding=None):
+def parse_msgp(data_in, input_encoding='utf-8'):
     import msgpack
     kwargs = {}
     if input_encoding:
         kwargs.update(encoding=input_encoding)
-    stream = msgpack.Unpacker(data_in)
+
+    # TODO: proper streaming
+    try:
+        from io import BytesIO as iowrap
+    except Exception:
+        from cStringIO import StringIO as iowrap
+    data_in = iowrap(data_in)
+
+    stream = msgpack.Unpacker(data_in, **kwargs)
     try:
         item = next(stream)
     except StopIteration:
@@ -265,6 +273,10 @@ def parse_auto(data_in):
         return prefetch_one(parse_msgp(data_in))
     except Exception as exc:
         errors.update(msgp_error=exc)
+    try:
+        return prefetch_one(parse_msgp(data_in, input_encoding=None))
+    except Exception as exc:
+        errors.update(msgp_bytes_error=exc)
     raise Exception(errors)
 
 
