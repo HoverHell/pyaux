@@ -6,6 +6,7 @@ from __future__ import print_function, unicode_literals, absolute_import, divisi
 import sys
 import argparse
 import functools
+from pyaux.iterables import prefetch_first
 
 
 def _bytes_stdin():
@@ -225,56 +226,33 @@ def parse_msgp(data_in, input_encoding='utf-8'):
         yield item
 
 
-def prefetch_one(iterable, require=True):
-    """
-    Transparent-ish iterable wrapper that obtains the first item on call.
-
-    Useful for error-catching.
-    """
-    iterable = iter(iterable)
-    context = {}
-    try:
-        context['first_item'] = next(iterable)
-    except StopIteration:
-        if require:
-            raise Exception("Empty input")
-        return iter(())
-
-    def gen():
-        yield context.pop('first_item')  # do not hold a reference
-        for item in iterable:
-            yield item
-
-    return gen()
-
-
-def prefetch_one_wrap(func):
+def prefetch_first_wrap(func, count=1, require=True):
 
     @functools.wraps(func)
-    def prefetch_one_wrapped(*args, **kwargs):
+    def prefetch_first_wrapped(*args, **kwargs):
         result = func(*args, **kwargs)
-        return prefetch_one(result)
+        return prefetch_first(result, count=count, require=require)
 
-    return prefetch_one_wrapped
+    return prefetch_first_wrapped
 
 
 def parse_auto(data_in):
     errors = {}
     # TODO: streaming support which would require pre-peeking into data_in.
     try:
-        return prefetch_one(parse_json(data_in))
+        return prefetch_first(parse_json(data_in), require=True)
     except Exception as exc:
         errors.update(json_error=exc)
     try:
-        return prefetch_one(parse_yaml(data_in))
+        return prefetch_first(parse_yaml(data_in), require=True)
     except Exception as exc:
         errors.update(yaml_error=exc)
     try:
-        return prefetch_one(parse_msgp(data_in))
+        return prefetch_first(parse_msgp(data_in), require=True)
     except Exception as exc:
         errors.update(msgp_error=exc)
     try:
-        return prefetch_one(parse_msgp(data_in, input_encoding=None))
+        return prefetch_first(parse_msgp(data_in, input_encoding=None))
     except Exception as exc:
         errors.update(msgp_bytes_error=exc)
     raise Exception(errors)
@@ -343,7 +321,7 @@ def make_parse_func(params):
     else:
         raise Exception("Unknown input_format")
 
-    parse_func = prefetch_one_wrap(parse_func)
+    parse_func = prefetch_first_wrap(parse_func)
     parse_func = bailout_wrap(parse_func, err_tpl)
 
     return parse_func
@@ -395,7 +373,7 @@ def make_outs_func(params):
         raise Exception("Unknown output_format")
 
     err_tpl = 'Error serializing as {}: {{exc}}'.format(output_format)
-    outs_func = prefetch_one_wrap(outs_func)
+    outs_func = prefetch_first_wrap(outs_func)
     outs_func = bailout_wrap(outs_func, err_tpl)
 
     return outs_func

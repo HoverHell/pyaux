@@ -258,6 +258,81 @@ def with_last(it):
     yield True, value
 
 
+class NotEnoughItems(Exception):
+    """ Pretty much StopIteration but only for handling by user-code """
+
+
+def prefetch_first(iterable, count=1, require=False):
+    """
+    Transparent-ish iterable wrapper that obtains the first N items on call.
+
+    Not to be confused with continuous peeking at any point in iteration; that
+    might as well be done with `window`.
+
+    Useful for error-catching and in parallelizing.
+
+    :param iterable: ...
+
+    :param count: amount of items to prefetch.
+
+    :param require: if True, raises an NotEnoughItems when it couldn't prefetch
+    `count` items.
+
+    Unfortunately, it is not possible to assign a convenience attribute on the
+    result (which is a generator object),
+    but the current list of the prefetched items in python3 can be found at
+
+        iterable.gi_frame.f_locals['prefetched']
+
+    >>> def verbose_iter(num):
+    ...     for idx in range(num):
+    ...         print("verbose_iter", num, idx)
+    ...         yield idx
+    ...
+    >>> iterable = verbose_iter(2)
+    >>> list(iterable)
+    verbose_iter 2 0
+    verbose_iter 2 1
+    [0, 1]
+    >>> iterable = verbose_iter(3)
+    >>> iterable = prefetch_first(iterable, count=2)
+    verbose_iter 3 0
+    verbose_iter 3 1
+    >>> iterable.gi_frame.f_locals['prefetched']
+    [0, 1]
+    >>> list(iterable)
+    verbose_iter 3 2
+    [0, 1, 2]
+    >>> list(prefetch_first(verbose_iter(1), count=10))
+    verbose_iter 1 0
+    [0]
+    """
+    iterable = iter(iterable)
+    prefetched = []
+    for _ in range(count):
+        try:
+            prefetched.append(next(iterable))
+        except StopIteration:
+            if require:
+                raise NotEnoughItems(
+                    "Could not prefetch the requested amount of items",
+                    dict(requested=count, found=len(prefetched), data=prefetched))
+
+    # pylint: disable=dangerous-default-value
+    def gen(iterable=iterable, prefetched=prefetched):
+        for item in prefetched[:-1]:
+            yield item
+        # A few extra tricks to drop the references to prefetched items without
+        # impacting performance too much.
+        item = prefetched[-1]
+        prefetched[:] = []
+        yield item
+        for item in iterable:
+            yield item
+
+    return gen()
+
+
 if __name__ == '__main__':
     import doctest
     doctest.testmod()
