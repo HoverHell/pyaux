@@ -306,6 +306,15 @@ def prefetch_first(iterable, count=1, require=False):
     >>> list(prefetch_first(verbose_iter(1), count=10))
     verbose_iter 1 0
     [0]
+    >>> list(prefetch_first(verbose_iter(0), count=10))
+    []
+    >>> list(prefetch_first(verbose_iter(0), count=0))
+    []
+    >>> iterable = prefetch_first(verbose_iter(2), count=0)
+    >>> list(iterable)
+    verbose_iter 2 0
+    verbose_iter 2 1
+    [0, 1]
     """
     iterable = iter(iterable)
     prefetched = []
@@ -320,13 +329,14 @@ def prefetch_first(iterable, count=1, require=False):
 
     # pylint: disable=dangerous-default-value
     def gen(iterable=iterable, prefetched=prefetched):
-        for item in prefetched[:-1]:
+        if prefetched:
+            for item in prefetched[:-1]:
+                yield item
+            # A few extra tricks to drop the references to prefetched items without
+            # impacting performance too much.
+            item = prefetched[-1]
+            prefetched[:] = []
             yield item
-        # A few extra tricks to drop the references to prefetched items without
-        # impacting performance too much.
-        item = prefetched[-1]
-        prefetched[:] = []
-        yield item
         for item in iterable:
             yield item
 
