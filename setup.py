@@ -29,8 +29,8 @@ setup_kwargs = dict(
     # keywords='...,...',
     author='HoverHell',
     author_email='hoverhell@gmail.com',
-    url='https://github.com/HoverHell/pyaux',
-    download_url='https://github.com/HoverHell/pyaux/tarball/%s' % (version,),
+    url='https://gitlab.com/hoverhell/pyaux',
+    download_url='https://gitlab.com/hoverhell/pyaux/-/archive/{0}/pyaux-{0}.tar.bz2'.format(version),
     packages=find_packages(),
     entry_points={
         'console_scripts': [

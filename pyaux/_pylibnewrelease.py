@@ -36,7 +36,7 @@ _log = logging.getLogger('_newrelease.py')
 
 def make_parser():
     parser = argparse.ArgumentParser(
-        description="Automatically prepare a new pypi release from git / github")
+        description="Automatically prepare a new pypi release from git")
 
     parser.add_argument(
         'cmd',

@@ -4,7 +4,7 @@ pyaux
 Personal collection of helpers and often-useful snippets for Python
 
 Install the latest version with
-`pip install -U -e "git+https://github.com/HoverHell/pyaux.git#egg=pyaux"`
+`pip install -U "git+https://gitlab.com/hoverhell/pyaux.git#egg=pyaux"`
 
 
 Contains:
