@@ -422,6 +422,7 @@ class RequesterAutoRaiseForStatus(RequesterBase):
 
     raise_with_content = True
     raise_content_cap = 1800  # in bytes.
+    response_exception_cls = requests.exceptions.HTTPError
 
     # Warning: kwargs defaults are also duplicated in `Requester.request`.
     def _prepare_request(self, kwargs, **etcetera):
@@ -470,11 +471,11 @@ class RequesterAutoRaiseForStatus(RequesterBase):
             content = self._get_raise_content(response)
         except Exception as exc:
             self.logger.warning("_get_raise_content failed: %r", exc)
-            raise requests.exceptions.HTTPError(
+            raise self.response_exception_cls(
                 "Status Error: {} {}".format(
                     response.status_code, response.reason),
                 response=response)
-        raise requests.exceptions.HTTPError(
+        raise self.response_exception_cls(
             "Status Error: {} {}: {}".format(
                 response.status_code, response.reason, content),
             response=response)
