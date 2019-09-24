@@ -3,6 +3,22 @@
 Release History
 ---------------
 
+2.8.0 (2019-09-24)
+++++++++++++++++++
+
+ - req: _cut in the middle, raise the retry failures for proper handling
+ - stdout_lines py2 fix
+ - Requester.response_exception_cls
+ - Requester improvements
+ - pyaux.net.gai_verbose
+ - Correct the links
+ - prefetch_first: correction for empty iterable
+ - pyaux.iterables.prefetch_first: Transparent-ish iterable wrapper that obtains the first N items on call.
+ - f_convert msgpack input improvements
+ - f_convert: generalized serialization formats converter
+ - fyaml_json fixes
+
+
 2.7.0 (2019-03-04)
 ++++++++++++++++++
 
