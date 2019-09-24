@@ -672,8 +672,14 @@ def stdin_lines(strip_newlines=True):
 
 
 def stdout_lines(gen, flush=True):
-    """ Send lines from a generator / iterable to stdout in a line-buffered way. """
+    """
+    Send lines from a generator / iterable to stdout in a line-buffered way.
+
+    Generally intended to work with text strings rather than bytestrings.
+    """
     for line in gen:
+        if not PY_3:
+            line = to_bytes(line)
         sys.stdout.write("%s\n" % (line,))
         if flush:
             sys.stdout.flush()
