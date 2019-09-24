@@ -53,6 +53,7 @@ def configure_session(
             'POST', 'PUT', 'PATCH', 'DELETE')),
         pool_connections=30,
         pool_maxsize=30,
+        raise_on_status=False,
         **kwargs):
     """
     Configure session with significant retries.
@@ -65,6 +66,8 @@ def configure_session(
         backoff_factor=retries_backoff_factor,
         status_forcelist=retries_status_forcelist,
         method_whitelist=retries_method_whitelist,
+        # https://stackoverflow.com/a/43496895
+        raise_on_status=raise_on_status,
     )
 
     for prefix in ('http://', 'https://'):
@@ -83,10 +86,12 @@ def _cut(data, length, marker):
     if not length:
         return data
     actual_length = length - len(marker)
-    assert actual_length > 0, "can't cut to/below marker length"
+    assert actual_length >= 2, "can't cut to/below marker length"
     if len(data) < length:
         return data
-    return data[:actual_length] + marker
+    right_length = actual_length // 2
+    left_length = actual_length - right_length
+    return data[:left_length] + marker + data[right_length:]
 
 
 SESSION_ZEALOUS = configure_session(requests.Session())
