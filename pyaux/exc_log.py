@@ -13,7 +13,6 @@ from __future__ import print_function, unicode_literals, absolute_import, divisi
 import re
 import sys
 import traceback
-import types
 import logging
 
 # # Extracts from django.views.debug
@@ -25,8 +24,8 @@ except ImportError:
     from pprint import pformat
 # from django.template.filters import force_escape
 from six.moves import reprlib
-from six import text_type as unicode
 from pyaux import edi  # 'templating'.
+from pyaux.base import to_text
 
 
 _log = logging.getLogger("unhandled_exception_handler")
@@ -34,7 +33,8 @@ _log = logging.getLogger("unhandled_exception_handler")
 _lrepr_params = dict(
     maxlevel=8, maxtuple=64, maxlist=64, maxarray=48,
     maxdict=64, maxset=64, maxfrozenset=64, maxdeque=64, maxstring=80,
-    maxlong=128, maxother=32)
+    maxlong=128, maxother=32,
+)
 
 
 def make_lrepr():
@@ -45,11 +45,11 @@ def make_lrepr():
 
 
 # # The singleton:
-lrepr = make_lrepr()
-# # Monkeypatch convenience addition:
-# reprlib.Repr.__call__ = (lambda self, x: self.repr(x))
-# # ... or let's not to that and patch own instance only instead.
-lrepr.__call__ = types.MethodType(lambda self, x: self.repr(x), lrepr)
+LREPR = make_lrepr()
+
+
+def lrepr_call(value):
+    return LREPR.repr(value)
 
 
 def info(exc_type, exc_value, tb):
@@ -63,11 +63,11 @@ def _var_repr(v, ll=356):
         # # not exactly optimized in case of huge datalists
         # r = pformat(v)
         # # not exactly... pretty
-        r = lrepr(v)
+        r = lrepr_call(v)
         # # XXX: combine those two somehow?
         # # (also, make it print last value of `list`/`deque`/... always, too)
-    except Exception as e:
-        return "<un`repr()`able variable>"
+    except Exception as exc:
+        return "<un`repr()`able variable: {!r}>".format(exc)
     # if len(r) > ll:  # handled by the lrepr, somewhat; `ll` is ignored
     #     return r[:ll-4] + '... '
     return r
@@ -103,7 +103,7 @@ def _get_lines_from_file(filename, lineno, context_lines, loader=None, module_na
         if match:
             encoding = match.group(1)
             break
-    source = [unicode(sline, encoding, 'replace') for sline in source]
+    source = [to_text(sline, encoding=encoding, errors='replace') for sline in source]
 
     lower_bound = max(0, lineno - context_lines)
     upper_bound = lineno + context_lines
