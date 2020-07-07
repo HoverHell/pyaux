@@ -653,11 +653,12 @@ class OReprMixin(object):
         return o_repr(self)
 
 
-def stdin_lines(strip_newlines=True):
+def stdin_bin_lines(strip_newlines=True):
     """ Iterate over stdin lines in a 'line-buffered' way """
+    source = sys.stdin.buffer if PY_3 else sys.stdin
     while True:
         try:
-            line = sys.stdin.readline()
+            line = source.readline()
         except KeyboardInterrupt:
             # Generally, there's no point in dropping a traceback in a
             # script within an interrupted shell pipe.
@@ -666,8 +667,15 @@ def stdin_lines(strip_newlines=True):
             # No more data to read (otherwise it would at least have an "\n")
             break
         # This might not be the case if the stream terminates with a non-newline at the end.
-        if strip_newlines and line[-1] == '\n':
+        if strip_newlines and line[-1] == b'\n':
             line = line[:-1]
+        yield line
+
+
+def stdin_lines(strip_newlines=True):
+    """ Iterate over stdin lines in a 'line-buffered' way """
+    for line in stdin_bin_lines(strip_newlines=strip_newlines):
+        line = to_text(line, errors='replace')
         yield line
 
 
@@ -677,10 +685,11 @@ def stdout_lines(gen, flush=True):
 
     Generally intended to work with text strings rather than bytestrings.
     """
+    output = sys.stdout.buffer if PY_3 else sys.stdout
     for line in gen:
-        if not PY_3:
-            line = to_bytes(line)
-        sys.stdout.write("%s\n" % (line,))
+        line = to_bytes(line)
+        output.write(line)
+        output.write(b"\n")
         if flush:
             sys.stdout.flush()
 
