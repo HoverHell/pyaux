@@ -3,6 +3,13 @@
 Release History
 ---------------
 
+2.11.0 (2021-03-25)
++++++++++++++++++++
+
+ - skip an unfeasible C-dependency
+ - avoid a warning in py3.9
+
+
 2.10.0 (2020-07-07)
 +++++++++++++++++++
 
