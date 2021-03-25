@@ -54,7 +54,8 @@ setup_kwargs = dict(
         # Things that are useful to simply have around:
         recommended=[
             'ipython', 'ipdb', 'PyYAML',
-            'atomicfile', 'cdecimal',
+            'atomicfile',
+            # 'cdecimal',
             # 'requests', 'pycurl',
             'simplejson',
         ],
