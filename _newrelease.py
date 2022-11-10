@@ -1,1 +1,1 @@
-pyaux/_pylibnewrelease.py
+./src/pyaux/_pylibnewrelease.py
