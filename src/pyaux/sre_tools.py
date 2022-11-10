@@ -105,9 +105,7 @@ def rast_to_pattern(rast, _parent_type=None, **kwargs):
         kwargs["flags"] = kwargs.get("flags", 0) | rast.state.flags
 
         if kwargs.get("group_to_name") is None:
-            kwargs["group_to_name"] = {
-                val: key for key, val in rast.state.groupdict.items()
-            }
+            kwargs["group_to_name"] = {val: key for key, val in rast.state.groupdict.items()}
 
         # Tricky point: support 'branch inside subpattern does not require extra parentheses',
         # AST goes like `SUBPATTERN -> SubPattern -> BRANCH`.
@@ -228,11 +226,7 @@ def rast_to_pattern(rast, _parent_type=None, **kwargs):
         #                 raise source.error(msg, len(this) + 1 + len(that))
         #             setappend((RANGE, (lo, hi)))
 
-        elif (
-            item_type is RANGE
-            and isinstance(item_value, tuple)
-            and len(item_value) == 2
-        ):
+        elif item_type is RANGE and isinstance(item_value, tuple) and len(item_value) == 2:
             assert _parent_type is IN, _parent_type
             lo, hi = item_value
             return "{}-{}".format(re.escape(_chr(lo)), re.escape(_chr(hi)))
@@ -268,9 +262,7 @@ def rast_to_pattern(rast, _parent_type=None, **kwargs):
             #     subpatternappend((IN, set))
         elif item_type is IN:
             # XXXXX: needs re-checking
-            return "[{}]".format(
-                "".join(rast_to_pattern(child, **kwargs) for child in item_value)
-            )
+            return "[{}]".format("".join(rast_to_pattern(child, **kwargs) for child in item_value))
 
         # # Reference:
         # elif this in REPEAT_CHARS:
@@ -332,9 +324,7 @@ def rast_to_pattern(rast, _parent_type=None, **kwargs):
         # # Reference:
         #     else:
         #         subpattern[-1] = (MAX_REPEAT, (min, max, item))
-        elif (
-            item_type is MAX_REPEAT or item_type is MIN_REPEAT and len(item_value) == 3
-        ):
+        elif item_type is MAX_REPEAT or item_type is MIN_REPEAT and len(item_value) == 3:
             min_repeat, max_repeat, child = item_value
             if min_repeat == 0 and max_repeat == 1:
                 modifier = "?"
@@ -608,11 +598,7 @@ def rast_to_pattern(rast, _parent_type=None, **kwargs):
             # if group is not None:
             #     state.closegroup(group, p)
             # subpatternappend((SUBPATTERN, (group, add_flags, del_flags, p)))
-        elif (
-            item_type is SUBPATTERN
-            and isinstance(item_value, tuple)
-            and len(item_value) == 4
-        ):
+        elif item_type is SUBPATTERN and isinstance(item_value, tuple) and len(item_value) == 4:
             group, add_flags, del_flags, child = item_value
             flags = _flags_to_list(add_flags)
             if del_flags:
@@ -700,9 +686,7 @@ def cutoff_rast(rast, **kwargs):
                 subsubpattern_params = item_value[:-1]
                 subsubpattern = item_value[-1]
                 for subcutoff in cutoff_rast(subsubpattern, **kwargs):
-                    cutoff_rec = base_rast + [
-                        (item_type, subsubpattern_params + (subcutoff,))
-                    ]
+                    cutoff_rec = base_rast + [(item_type, subsubpattern_params + (subcutoff,))]
                     yield make_cutoff_obj(cutoff_rec)
 
             # '...(abc|de)' -> ['...(abc|de)', '...(abc|d)', '...(ab|d)', '...(a|d)', '...']

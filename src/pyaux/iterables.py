@@ -30,9 +30,7 @@ def window(seq, size=2, fill=0, fill_left=False, fill_right=False):
     s -> (s0,s1,...s[n-1]), (s1,s2,...,sn), ...
     """
     ssize = size - 1
-    it = chain(
-        repeat(fill, ssize * fill_left), iter(seq), repeat(fill, ssize * fill_right)
-    )
+    it = chain(repeat(fill, ssize * fill_left), iter(seq), repeat(fill, ssize * fill_right))
     result = tuple(islice(it, size))
     if len(result) == size:  # `<=` if okay to return seq if len(seq) < size
         yield result

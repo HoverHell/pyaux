@@ -80,9 +80,7 @@ def _var_repr(v, ll=356):
     return r
 
 
-def _get_lines_from_file(
-    filename, lineno, context_lines, loader=None, module_name=None
-):
+def _get_lines_from_file(filename, lineno, context_lines, loader=None, module_name=None):
     """
     Returns context_lines before and after lineno from file.
     Returns (pre_context_lineno, pre_context, context_line, post_context).
@@ -196,9 +194,10 @@ def render_exc_repr(exc_type, exc_value):
                 )
     except Exception as e3:
         try:
-            res += (
-                "Error: Some faulty exception of type %r, failing " "on repr with %s"
-            ) % (exc_type, _exc_safe_repr(type(e3), e3))
+            res += ("Error: Some faulty exception of type %r, failing " "on repr with %s") % (
+                exc_type,
+                _exc_safe_repr(type(e3), e3),
+            )
         except Exception:
             res += "Error: Some very faulty exception"
     return res

@@ -35,9 +35,7 @@ class DummyProfiler(object):
         return self  # do nothing as a context
 
     ## Do nothing for other LineProfiler-like functions
-    __exit__ = (
-        enable
-    ) = disable = dump_stats = print_stats = lambda self, *ar, **kwa: None
+    __exit__ = enable = disable = dump_stats = print_stats = lambda self, *ar, **kwa: None
 
 
 profile = None

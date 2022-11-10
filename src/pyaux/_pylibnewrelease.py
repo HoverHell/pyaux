@@ -204,9 +204,7 @@ def prepare(params):
     _log.debug("History parts: %r", [val[:10] for val in history_parts])
     history_versions = history_parts[-1]
 
-    current_version_match = re.search(
-        HISTORY_VERSION_TAG, history_versions, re.MULTILINE
-    )
+    current_version_match = re.search(HISTORY_VERSION_TAG, history_versions, re.MULTILINE)
     current_version = current_version_match.group(1)
     today = datetime.date.today().isoformat()
     version_parts = current_version.split(".")
@@ -225,9 +223,7 @@ def prepare(params):
     _log.debug("New version: %s", new_version)
 
     version_tag = VERSION_TAG_TPL % dict(version=current_version)
-    git_history = run_sh(
-        "git", "log", "%s..HEAD" % (version_tag,), "--format=format: - %s"
-    )
+    git_history = run_sh("git", "log", "%s..HEAD" % (version_tag,), "--format=format: - %s")
     if isinstance(git_history, bytes):
         git_history = git_history.decode("utf-8", errors="replace")
     _log.debug("Git history: %r", git_history)
@@ -251,9 +247,7 @@ def prepare(params):
     try:
         update_version_in_file("setup.py", new_version, current_version=current_version)
         for filename in glob.glob(VERSION_FILES):
-            update_version_in_file(
-                filename, new_version, current_version=current_version
-            )
+            update_version_in_file(filename, new_version, current_version=current_version)
     except ValueError as exc:
         _log.critical("Error updating version: %r", exc)
         return 2

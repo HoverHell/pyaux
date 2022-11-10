@@ -36,9 +36,7 @@ def _dumprepr(
     if no_anchors:
 
         class NoAliasesSafeDumper(dumper):
-            def ignore_aliases(
-                self, *args, **kwargs
-            ):  # pylint: disable=arguments-differ
+            def ignore_aliases(self, *args, **kwargs):  # pylint: disable=arguments-differ
                 return True
 
         dumper = NoAliasesSafeDumper
@@ -62,9 +60,7 @@ def _dumprepr(
                     node_value = self.represent_data(item_value)
                     if not (isinstance(node_key, ScalarNode) and not node_key.style):
                         best_style = False
-                    if not (
-                        isinstance(node_value, ScalarNode) and not node_value.style
-                    ):
+                    if not (isinstance(node_value, ScalarNode) and not node_value.style):
                         best_style = False
                     value.append((node_key, node_value))
                 if flow_style is None:
@@ -101,9 +97,7 @@ def _dumprepr(
         import ujson
 
         res += "# Unable to serialize directly! (%r)\n" % (exc,)
-        prepared_value = ujson.loads(
-            ujson.dumps(val)
-        )  # pylint: disable=c-extension-no-member
+        prepared_value = ujson.loads(ujson.dumps(val))  # pylint: disable=c-extension-no-member
         res += maybe_colorize(yaml.dump(prepared_value, **params))
 
     return res
@@ -117,9 +111,7 @@ def _diff_pre_diff(val, **kwa):
     return res
 
 
-def word_diff_color(
-    val1, val2, add="\x1b[32m", rem="\x1b[31;01m", clear="\x1b[39;49;00m", n=3
-):
+def word_diff_color(val1, val2, add="\x1b[32m", rem="\x1b[31;01m", clear="\x1b[39;49;00m", n=3):
     """Proper-ish word-diff represented by colors"""
 
     def _preprocess(val):

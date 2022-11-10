@@ -182,9 +182,7 @@ def sigeventer(
         ), "unexpected: different list-based term/int handlers"
         return curhandler_term
 
-    the_handler = ListSigHandler(
-        try_argless=try_argless, ignore_exc=ignore_exc, verbose=verbose
-    )
+    the_handler = ListSigHandler(try_argless=try_argless, ignore_exc=ignore_exc, verbose=verbose)
     signal.signal(signal.SIGINT, the_handler)
     signal.signal(signal.SIGTERM, the_handler)
 

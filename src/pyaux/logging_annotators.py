@@ -31,9 +31,7 @@ class Annotator(logging.Filter):
     def __init__(self, *args, **kwargs):
         self.attribute_name = kwargs.pop("attribute_name", None) or self.attribute_name
         if self.attribute_name is None:
-            raise Exception(
-                "attribute_name should either be on class or always specified"
-            )
+            raise Exception("attribute_name should either be on class or always specified")
         super(Annotator, self).__init__(*args, **kwargs)
 
     def get_value(self, record, *args, **kwargs):

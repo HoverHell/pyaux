@@ -59,10 +59,7 @@ class Url(dotdict):
     def to_string(self):
         query_str = urllib.parse.urlencode(list(self.query.items()))
         return urllib.parse.urlunparse(
-            (
-                self[key] if key != "query" else query_str
-                for key in self._base_components
-            )
+            (self[key] if key != "query" else query_str for key in self._base_components)
         )
 
 
@@ -152,13 +149,9 @@ def _re_largest_matching_start(regex, value, return_regexp=False):
     # Even more horrible:
     all_substrings = [value[:idx] for idx in range(len(value) + 1)]
     all_match_tries = (
-        (subreg, _try_match(subreg, substr))
-        for subreg in all_regexes
-        for substr in all_substrings
+        (subreg, _try_match(subreg, substr)) for subreg in all_regexes for substr in all_substrings
     )
-    all_matchstrings = [
-        (subreg, val.group(0)) for subreg, val in all_match_tries if val
-    ]
+    all_matchstrings = [(subreg, val.group(0)) for subreg, val in all_match_tries if val]
     if not all_matchstrings:
         return ""
     lrex, lval = max(all_matchstrings, key=lambda val: len(val[1]))  # longest match

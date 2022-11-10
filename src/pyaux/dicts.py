@@ -136,9 +136,7 @@ def dict_fsetdefault(D, k, d):
     return v
 
 
-def dict_is_subset(
-    smaller_obj, larger_obj, recurse_iterables=False, require_structure_match=True
-):
+def dict_is_subset(smaller_obj, larger_obj, recurse_iterables=False, require_structure_match=True):
     """Recursive check "smaller_dict's keys are subset of
     larger_dict's keys.
 
@@ -429,15 +427,9 @@ class OrderedDict(ODReprMixin, dict, MutableMapping):
     items = MutableMapping.items
 
     # Will be provided in any version from whichever is available.
-    iterkeys = getattr(MutableMapping, "iterkeys", None) or getattr(
-        MutableMapping, "keys"
-    )
-    itervalues = getattr(MutableMapping, "itervalues", None) or getattr(
-        MutableMapping, "values"
-    )
-    iteritems = getattr(MutableMapping, "iteritems", None) or getattr(
-        MutableMapping, "items"
-    )
+    iterkeys = getattr(MutableMapping, "iterkeys", None) or getattr(MutableMapping, "keys")
+    itervalues = getattr(MutableMapping, "itervalues", None) or getattr(MutableMapping, "values")
+    iteritems = getattr(MutableMapping, "iteritems", None) or getattr(MutableMapping, "items")
 
     def copy(self):
         return self.__class__(self)
@@ -539,9 +531,7 @@ class MultiValueDict(dict):
         result = self.__class__()
         memo[id(self)] = result
         for key, value in dict.items(self):
-            dict.__setitem__(
-                result, copy.deepcopy(key, memo), copy.deepcopy(value, memo)
-            )
+            dict.__setitem__(result, copy.deepcopy(key, memo), copy.deepcopy(value, memo))
         return result
 
     def __getstate__(self):
@@ -743,10 +733,7 @@ class MVOD_Common(ODReprMixin, object):
             lv = len(item)  # Paranoidally avoid calling it twice.
             if lv != 2:
                 raise ValueError(
-                    (
-                        "dictionary update sequence element #%d has"
-                        " length %r; 2 is required"
-                    )
+                    ("dictionary update sequence element #%d has" " length %r; 2 is required")
                     % (i, lv)
                 )
             key, val = item
@@ -770,15 +757,11 @@ class MVOD_Common(ODReprMixin, object):
             arg = getattr(arg, "iteritems", arg.items)()
         if kwds:
             if strict:
-                raise TypeError(
-                    "initializing an ordered dict from keywords is not recommended"
-                )
+                raise TypeError("initializing an ordered dict from keywords is not recommended")
             # Append the keywords to the other stuff
             arg = itertools.chain(arg, kwds.items())
         if preprocess:
-            arg = self._preprocess_data(
-                arg
-            )  ## NOTE: iterates over it and makes a tuple.
+            arg = self._preprocess_data(arg)  ## NOTE: iterates over it and makes a tuple.
         return arg
 
     # A set of properties to set the data with or without checking it
@@ -874,9 +857,7 @@ class MVOD_Common(ODReprMixin, object):
 
     def pop(self, key, *args):
         if len(args) > 1:
-            raise TypeError(
-                "pop expected at most 2 arguments, got %r" % (1 + len(args),)
-            )
+            raise TypeError("pop expected at most 2 arguments, got %r" % (1 + len(args),))
         try:
             value = self[key]
         except KeyError:
@@ -1027,9 +1008,7 @@ class MVOD(MVOD_Common, dict):
         return cp
 
     def getlist(self, key, default=None):
-        values = [
-            item_val for item_key, item_val in self._iteritems() if item_key == key
-        ]
+        values = [item_val for item_key, item_val in self._iteritems() if item_key == key]
         if values:
             return values
         if default is None:

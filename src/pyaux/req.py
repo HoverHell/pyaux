@@ -18,14 +18,7 @@ import requests.adapters
 import requests.exceptions
 from requests.packages.urllib3.util import Retry  # pylint: disable=import-error
 
-from pyaux.base import (
-    LazyRepr,
-    ReprObj,
-    dict_maybe_items,
-    find_caller,
-    split_dict,
-    to_bytes,
-)
+from pyaux.base import LazyRepr, ReprObj, dict_maybe_items, find_caller, split_dict, to_bytes
 
 # Singleton session for connection pooling.
 # WARNING: this involves caching; do `SESSION.close()` in a `finally:` block to clean it up.
@@ -157,8 +150,7 @@ class RequesterBase(object):
         else:
             # TODO?: OrderedDict?
             headers = {
-                key.lower().replace("_", "-"): value
-                for key, value in dict_maybe_items(headers)
+                key.lower().replace("_", "-"): value for key, value in dict_maybe_items(headers)
             }
         kwargs["headers"] = headers
 
@@ -191,14 +183,10 @@ class RequesterBase(object):
         assert kwargs.get("url")
 
         prepare_keys = self._prepare_request_keys
-        prepare_kwargs, send_kwargs = split_dict(
-            kwargs, lambda key, value: key in prepare_keys
-        )
+        prepare_kwargs, send_kwargs = split_dict(kwargs, lambda key, value: key in prepare_keys)
 
         send_keys = self.send_request_keys
-        send_kwargs, unknown_kwargs = split_dict(
-            send_kwargs, lambda key, value: key in send_keys
-        )
+        send_kwargs, unknown_kwargs = split_dict(send_kwargs, lambda key, value: key in send_keys)
 
         if unknown_kwargs:
             raise ValueError("Unknown request arguments", unknown_kwargs)
@@ -208,9 +196,7 @@ class RequesterBase(object):
         if self.apply_environment:
             send_kwargs_overrides = send_kwargs
             # http://docs.python-requests.org/en/master/user/advanced/#prepared-requests
-            send_kwargs = session.merge_environment_settings(
-                request.url, {}, None, None, None
-            )
+            send_kwargs = session.merge_environment_settings(request.url, {}, None, None, None)
             send_kwargs.update(send_kwargs_overrides)
         send_kwargs["session"] = session
         return request, send_kwargs
@@ -313,10 +299,7 @@ class RequesterDefaults(RequesterBase):
                 kwargs["method"] = "get"
 
         if _is_special(kwargs.get("allow_redirects")):
-            if (
-                self.default_allow_redirects == "auto"
-                or self.default_allow_redirects is AUTO
-            ):
+            if self.default_allow_redirects == "auto" or self.default_allow_redirects is AUTO:
                 # From `requests.get` logic.
                 kwargs["allow_redirects"] = kwargs["method"] in ("get", "options")
             else:
@@ -336,9 +319,7 @@ class RequesterBaseUrl(RequesterBase):
     # Warning: kwargs defaults are also duplicated in `Requester.request`.
     def _prepare_parameters(self, kwargs):
         if self.base_url:
-            kwargs["url"] = urllib.parse.urljoin(
-                self.base_url, kwargs["url"]
-            )  # required parameter
+            kwargs["url"] = urllib.parse.urljoin(self.base_url, kwargs["url"])  # required parameter
         return super(RequesterBaseUrl, self)._prepare_parameters(kwargs)
 
 
@@ -411,18 +392,14 @@ class RequesterContentType(RequesterBase):
             return self._serialize_data_ujson(data, context=context)
         raise Exception("Unknown data serialization content_type", content_type)
 
-    def _serialize_data_json(
-        self, data, context=None
-    ):  # pylint: disable=unused-argument
+    def _serialize_data_json(self, data, context=None):  # pylint: disable=unused-argument
         """Overridable point for json-serialization customization."""
         from .anyjson import json_dumps
 
         data = to_bytes(json_dumps(data))
         return data, self.json_content_type
 
-    def _serialize_data_ujson(
-        self, data, context=None
-    ):  # pylint: disable=unused-argument
+    def _serialize_data_ujson(self, data, context=None):  # pylint: disable=unused-argument
         import ujson
 
         # pylint: disable=c-extension-no-member
@@ -474,17 +451,15 @@ class RequesterAutoRaiseForStatus(RequesterBase):
         # This could be done by auto-merging `send_request_keys` by the MRO /
         # property, but for a single case this is easier:
         require = kwargs.pop("require", True)
-        request, send_kwargs = super(
-            RequesterAutoRaiseForStatus, self
-        )._prepare_request(kwargs, **etcetera)
+        request, send_kwargs = super(RequesterAutoRaiseForStatus, self)._prepare_request(
+            kwargs, **etcetera
+        )
         send_kwargs["require"] = require
         return request, send_kwargs
 
     def send_request(self, request, **kwargs):
         require = kwargs.pop("require", True)
-        response = super(RequesterAutoRaiseForStatus, self).send_request(
-            request, **kwargs
-        )
+        response = super(RequesterAutoRaiseForStatus, self).send_request(request, **kwargs)
         if require:
             self.raise_for_status(response)
         return response
@@ -502,9 +477,7 @@ class RequesterAutoRaiseForStatus(RequesterBase):
         # TODO?: support streaming?
         # Note: cutting the bytestream.
         content = response.content
-        content = _cut(
-            content, length=self.raise_content_cap, marker=self.length_cut_marker
-        )
+        content = _cut(content, length=self.raise_content_cap, marker=self.length_cut_marker)
         return content
 
     def raise_for_status_forced(self, response):
@@ -522,9 +495,7 @@ class RequesterAutoRaiseForStatus(RequesterBase):
                 response=response,
             )
         raise self.response_exception_cls(
-            "Status Error: {} {}: {}".format(
-                response.status_code, response.reason, content
-            ),
+            "Status Error: {} {}: {}".format(response.status_code, response.reason, content),
             response=response,
         )
 
@@ -579,9 +550,7 @@ class RequesterLog(RequesterBase):
         pieces.append(elapsed)
         if self.log_response_headers:
             pieces.append("    response.headers={!r}".format(response.headers))
-        return " ".join(
-            str(piece) if not isinstance(piece, str) else piece for piece in pieces
-        )
+        return " ".join(str(piece) if not isinstance(piece, str) else piece for piece in pieces)
 
     # pylint: disable=unused-argument
     def log_before(self, request, level=logging.DEBUG, **kwargs):

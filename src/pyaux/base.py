@@ -594,9 +594,7 @@ def group2(lst, key=lambda v: v[0]):
     return res.items()
 
 
-def mangle_items(
-    items, include=None, exclude=None, add=None, replace=None, replace_inplace=None
-):
+def mangle_items(items, include=None, exclude=None, add=None, replace=None, replace_inplace=None):
     """
     Functional-style dict editing core (working with a list of pairs).
 
@@ -641,9 +639,7 @@ def mangle_items(
     return res
 
 
-def mangle_dict(
-    input_dict, include=None, exclude=None, add=None, _return_list=False, dcls=dict
-):
+def mangle_dict(input_dict, include=None, exclude=None, add=None, _return_list=False, dcls=dict):
     """Functional-style dict editing"""
     items = input_dict.items()
     res = mangle_items(items, include=include, exclude=exclude, add=add)
@@ -673,9 +669,7 @@ def colorize(text, fmt, outfmt="term", lexer_kwa=None, formatter_kwa=None, **kwa
 
     lexer_cls = getattr(lexers, fmt)
     formatter_cls = getattr(formatters, outfmt)
-    return highlight(
-        text, lexer_cls(**(lexer_kwa or {})), formatter_cls(**(formatter_kwa or {}))
-    )
+    return highlight(text, lexer_cls(**(lexer_kwa or {})), formatter_cls(**(formatter_kwa or {})))
 
 
 def colorize_yaml(text, **kwa):
@@ -833,9 +827,7 @@ class memoize(object):
         except KeyError:
             pass
         except TypeError:  # e.g. unhashable args
-            self.log.warning(
-                "memoize: Trying to memoize unhashable args %r, %r", ar, kwa
-            )
+            self.log.warning("memoize: Trying to memoize unhashable args %r, %r", ar, kwa)
             return self.fn(*ar, **kwa)
         else:
             if override:
@@ -1035,9 +1027,7 @@ def import_func(func_path, _check_callable=True):
             here = getattr(here, f_name_part)
         func = here
     except AttributeError as exc:
-        raise _exc_cls(
-            "func_path's module does not have the specified func", func_path, exc
-        )
+        raise _exc_cls("func_path's module does not have the specified func", func_path, exc)
 
     if _check_callable and not callable(func):
         raise _exc_cls("func does not seem to be a callable", func_path, func)
@@ -1065,15 +1055,12 @@ def find_files(
             file_list = (val for val in file_list if re.match(fname_re, val))
 
         # Annotate with full path:
-        file_list = (
-            (os.path.join(dir_name, file_name), file_name) for file_name in file_list
-        )
+        file_list = ((os.path.join(dir_name, file_name), file_name) for file_name in file_list)
 
         if strip_dir:
             # Strip the top dir from it
             file_list = (
-                (slstrip(fpath, dir_name).lstrip("/"), fname)
-                for fpath, fname in file_list
+                (slstrip(fpath, dir_name).lstrip("/"), fname) for fpath, fname in file_list
             )
 
         if older_than is not None:

@@ -98,6 +98,25 @@ exclude = [
     "tests/*",
 ]
 
+[tool.isort]
+profile = "black"
+line_length = 100
+combine_as_imports = true
+use_parentheses = true
+balanced_wrapping = true
+include_trailing_comma = true
+# `WrapModes.VERTICAL_GRID_GROUPED`:
+# known_third_party = "_pytest, pytest"
+# no_lines_before = "LOCALFOLDER"
+# order_by_type = false
+# reverse_relative = true
+
+
+[tool.black]
+line-length = 100
+target-version = ["py37"]
+
+
 [tool.flake8]
 ignore = [
     "FI58",  # requiring `from __future__ import annotations` (FI18)
@@ -107,20 +126,6 @@ ignore = [
 max_line_length = 100
 min_version = "3.7"
 require_code = "true"
-
-
-[tool.isort]
-line_length = 80
-combine_as_imports = true
-use_parentheses = true
-balanced_wrapping = true
-include_trailing_comma = true
-# `WrapModes.VERTICAL_GRID_GROUPED`:
-multi_line_output = 5
-# known_third_party = "_pytest, pytest"
-# no_lines_before = "LOCALFOLDER"
-# order_by_type = false
-# reverse_relative = true
 
 
 [tool.mypy]
@@ -248,7 +253,7 @@ deps=
 
 commands =
     isort --check --diff ./
-    black --check
+    black --check ./
     pflake8
     pylint --rcfile=pyproject.toml --disable=fixme ./ || true
     mypy --config-file=pyproject.toml --warn-unused-configs ./

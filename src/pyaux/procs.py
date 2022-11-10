@@ -10,9 +10,7 @@ import subprocess
 import time
 
 
-def _out_cb_default_common(
-    tag, line, timestamp=None, encoding="utf-8", errors="replace"
-):
+def _out_cb_default_common(tag, line, timestamp=None, encoding="utf-8", errors="replace"):
     # timestamp_dt = datetime.datetime.fromtimestamp(timestamp)
     # # Less precise, more convenient.
     timestamp_dt = datetime.datetime.now()
@@ -120,9 +118,7 @@ def run_cmd(*args, **kwargs):
 
     tag_to_cb = dict(stdout=stdout_cb, stderr=stderr_cb)
 
-    proc = subprocess.Popen(
-        args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, **kwargs
-    )
+    proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, **kwargs)
 
     tag_to_fd = dict(stdout=proc.stdout, stderr=proc.stderr)
     outputs = poll_fds(tag_to_fd, nonblocking=nonblocking, total_timeout=timeout)

@@ -39,10 +39,7 @@ def url_replace(url, **params):
         if key == "query" and not isinstance(val, (bytes, str)):
             if isinstance(val, dict):
                 val = val.items()
-            val = [
-                (to_bytes(query_key), to_bytes(query_val))
-                for query_key, query_val in val
-            ]
+            val = [(to_bytes(query_key), to_bytes(query_val)) for query_key, query_val in val]
             val = urllib.parse.urlencode(val)
 
         num = name_to_num[key]  # Will except here if supplied an unknown url param
@@ -85,7 +82,5 @@ def mangle_url_l(url, include=None, exclude=None, add=None, **kwargs):
 
     url_parts = urllib.parse.urlparse(to_bytes(url))
     query = MVOD(urllib.parse.parse_qsl(url_parts.query, keep_blank_values=1))
-    query_new = mangle_dict(
-        query, include=include, exclude=exclude, add=add, _return_list=True
-    )
+    query_new = mangle_dict(query, include=include, exclude=exclude, add=add, _return_list=True)
     return url_replace(url, query=query_new, **kwargs)

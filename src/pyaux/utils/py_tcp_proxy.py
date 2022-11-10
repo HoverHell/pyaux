@@ -198,9 +198,7 @@ class TheServer(object):
                     if too_long:
                         msg_data = repr(line) + "…"
                     else:
-                        msg_data = repr(
-                            line + "\n"
-                        )  # ... after putting the newline back
+                        msg_data = repr(line + "\n")  # ... after putting the newline back
                 else:
                     msg_data = " " + line  # Unambiguate with the space
 

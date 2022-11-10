@@ -119,9 +119,7 @@ def gai_verbose_parse(responses, family_set=None, flags=None):
     results = []
     flag_names = set()
     if flags is not None:
-        flag_names = set(
-            item["name"] for num, item in SOCKET_AI.items() if flags & item["value"]
-        )
+        flag_names = set(item["name"] for num, item in SOCKET_AI.items() if flags & item["value"])
 
     for family, socktype, proto, canonname, sockaddr in responses:
 

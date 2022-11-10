@@ -8,13 +8,7 @@ from __future__ import annotations
 
 import sys
 
-from . import (
-    aio,
-    madness_datadiff,
-    madness_oneliny,
-    madness_reprstuff,
-    madness_stuffstuff,
-)
+from . import aio, madness_datadiff, madness_oneliny, madness_reprstuff, madness_stuffstuff
 from .aio import *
 from .madness_datadiff import *
 from .madness_oneliny import *

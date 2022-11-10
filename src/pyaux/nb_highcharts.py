@@ -17,9 +17,7 @@ from pyaux.dicts import dict_merge
 
 
 def mk_uid():
-    return "".join(
-        random.choice(string.ascii_uppercase + string.digits) for _ in range(15)
-    )
+    return "".join(random.choice(string.ascii_uppercase + string.digits) for _ in range(15))
 
 
 def Highcharts_old(
@@ -201,13 +199,10 @@ def mk_chart_def(
 
         if zip_idx:
             series.extend(
-                dict(name=column, data=zip(idx, list(df[column])))
-                for column in df.columns
+                dict(name=column, data=zip(idx, list(df[column]))) for column in df.columns
             )
         else:
-            series.extend(
-                dict(name=column, data=list(df[column])) for column in df.columns
-            )
+            series.extend(dict(name=column, data=list(df[column])) for column in df.columns)
 
     if kwa:
         res = dict_merge(res, kwa, _copy=False)
@@ -223,8 +218,7 @@ def dt_to_hc(dt):
 def ohlc_to_data(df, cols="o h l c".split(), **kwa):
     """OHLC dataframe -> data"""
     res = [
-        ([dt_to_hc(idx.to_datetime())] + [row[col] for col in cols])
-        for idx, row in df.iterrows()
+        ([dt_to_hc(idx.to_datetime())] + [row[col] for col in cols]) for idx, row in df.iterrows()
     ]
     return res
 
@@ -284,9 +278,7 @@ def ohlcv_to_cdef(df, name, volume="v", pois=None, poi_to_color="default", **kwa
     extras = {}
     if volume and volume in df:
         volume_series = df[volume]
-        volume_data = [
-            [dt_to_hc(idx.to_datetime()), val] for idx, val in volume_series.iteritems()
-        ]
+        volume_data = [[dt_to_hc(idx.to_datetime()), val] for idx, val in volume_series.iteritems()]
         series.append(
             dict(
                 type="column",

@@ -167,10 +167,7 @@ def _mrosources(cls, attname, raw=False, colorize=False):
 
     from pyaux import dotdict
 
-    meths = [
-        dotdict(cls=mrocls, meth=getattr(mrocls, attname, None))
-        for mrocls in cls.__mro__
-    ]
+    meths = [dotdict(cls=mrocls, meth=getattr(mrocls, attname, None)) for mrocls in cls.__mro__]
     meths = [val for val in meths if val.meth]
 
     def getsrc(val):
@@ -190,9 +187,7 @@ def _mrosources(cls, attname, raw=False, colorize=False):
         meths = [dotdict(val, src=colorfunc(val.src, **colorfunc_kwa)) for val in meths]
     if raw:
         return meths
-    res = "\n\n".join(
-        " ======= %s =======\n%s" % (val.cls.__name__, val.src) for val in meths
-    )
+    res = "\n\n".join(" ======= %s =======\n%s" % (val.cls.__name__, val.src) for val in meths)
     return res
 
 
