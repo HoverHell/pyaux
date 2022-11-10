@@ -60,7 +60,7 @@ def _ensure_grouped(pattern, source=None):
     # TODO: e.g. '\r*'
     # if not source: source = sre_parse.parse(pattern)
     # if len(source.data) == 1: return pattern
-    return "(?:{})".format(pattern)
+    return f"(?:{pattern})"
 
 
 def _flags_to_list(flags):
@@ -229,7 +229,7 @@ def rast_to_pattern(rast, _parent_type=None, **kwargs):
         elif item_type is RANGE and isinstance(item_value, tuple) and len(item_value) == 2:
             assert _parent_type is IN, _parent_type
             lo, hi = item_value
-            return "{}-{}".format(re.escape(_chr(lo)), re.escape(_chr(hi)))
+            return f"{re.escape(_chr(lo))}-{re.escape(_chr(hi))}"
 
         # # Reference:
         #         else:
@@ -333,7 +333,7 @@ def rast_to_pattern(rast, _parent_type=None, **kwargs):
             elif min_repeat == 1 and max_repeat is MAXREPEAT:
                 modifier = "+"
             elif min_repeat == max_repeat:  # `{a}`
-                modifier = "{{{}}}".format(min_repeat)
+                modifier = f"{{{min_repeat}}}"
             else:  # `{a,b}`
                 modifier = "{{{},{}}}".format(
                     "" if min_repeat == 0 else min_repeat,
@@ -588,7 +588,7 @@ def rast_to_pattern(rast, _parent_type=None, **kwargs):
             result = "|".join(rast_to_pattern(child, **kwargs) for child in children)
             # Tricky: branch inside subpattern does not require extra parentheses.
             if _parent_type is not SUBPATTERN:
-                result = "(?:{})".format(result)
+                result = f"(?:{result})"
             return result
 
             # # Reference:
@@ -613,7 +613,7 @@ def rast_to_pattern(rast, _parent_type=None, **kwargs):
                 if name:
                     # NOTE: making a named group with changed flags is syntaxically impossible.
                     assert not flags
-                    flags = ["P<{}>".format(name)] + flags
+                    flags = [f"P<{name}>"] + flags
 
             return "({}{})".format(
                 "?{}".format("".join(flags)) if flags else "",
@@ -739,7 +739,7 @@ def main():
 
     rex = sys.argv[1]
     string = sys.argv[2]
-    print("Regex: {!r}, string: {!r}".format(rex, string), file=sys.stderr)
+    print(f"Regex: {rex!r}, string: {string!r}", file=sys.stderr)
     for result in find_matching_subregexes(rex, string, verbose=True):
         print("{pattern_round.state!r} -> {substring!r}".format(**result))
 

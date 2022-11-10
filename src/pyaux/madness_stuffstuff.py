@@ -1,4 +1,3 @@
-# coding: utf8
 """ madstuff: other stuff stuff """
 
 import re
@@ -59,7 +58,7 @@ class Url(dotdict):
     def to_string(self):
         query_str = urllib.parse.urlencode(list(self.query.items()))
         return urllib.parse.urlunparse(
-            (self[key] if key != "query" else query_str for key in self._base_components)
+            self[key] if key != "query" else query_str for key in self._base_components
         )
 
 
@@ -86,7 +85,7 @@ def IPNBDFDisplay(df, *ar, **kwa):
     """
     from IPython.display import HTML, display
 
-    kwa.setdefault("float_format", lambda v: "%.6f" % (v,))
+    kwa.setdefault("float_format", lambda v: f"{v:.6f}")
     columns = kwa.pop("columns", None)
     include = kwa.pop("include", None)
     exclude = kwa.pop("exclude", None)
@@ -110,7 +109,7 @@ def IPNBDFDisplay(df, *ar, **kwa):
         cutlinks = 80 if cutlinks is True else cutlinks
 
         def cutlink(link):
-            result = '<a href="%s">%s</a>' % (link, _cut(link, cutlinks))
+            result = f'<a href="{link}">{_cut(link, cutlinks)}</a>'
             return result
 
         html = re.sub(_url_re, lambda match: cutlink(match.group(0)), html)

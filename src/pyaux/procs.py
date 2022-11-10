@@ -1,4 +1,3 @@
-# coding: utf8
 """
 Additional utils for working with subprocesses.
 """

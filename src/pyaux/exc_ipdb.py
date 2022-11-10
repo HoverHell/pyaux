@@ -1,4 +1,3 @@
-# coding: utf8
 """
 Automatically start the debugger on an exception.
 

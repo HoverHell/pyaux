@@ -169,7 +169,7 @@ def main():
         return main_i(data_in, params)
     except Bailout as exc:
         msg = exc.args[0]
-        err_msg_pieces = ['ERROR: f_convert: {}'.format(msg)]
+        err_msg_pieces = [f'ERROR: f_convert: {msg}']
         if params.original_data_on_failure:
             err_msg_pieces.append('; original data as follows (on stdout):')
         err_msg_pieces.append('\n')
@@ -374,7 +374,7 @@ def make_outs_func(params):
     else:
         raise Exception("Unknown output_format")
 
-    err_tpl = 'Error serializing as {}: {{exc}}'.format(output_format)
+    err_tpl = f'Error serializing as {output_format}: {{exc}}'
     outs_func = prefetch_first_wrap(outs_func)
     outs_func = bailout_wrap(outs_func, err_tpl)
 

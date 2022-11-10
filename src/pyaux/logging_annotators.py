@@ -1,4 +1,3 @@
-# coding: utf-8
 """
 Logging: annotating filters
 
@@ -32,7 +31,7 @@ class Annotator(logging.Filter):
         self.attribute_name = kwargs.pop("attribute_name", None) or self.attribute_name
         if self.attribute_name is None:
             raise Exception("attribute_name should either be on class or always specified")
-        super(Annotator, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def get_value(self, record, *args, **kwargs):
         raise NotImplementedError
@@ -62,7 +61,7 @@ class time_diff_annotator(Annotator):
 
     def __init__(self, *args, **kwargs):
         self.last_ts = time.time()
-        super(time_diff_annotator, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def get_value(self, record, *args, **kwargs):
         now = time.time()

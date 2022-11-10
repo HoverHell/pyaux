@@ -1,4 +1,3 @@
-# coding: utf8
 """
 Wide variety of helper methods for working with iterables.
 
@@ -120,7 +119,7 @@ def uniq_g(lst, key=lambda value: value):
 uniq = uniq_g
 
 
-class IterStat(object):
+class IterStat:
     """
     Iterative single-pass computing of mean and variance.
 

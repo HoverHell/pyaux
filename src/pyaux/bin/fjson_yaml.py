@@ -61,14 +61,14 @@ def main():
 
     def bailout(msg):
         sys.stderr.write(
-            "ERROR: fjson_yaml: %s; original data as follows (on stdout)\n" % (msg,))
+            f"ERROR: fjson_yaml: {msg}; original data as follows (on stdout)\n")
         sys.stdout.write(data_in)
         return 13
 
     try:
         data_data = json.loads(data_in)
     except Exception as exc:
-        return bailout("Error parsing as json: %s" % (exc,))
+        return bailout(f"Error parsing as json: {exc}")
 
     kwa = dict(
         default_flow_style=params.default_flow_style,
@@ -82,7 +82,7 @@ def main():
     try:
         out = yaml.safe_dump(data_data, **kwa)
     except Exception as exc:
-        return bailout("Error dumping as yaml: %s" % (exc,))
+        return bailout(f"Error dumping as yaml: {exc}")
 
     # Result:
     #   `--color=no` always skips this

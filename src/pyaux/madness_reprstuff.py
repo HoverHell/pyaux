@@ -1,4 +1,3 @@
-# coding: utf8
 """ madstuff: repr stuff """
 
 __all__ = (
@@ -7,7 +6,7 @@ __all__ = (
 )
 
 
-class GenReprWrap(object):
+class GenReprWrap:
     """Generator proxy-wrapper that prints part of the child generator
     on __repr__ (saving it in a list)."""
 

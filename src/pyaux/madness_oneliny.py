@@ -1,4 +1,3 @@
-# coding: utf8
 """ madstuff: oneliners and debug-useful stuff """
 
 from __future__ import annotations
@@ -187,7 +186,7 @@ def _mrosources(cls, attname, raw=False, colorize=False):
         meths = [dotdict(val, src=colorfunc(val.src, **colorfunc_kwa)) for val in meths]
     if raw:
         return meths
-    res = "\n\n".join(" ======= %s =======\n%s" % (val.cls.__name__, val.src) for val in meths)
+    res = "\n\n".join(f" ======= {val.cls.__name__} =======\n{val.src}" for val in meths)
     return res
 
 

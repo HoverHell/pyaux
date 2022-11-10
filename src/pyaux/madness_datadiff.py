@@ -1,4 +1,3 @@
-# coding: utf8
 """ madstuff: datadiff stuff """
 
 from __future__ import annotations
@@ -96,7 +95,7 @@ def _dumprepr(
         # segfault while doing that.
         import ujson
 
-        res += "# Unable to serialize directly! (%r)\n" % (exc,)
+        res += f"# Unable to serialize directly! ({exc!r})\n"
         prepared_value = ujson.loads(ujson.dumps(val))  # pylint: disable=c-extension-no-member
         res += maybe_colorize(yaml.dump(prepared_value, **params))
 
@@ -128,7 +127,7 @@ def word_diff_color(val1, val2, add="\x1b[32m", rem="\x1b[31;01m", clear="\x1b[3
             color = rem
         else:
             color = ""
-        return "%s%s%s" % (color, line[1:], clear)
+        return f"{color}{line[1:]}{clear}"
 
     diffs = list(diffs)
     diffs_colored = (_postprocess(line) for line in diffs)

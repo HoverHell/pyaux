@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# coding: utf8
 
 from __future__ import annotations
 
@@ -25,20 +24,20 @@ def main():
 
     def bailout(msg):
         sys.stderr.write(
-            "ERROR: fjson.py: %s; original data as follows (on stdout)\n" % (msg,))
+            f"ERROR: fjson.py: {msg}; original data as follows (on stdout)\n")
         outbuf.write(to_bytes(data_in))
         return 13
 
     try:
         data = json.loads(data_in)
     except Exception as exc:
-        return bailout("Error parsing as json: %s" % (exc,))
+        return bailout(f"Error parsing as json: {exc}")
 
     try:
         data_out = json.dumps(
             data, indent=indent, sort_keys=True, ensure_ascii=False)
     except Exception as exc:
-        return bailout("Error dumping as json: %s" % (exc,))
+        return bailout(f"Error dumping as json: {exc}")
 
     outbuf.write(to_bytes(data_out))
     outbuf.write(b"\n")

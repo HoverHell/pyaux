@@ -140,8 +140,8 @@ def update_version_in_text(text, new_version, current_version=None):
             )
 
     # pre and post tag parts are supposed to contain the quotes
-    new_tag = "%s%s%s" % (pre_tag, new_version, post_tag)
-    new_text = "%s%s%s" % (text[: match.start()], new_tag, text[match.end() :])
+    new_tag = f"{pre_tag}{new_version}{post_tag}"
+    new_text = f"{text[: match.start()]}{new_tag}{text[match.end() :]}"
     return new_text
 
 
@@ -153,7 +153,7 @@ def update_version_in_file(filename, new_version, **kwa):
         new_text = update_version_in_text(text, new_version, **kwa)
     except ValueError:
         # Re-raise with filename instead of the text
-        raise ValueError("Version not found in file %r" % (filename,))
+        raise ValueError(f"Version not found in file {filename!r}")
 
     with open(filename, "w") as fo:
         fo.write(new_text)
@@ -223,17 +223,17 @@ def prepare(params):
     _log.debug("New version: %s", new_version)
 
     version_tag = VERSION_TAG_TPL % dict(version=current_version)
-    git_history = run_sh("git", "log", "%s..HEAD" % (version_tag,), "--format=format: - %s")
+    git_history = run_sh("git", "log", f"{version_tag}..HEAD", "--format=format: - %s")
     if isinstance(git_history, bytes):
         git_history = git_history.decode("utf-8", errors="replace")
     _log.debug("Git history: %r", git_history)
 
-    new_history_header = "%s (%s)" % (new_version, today)
-    new_history_header_full = "%s\n%s" % (
+    new_history_header = f"{new_version} ({today})"
+    new_history_header_full = "{}\n{}".format(
         new_history_header,
         "+" * len(new_history_header),
     )
-    new_history_versions = "\n%s\n\n%s\n\n%s" % (
+    new_history_versions = "\n{}\n\n{}\n\n{}".format(
         new_history_header_full,
         git_history,
         history_versions,
@@ -275,11 +275,9 @@ def finalise(params):
         mods = get_git_mods()
         if not mods.strip():
             _log.critical(
-                (
-                    "Finalise should be called after `prepare` made the"
-                    " changes and while they are not committed yet; alas, no"
-                    " changes are found by git"
-                )
+                "Finalise should be called after `prepare` made the"
+                " changes and while they are not committed yet; alas, no"
+                " changes are found by git"
             )
             return 4
 

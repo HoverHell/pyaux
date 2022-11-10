@@ -38,7 +38,7 @@ def _make_short_levelnames(shortnum=True):
 
 
 # Current attempt: use bytes in py2, unicode in py3 (i.e. subvert unicode_literals just for these).
-BASIC_LOG_FORMAT = str("%(asctime)s: %(levelname)-13s: %(name)s: %(message)s")
+BASIC_LOG_FORMAT = "%(asctime)s: %(levelname)-13s: %(name)s: %(message)s"
 BASIC_LOG_FORMAT_TD = str(
     "%(asctime)s(+%(time_diff)5.3fs): %(levelname)-13s: %(name)s: %(message)s"
 )
@@ -130,7 +130,7 @@ class ListSigHandler(list):
         for func in reversed(self):
             try:
                 if self.verbose:
-                    print("ListSigHandler: running %r" % (func,))
+                    print(f"ListSigHandler: running {func!r}")
                 if self.try_argless:
                     func = argless_wrap(func)
                 func(n, f)
@@ -140,7 +140,7 @@ class ListSigHandler(list):
                         traceback.print_exc()
                     else:
                         # Still print something
-                        print("Exception ignored: %r" % (e,))
+                        print(f"Exception ignored: {e!r}")
                 else:
                     raise
 

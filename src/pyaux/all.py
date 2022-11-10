@@ -1,4 +1,3 @@
-# coding: utf8
 """
 The most simple and backwards-compatible way of getting something. Not
 necessarily performant.

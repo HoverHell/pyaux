@@ -1,4 +1,3 @@
-# coding: utf8
 """ Various helper functions for easier profiling """
 
 ## LineProfiler helpers

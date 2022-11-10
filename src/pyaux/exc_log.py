@@ -1,4 +1,3 @@
-# coding: utf8
 """ Set the exception handler to additionaly log the exception before
 processing it further (e.g. to e-mail it to admins).
 
@@ -74,7 +73,7 @@ def _var_repr(v, ll=356):
         # # XXX: combine those two somehow?
         # # (also, make it print last value of `list`/`deque`/... always, too)
     except Exception as exc:
-        return "<un`repr()`able variable: {!r}>".format(exc)
+        return f"<un`repr()`able variable: {exc!r}>"
     # if len(r) > ll:  # handled by the lrepr, somewhat; `ll` is ignored
     #     return r[:ll-4] + '... '
     return r
@@ -97,7 +96,7 @@ def _get_lines_from_file(filename, lineno, context_lines, loader=None, module_na
                 source = f.readlines()
             finally:
                 f.close()
-        except (OSError, IOError):
+        except OSError:
             pass
     if source is None:
         return None, [], None, []
@@ -183,12 +182,12 @@ def render_exc_repr(exc_type, exc_value):
     try:
         res += "Error:  %s" % _exc_safe_repr(exc_type, exc_value)
         try:
-            res += "  (repr: '''%r''')\n" % (exc_value,)
+            res += f"  (repr: '''{exc_value!r}''')\n"
         except Exception as e:
             try:
-                res += "  (Failure to repr: %r)\n" % (e,)
+                res += f"  (Failure to repr: {e!r})\n"
             except Exception as e2:
-                res += "  (Failure to repr totally: (%s) (%s)\n" % (
+                res += "  (Failure to repr totally: ({}) ({})\n".format(
                     _exc_safe_repr(type(e), e).strip(),
                     _exc_safe_repr(type(e2), e2).strip(),
                 )

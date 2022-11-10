@@ -1,5 +1,3 @@
-# coding: utf8
-
 # NOTE: not using unicode_literals because doctesting becomes a problem.
 from __future__ import annotations
 
@@ -110,7 +108,7 @@ class Counter(dict):
         if not self:
             return "%s()" % self.__class__.__name__
         items = ", ".join("%r: %r" % value for value in self.most_common())
-        return "%s({%s})" % (self.__class__.__name__, items)
+        return f"{self.__class__.__name__}({{{items}}})"
 
     # Multiset-style mathematical operations discussed in:
     #       Knuth TAOCP Volume II section 4.6.3 exercise 19

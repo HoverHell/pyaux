@@ -1,4 +1,3 @@
-# coding: utf8
 """ Various functions for easier working with URLs """
 
 from __future__ import annotations

@@ -57,7 +57,7 @@ def _lzcat_main():
     else:
         fo_a = "-"
     if len(sys.argv) > 3:
-        print("Basic usage: %s [<from_file> [<to_file>]]" % (sys.argv[0],))
+        print(f"Basic usage: {sys.argv[0]} [<from_file> [<to_file>]]")
         sys.exit()
 
     if fi_a == "-":

@@ -1,4 +1,3 @@
-# coding: utf8
 """
 Helpers for using Highcharts / Highstock in an IPython notebook.
 """
@@ -256,8 +255,7 @@ def interleave(joiner, iterable):
     except StopIteration:  # empty
         return
     for item in iterable:
-        for subjoiner in joiner:
-            yield subjoiner
+        yield from joiner
         yield item
 
 

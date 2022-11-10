@@ -1,4 +1,3 @@
-# coding: utf8
 """
 Various dict-related special classes.
 
@@ -300,23 +299,23 @@ class dotdictify(dict):
     __getattr__ = __getitem__
 
 
-class ODReprMixin(object):
+class ODReprMixin:
     """A mixin for ordered dicts that provides two different representations
     and a wrapper for handling self-referencing structures."""
 
     def __irepr__(self):
         """The usual (default) representation of an ordereddict"""
         if not self:
-            return "%s()" % (self.__class__.__name__,)
-        return "%s(%r)" % (self.__class__.__name__, self.items())
+            return f"{self.__class__.__name__}()"
+        return f"{self.__class__.__name__}({self.items()!r})"
 
     def __drepr__(self):
         """A slightly more visual-oriented representation of an ordereddict"""
         if not self:
-            return "%s()" % (self.__class__.__name__,)
-        return "%s(%s)" % (
+            return f"{self.__class__.__name__}()"
+        return "{}({})".format(
             self.__class__.__name__,
-            ", ".join("%r: %r" % (key, val) for key, val in self.items()),
+            ", ".join(f"{key!r}: {val!r}" for key, val in self.items()),
         )
 
     def __repr__(self, _repr_running={}, fn=__drepr__):
@@ -488,7 +487,7 @@ class MultiValueDict(dict):
     """
 
     def __init__(self, key_to_list_mapping=()):
-        super(MultiValueDict, self).__init__(key_to_list_mapping)
+        super().__init__(key_to_list_mapping)
 
     @classmethod
     def make_from_items(cls, items):
@@ -498,9 +497,9 @@ class MultiValueDict(dict):
         return cls(key_to_list_mapping)
 
     def __repr__(self):
-        return "<%s: %s>" % (
+        return "<{}: {}>".format(
             self.__class__.__name__,
-            super(MultiValueDict, self).__repr__(),
+            super().__repr__(),
         )
 
     def __getitem__(self, key):
@@ -509,7 +508,7 @@ class MultiValueDict(dict):
         raises KeyError if not found.
         """
         try:
-            list_ = super(MultiValueDict, self).__getitem__(key)
+            list_ = super().__getitem__(key)
         except KeyError:
             raise MultiValueDictKeyError(repr(key))
         try:
@@ -520,7 +519,7 @@ class MultiValueDict(dict):
             return []
 
     def __setitem__(self, key, value):
-        super(MultiValueDict, self).__setitem__(key, [value])
+        super().__setitem__(key, [value])
 
     def __copy__(self):
         return self.__class__([(k, v[:]) for k, v in self.lists()])
@@ -564,14 +563,14 @@ class MultiValueDict(dict):
         then a default value is returned.
         """
         try:
-            return super(MultiValueDict, self).__getitem__(key)
+            return super().__getitem__(key)
         except KeyError:
             if default is None:
                 return []
             return default
 
     def setlist(self, key, list_):
-        super(MultiValueDict, self).__setitem__(key, list_)
+        super().__setitem__(key, list_)
 
     def setdefault(self, key, default=None):
         if key not in self:
@@ -603,7 +602,7 @@ class MultiValueDict(dict):
 
     def iterlists(self):
         """Yields (key, list) pairs."""
-        return super(MultiValueDict, self).items()
+        return super().items()
 
     def itervalues(self):
         """Yield the last value on every key list."""
@@ -713,7 +712,7 @@ def _lists_ungroup(key_to_list_mapping):
     return result
 
 
-class MVOD_Common(ODReprMixin, object):
+class MVOD_Common(ODReprMixin):
 
     _data_internal = ()
 
@@ -813,8 +812,7 @@ class MVOD_Common(ODReprMixin, object):
     def _iteritems(self):
         # WARN: no dict-changed-while-iterating handling. In practice,
         # iteration is always over a copy (since self._data is a tuple).
-        for item in self._data:
-            yield item
+        yield from self._data
 
     def __reversed__(self):
         # See the `_iteritems` dict-changed-while-iterating note.
@@ -825,8 +823,7 @@ class MVOD_Common(ODReprMixin, object):
         """MultiValueDict-like (django) method. Not very optimal."""
         # See the `_iteritems` dict-changed-while-iterating note.
         pre_func = self._lists_group_ordered if ordered else self._lists_group
-        for key, lst in pre_func(self._data):
-            yield key, lst
+        yield from pre_func(self._data)
 
     def _itervalues(self):
         for _, val in self._iteritems():
@@ -857,7 +854,7 @@ class MVOD_Common(ODReprMixin, object):
 
     def pop(self, key, *args):
         if len(args) > 1:
-            raise TypeError("pop expected at most 2 arguments, got %r" % (1 + len(args),))
+            raise TypeError(f"pop expected at most 2 arguments, got {1 + len(args)!r}")
         try:
             value = self[key]
         except KeyError:
@@ -957,7 +954,7 @@ class MVOD(MVOD_Common, dict):
         times.
         """
         data_new = self._process_upddata(args, kwds)
-        keys = set(key for key, val in data_new)
+        keys = {key for key, val in data_new}
         pre_data = tuple((key, val) for key, val in self._data if key not in keys)
         self._data_checked = pre_data + data_new
 
@@ -994,7 +991,7 @@ class MVOD(MVOD_Common, dict):
         elif how == "last":
             return self.deduplicate_last()
         else:
-            raise ValueError("Unknown deduplication `how`: %r" % (how,))
+            raise ValueError(f"Unknown deduplication `how`: {how!r}")
         self._data_checked = tuple(uniq(self._data, key=lambda item: item[0]))
 
     def deduplicate_last(self):
@@ -1078,7 +1075,7 @@ class MVLOD(MVOD_Common, MultiValueDict):
         times.
         """
         data_new = self._process_upddata(args, kwds)
-        keys = set(key for key, val in data_new)
+        keys = {key for key, val in data_new}
         data_kept = tuple((key, val) for key, val in self._data if key not in keys)
         data_result = data_kept + data_new
         if not self._optimised:
@@ -1127,7 +1124,7 @@ class MVLOD(MVOD_Common, MultiValueDict):
 
     def _iterlists(self, ordered=False):
         if ordered:
-            return super(MVLOD, self)._iterlists(ordered=ordered)
+            return super()._iterlists(ordered=ordered)
         return dict.items(self)
 
 
@@ -1139,7 +1136,7 @@ class dotdictx(dict):
 
     def __getattr__(self, name):
         if name.startswith("__"):  # NOTE: two underscores.
-            return super(dotdictx, self).__getattr__(name)
+            return super().__getattr__(name)
         try:
             return self[name]
         except KeyError as e:
@@ -1147,7 +1144,7 @@ class dotdictx(dict):
 
     def __setattr__(self, name, value):
         if name.startswith("_"):
-            return super(dotdictx, self).__setattr__(name, value)
+            return super().__setattr__(name, value)
         self[name] = value
 
 
@@ -1164,7 +1161,7 @@ class defaultdictx(dict):
 
     def __getitem__(self, name):
         try:
-            return super(defaultdictx, self).__getitem__(name)
+            return super().__getitem__(name)
         except KeyError:
             if self._default is not None:
                 val = self._default()
@@ -1194,7 +1191,7 @@ class DefaultDotDictMixin(dotdict, defaultdictx):
         # (could disable the defaultdict'ing for that, though)
         if name.startswith("__"):  # NOTE: two underscores.
             return self.__getattribute__(name)  # Basically `raise AttributeError`.
-        return super(DefaultDotDictMixin, self).__getattr__(name)  # __getitem__
+        return super().__getattr__(name)  # __getitem__
 
     def __setattr__(self, name, value):
         # if name in self.__dict__:
@@ -1210,7 +1207,7 @@ class DefaultDotDictMixin(dotdict, defaultdictx):
             # default. Not necessarily problematic though.
             return dict.__setattr__(self, name, value)
 
-        return super(DefaultDotDictMixin, self).__setattr__(name, value)  # __setitem__
+        return super().__setattr__(name, value)  # __setitem__
 
 
 class dodd(DefaultDotDictMixin, OrderedDict):

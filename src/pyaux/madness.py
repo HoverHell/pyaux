@@ -1,4 +1,3 @@
-# coding: utf8
 """ Things that are not quite okay to use in most cases.
 
 Also, things that are useful in an ipython interactice shell.
@@ -38,7 +37,7 @@ def _into_builtin(dct):
 
 # For _into_builtin
 __all_stuff = locals()
-__all_stuff_e = dict((key, globals().get(key)) for key in __all__)
+__all_stuff_e = {key: globals().get(key) for key in __all__}
 
 
 try:

@@ -1,4 +1,3 @@
-# coding: utf8
 """
 Requests for humans that have to deal with lots of stuff.
 
@@ -99,7 +98,7 @@ def _cut(data, length, marker):
 SESSION_ZEALOUS = configure_session(requests.Session())
 
 
-class RequesterBase(object):
+class RequesterBase:
 
     apply_environment = True
     length_cut_marker = b"..."
@@ -283,7 +282,7 @@ class RequesterDefaults(RequesterBase):
         self.default_timeout = default_timeout
         self.default_write_method = default_write_method
         self.default_allow_redirects = default_allow_redirects
-        super(RequesterDefaults, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     # Warning: kwargs defaults are also duplicated in `Requester.request`.
     def _prepare_parameters(self, kwargs):
@@ -305,7 +304,7 @@ class RequesterDefaults(RequesterBase):
             else:
                 kwargs["allow_redirects"] = self.default_allow_redirects
 
-        return super(RequesterDefaults, self)._prepare_parameters(kwargs)
+        return super()._prepare_parameters(kwargs)
 
 
 class RequesterBaseUrl(RequesterBase):
@@ -314,13 +313,13 @@ class RequesterBaseUrl(RequesterBase):
     # Warning: argument defaults are also duplicated in `Requester.__init__`.
     def __init__(self, base_url=None, **kwargs):
         self.base_url = base_url
-        super(RequesterBaseUrl, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     # Warning: kwargs defaults are also duplicated in `Requester.request`.
     def _prepare_parameters(self, kwargs):
         if self.base_url:
             kwargs["url"] = urllib.parse.urljoin(self.base_url, kwargs["url"])  # required parameter
-        return super(RequesterBaseUrl, self)._prepare_parameters(kwargs)
+        return super()._prepare_parameters(kwargs)
 
 
 class RequesterContentType(RequesterBase):
@@ -338,7 +337,7 @@ class RequesterContentType(RequesterBase):
     # Warning: argument defaults are also duplicated in `Requester.__init__`.
     def __init__(self, default_content_type="json", **kwargs):
         self.default_content_type = default_content_type
-        super(RequesterContentType, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     # Warning: kwargs defaults are also duplicated in `Requester.request`.
     def _prepare_parameters(self, kwargs):
@@ -349,10 +348,8 @@ class RequesterContentType(RequesterBase):
         json_data = kwargs.pop("json", None)
         if json_data is not None:
             raise Exception(
-                (
-                    "Please don't use `json=...` keyword here."
-                    " Use `content_type='json'` (likely, already the default)."
-                )
+                "Please don't use `json=...` keyword here."
+                " Use `content_type='json'` (likely, already the default)."
             )
         if data is not None and content_type is not None:
             # # Maybe:
@@ -366,7 +363,7 @@ class RequesterContentType(RequesterBase):
                 kwargs["data"] = data
                 if content_type_header is not None:
                     kwargs["headers"]["content-type"] = content_type_header
-        return super(RequesterContentType, self)._prepare_parameters(kwargs)
+        return super()._prepare_parameters(kwargs)
 
     json_content_type = "application/json; charset=utf-8"
 
@@ -413,7 +410,7 @@ class RequesterMeta(RequesterBase):
     def __init__(self, collect_call_info=True, call_info_in_ua=True, **kwargs):
         self.collect_call_info = collect_call_info
         self.call_info_in_ua = call_info_in_ua
-        super(RequesterMeta, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     # Warning: kwargs defaults are also duplicated in `Requester.request`.
     def _prepare_parameters(self, kwargs):
@@ -423,7 +420,7 @@ class RequesterMeta(RequesterBase):
             kwargs["headers"]["user-agent"] = "{}, {}:{}: {}".format(
                 kwargs["headers"].get("user-agent") or "", *call_info
             )
-        return super(RequesterMeta, self)._prepare_parameters(kwargs)
+        return super()._prepare_parameters(kwargs)
 
     def request(self, url, **kwargs):
         """
@@ -437,7 +434,7 @@ class RequesterMeta(RequesterBase):
         if self.collect_call_info and kwargs.get("call_info") is None:
             # Could actually filter out the current module, but that's costly and palliative.
             kwargs["call_info"] = find_caller(extra_depth=call_extra_depth + 1)
-        return super(RequesterMeta, self).request(url, **kwargs)
+        return super().request(url, **kwargs)
 
 
 class RequesterAutoRaiseForStatus(RequesterBase):
@@ -451,15 +448,13 @@ class RequesterAutoRaiseForStatus(RequesterBase):
         # This could be done by auto-merging `send_request_keys` by the MRO /
         # property, but for a single case this is easier:
         require = kwargs.pop("require", True)
-        request, send_kwargs = super(RequesterAutoRaiseForStatus, self)._prepare_request(
-            kwargs, **etcetera
-        )
+        request, send_kwargs = super()._prepare_request(kwargs, **etcetera)
         send_kwargs["require"] = require
         return request, send_kwargs
 
     def send_request(self, request, **kwargs):
         require = kwargs.pop("require", True)
-        response = super(RequesterAutoRaiseForStatus, self).send_request(request, **kwargs)
+        response = super().send_request(request, **kwargs)
         if require:
             self.raise_for_status(response)
         return response
@@ -491,11 +486,11 @@ class RequesterAutoRaiseForStatus(RequesterBase):
         except Exception as exc:
             self.logger.warning("_get_raise_content failed: %r", exc)
             raise self.response_exception_cls(
-                "Status Error: {} {}".format(response.status_code, response.reason),
+                f"Status Error: {response.status_code} {response.reason}",
                 response=response,
             )
         raise self.response_exception_cls(
-            "Status Error: {} {}: {}".format(response.status_code, response.reason, content),
+            f"Status Error: {response.status_code} {response.reason}: {content}",
             response=response,
         )
 
@@ -508,7 +503,7 @@ class RequesterLog(RequesterBase):
     def send_request(self, request, **kwargs):
         self.log_before(request, **kwargs)
         try:
-            response = super(RequesterLog, self).send_request(request, **kwargs)
+            response = super().send_request(request, **kwargs)
         except Exception as exc:
             exc_info = sys.exc_info()
             self.log_exc(request, exc, exc_info=exc_info, **kwargs)
@@ -521,11 +516,11 @@ class RequesterLog(RequesterBase):
         url = request.url
         url_cap = self.logging_url_cap
         if url_cap and len(url) > url_cap:
-            url = "{}{}".format(url[:url_cap], self.length_cut_marker)
+            url = f"{url[:url_cap]}{self.length_cut_marker}"
 
         data_info = ""
         if request.body:
-            data_info = "  data_len={}".format(len(request.body))
+            data_info = f"  data_len={len(request.body)}"
 
         return "{method} {url}{data_info}".format(
             method=request.method.upper(), url=url, data_info=data_info
@@ -544,12 +539,12 @@ class RequesterLog(RequesterBase):
             "    {}b".format(len(response.content or "")),
         ]
         try:
-            elapsed = "in {:.3f}s".format(response.elapsed.total_seconds())
+            elapsed = f"in {response.elapsed.total_seconds():.3f}s"
         except Exception:  # pylint: disable=broad-except
             elapsed = "in ???s"
         pieces.append(elapsed)
         if self.log_response_headers:
-            pieces.append("    response.headers={!r}".format(response.headers))
+            pieces.append(f"    response.headers={response.headers!r}")
         return " ".join(str(piece) if not isinstance(piece, str) else piece for piece in pieces)
 
     # pylint: disable=unused-argument
@@ -580,7 +575,7 @@ class RequesterLog(RequesterBase):
         response_str = ""
         response = getattr(exc, "response", None)
         if response is not None:
-            response_str = " ({})".format(self.response_for_logging(response))
+            response_str = f" ({self.response_for_logging(response)})"
 
         self.logger.log(
             level,
@@ -645,7 +640,7 @@ class Requester(
 
         :param call_info_in_ua: add the stack information to user agent.
         """
-        super(Requester, self).__init__(
+        super().__init__(
             session=session,
             default_timeout=default_timeout,
             default_write_method=default_write_method,
@@ -743,7 +738,7 @@ class Requester(
 
         :param session: requests.Session object to use; defaults to `self.session`.
         """
-        return super(Requester, self).request(
+        return super().request(
             url,
             session=session,
             method=method,
@@ -786,7 +781,7 @@ class APIRequester(Requester):
             session = configure_session(requests.Session())
         kwargs.setdefault("default_timeout", 120)
         kwargs.setdefault("default_allow_redirects", False)
-        super(APIRequester, self).__init__(session=session, **kwargs)
+        super().__init__(session=session, **kwargs)
 
     # '204' is often returned for `DELETE` requests.
     okay_statuses = (200, 201, 204)

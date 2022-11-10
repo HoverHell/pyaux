@@ -1,4 +1,3 @@
-# coding: utf8
 """
 A collection of small useful helpers.
 """

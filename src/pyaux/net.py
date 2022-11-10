@@ -1,4 +1,3 @@
-# coding: utf8
 """
 ...
 """
@@ -85,7 +84,7 @@ def gai_verbose(
     """
     family_set = None
     if isinstance(family, (list, tuple, set)):
-        family_set = set(SOCKET_FAMILIES[family_one]["value"] for family_one in family)
+        family_set = {SOCKET_FAMILIES[family_one]["value"] for family_one in family}
         family = 0
 
     flags = flags or 0
@@ -119,7 +118,7 @@ def gai_verbose_parse(responses, family_set=None, flags=None):
     results = []
     flag_names = set()
     if flags is not None:
-        flag_names = set(item["name"] for num, item in SOCKET_AI.items() if flags & item["value"])
+        flag_names = {item["name"] for num, item in SOCKET_AI.items() if flags & item["value"]}
 
     for family, socktype, proto, canonname, sockaddr in responses:
 

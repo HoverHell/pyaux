@@ -1,4 +1,3 @@
-# coding: utf8
 """ Various methods and helpers for code profiling (especially
 LineProfiler)
 
@@ -25,7 +24,7 @@ import sys
 import traceback
 
 
-class DummyProfiler(object):
+class DummyProfiler:
     """Dummy LineProfiler-like wrapper"""
 
     def __call__(self, fn, *ar, **kwa):
@@ -80,12 +79,12 @@ def _wrap_class_stuff(the_class, wrapf):
             if getattr(i_val, "__prof_wrapped__", False):
                 continue  # do not wrap wrapped wrapstuff.
             # XXX: do the sourcefilename check too?
-            print("    Method wrapping: %s" % (i_name,))
+            print(f"    Method wrapping: {i_name}")
             wrapped_val = wrapf(i_val)
             setattr(wrapped_val, "__prof_wrapped__", True)
             setattr(the_class, i_name, wrapped_val)
         except Exception as e:
-            print("     ... Failed (%r). %r" % (i_name, e))
+            print(f"     ... Failed ({i_name!r}). {e!r}")
 
 
 def _wrap_module_stuff(module, wrapf):
@@ -115,15 +114,15 @@ def _wrap_module_stuff(module, wrapf):
                 ## ... and skip, too, all the built-ins, non-(module/class/function/...)
                 continue
             if inspect.isclass(i_val):
-                print("  Class wrapping: %s" % (i_name,))
+                print(f"  Class wrapping: {i_name}")
                 _wrap_class_stuff(i_val, wrapf=wrapf)
             elif callable(i_val):
-                print("  Wrapping: %s" % (i_name,))
+                print(f"  Wrapping: {i_name}")
                 wrapped_val = wrapf(i_val)
                 setattr(wrapped_val, "__prof_wrapped__", True)
                 setattr(module, i_name, wrapped_val)
         except Exception as e:
-            print("  ... Failed (%r). %r" % (i_name, e))
+            print(f"  ... Failed ({i_name!r}). {e!r}")
 
 
 # TODO: make it possible to specify down to particular objects to wrap.
@@ -141,7 +140,7 @@ def wrap_packages(packages, wrapf=None, verbose=True):
         for pkg_to_wrap in packages:
             if pkg_name.startswith(pkg_to_wrap):
                 if verbose:
-                    print("Module-wrapping: %s" % (pkg_name,))
+                    print(f"Module-wrapping: {pkg_name}")
                 try:
                     _wrap_module_stuff(pkg, wrapf)
                 except Exception as exc:
@@ -166,10 +165,10 @@ def stgrab(sig, frame):
         print(" ... Polling ...")  # don't spam that specific traceback
         return
     print(
-        " ------- %s\n" % (stgrab.header_str,)
+        f" ------- {stgrab.header_str}\n"
         +
         # "Framedata: %s\n" % (name, d) +
-        "Traceback:\n%s" % (trace_formatted,)
+        f"Traceback:\n{trace_formatted}"
         + ""
     )
 

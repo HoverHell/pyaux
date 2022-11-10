@@ -1,4 +1,3 @@
-# coding: utf8
 # pylint: disable=useless-import-alias
 """
 Monkey-patching of various things

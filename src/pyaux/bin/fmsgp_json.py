@@ -21,12 +21,12 @@ def main():
             try:
                 data_out = json.dumps(item, indent=indent, sort_keys=True, ensure_ascii=False)
             except Exception as exc:
-                data_out = "# (json failed: %r)  # %r" % (exc, item)
+                data_out = f"# (json failed: {exc!r})  # {item!r}"
             sys.stdout.write(data_out)
             sys.stdout.write("\n")
             sys.stdout.flush()
     except Exception as exc:
-        sys.stderr.write("#  -!!---- %s\n" % (exc,))
+        sys.stderr.write(f"#  -!!---- {exc}\n")
         sys.stdout.write(repr(data_in.read()))
         return 13
 

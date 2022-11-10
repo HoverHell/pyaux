@@ -1,4 +1,3 @@
-# coding: utf8
 from __future__ import annotations
 
 import errno
@@ -22,11 +21,11 @@ from urllib.parse import urljoin
 
 def repr_call(args, kwargs):
     """A helper function for pretty-printing a function call arguments"""
-    res = ", ".join("%r" % (val,) for val in args)
+    res = ", ".join(f"{val!r}" for val in args)
     if kwargs:
         if res:
             res += ", "
-        res += ", ".join("%s=%r" % (key, val) for key, val in kwargs.items())
+        res += ", ".join(f"{key}={val!r}" for key, val in kwargs.items())
     return res
 
 
@@ -53,7 +52,7 @@ def DebugPlug(name, mklogger=None):
 
     log = mklogger(name)
 
-    class DebugPlugInternal(object):
+    class DebugPlugInternal:
         """An actual internal class of the DebugPlug"""
 
         def __call__(self, *ar, **kwa):
@@ -63,7 +62,7 @@ def DebugPlug(name, mklogger=None):
             dbgs[name]["__call__"] = (ar, kwa)
 
         def __getattr__(self, attname):
-            namef = "%s.%s" % (name, attname)
+            namef = f"{name}.{attname}"
             # Recursive!
             dpchild = DebugPlug(name=namef, mklogger=mklogger)
             # setattr(self, attname, dpchild)
@@ -237,7 +236,7 @@ def human_sort_key(string, normalize=unicodedata.normalize, floats=True):
 # ####### ...
 
 
-class ThrottledCall(object):
+class ThrottledCall:
     """Decorator for throttling calls to some functions (e.g. logging).
     Defined as class for various custom attributes and methods.
     Attributes:
@@ -263,7 +262,7 @@ class ThrottledCall(object):
         # self.__call__ = wraps(fn)(self.__call__)
         self.sec_limit = sec_limit
         self.cnt_limit = cnt_limit
-        doc = "%s (throttled)" % (fn.__doc__,)
+        doc = f"{fn.__doc__} (throttled)"
 
         self.__doc__ = doc
         self.__call__.__doc__ = doc
@@ -307,7 +306,7 @@ class ThrottledCall(object):
         return None
 
     def __repr__(self):
-        return "<throttled_call(%r)>" % (self.fn,)
+        return f"<throttled_call({self.fn!r})>"
 
     # # Optional: mimickry
     # def __repr__(self):
@@ -333,7 +332,7 @@ def throttled_call(*args, **kwargs):
     return lambda func: functools.wraps(func)(ThrottledCall(func, *args, **kwargs))
 
 
-class lazystr(object):
+class lazystr:
     """
     A simple class for lazy-computed processing into string,
     e.g. for use in logging.
@@ -356,7 +355,7 @@ class lazystr(object):
         return repr(self.fn())
 
 
-class LazyRepr(object):
+class LazyRepr:
     """
     Alternative of `lazystr` that does not do additional `repr()`ing, i.e. the
     `func` must return a string.
@@ -376,7 +375,7 @@ class LazyRepr(object):
 
 
 # Helper for o_repr that displays '???'
-class ReprObj(object):
+class ReprObj:
     """A class for inserting specific text in __repr__ outputs."""
 
     def __init__(self, txt):
@@ -504,7 +503,7 @@ def o_repr(o, **kwa):
     return "".join(o_repr_g(o, **kwa))
 
 
-class OReprMixin(object):
+class OReprMixin:
     def __repr__(self):
         return o_repr(self)
 
@@ -614,7 +613,7 @@ def mangle_items(items, include=None, exclude=None, add=None, replace=None, repl
             replace = replace.items()
         add = add + replace
         exclude = exclude if exclude is not None else set()
-        exclude = exclude | set(key for key, val in replace)
+        exclude = exclude | {key for key, val in replace}
 
     res = items
     if include is not None:
@@ -776,7 +775,7 @@ def simple_memoize_argless(func):
 
 
 # TODO?: some clear-all-global-memos method. By singleton and weakrefs.
-class memoize(object):
+class memoize:
     def __init__(
         self,
         fn,
@@ -796,7 +795,7 @@ class memoize(object):
         :param single_value: keep only one value memoized, i.e. clear the cache
         on function call.
         """
-        self.log = logging.getLogger("%s.%r" % (__name__, self))
+        self.log = logging.getLogger(f"{__name__}.{self!r}")
         self.fn = fn
         self.mem = {}
         self.timelimit = timelimit
@@ -859,7 +858,7 @@ def memoize_method(func, memo_attr=None, **cfg):
         # will have the same name on the same instance despite
         # different contents. And figuring out the correct class name
         # at this point (like `self.__some_attr` does) is not viable.
-        memo_attr = "_cached_%s_%x" % (func.__name__, id(func))
+        memo_attr = f"_cached_{func.__name__}_{id(func):x}"
 
     @functools.wraps(func)
     def _memoized_method(self, *c_ar, **c_kwa):
@@ -960,7 +959,7 @@ def group3(items, to_hashable=_dict_to_hashable_json):
     """Same as `group` but supports dicts as keys (and returns list
     of pairs)"""
     annotated = [(to_hashable(key), key, val) for key, val in items]
-    hashes = dict((keyhash, key) for keyhash, key, val in annotated)
+    hashes = {keyhash: key for keyhash, key, val in annotated}
     groups = group((keyhash, val) for keyhash, key, val in annotated).items()
     return [(hashes[keyhash], lst) for keyhash, lst in groups]
 
@@ -1078,8 +1077,7 @@ def find_files(
         if not include_base:
             file_list = (fpath for fpath, fname in file_list)
 
-        for res_val in file_list:
-            yield res_val
+        yield from file_list
 
 
 @memoize
@@ -1195,9 +1193,9 @@ def request(
     resp = reqr.request(method, url, **kwa)
 
     try:
-        elapsed = "%.3fs" % (resp.elapsed.total_seconds(),)
+        elapsed = f"{resp.elapsed.total_seconds():.3f}s"
     except Exception as exc:  # Just in case
-        elapsed = "???(%s)" % (repr(exc)[:32],)
+        elapsed = f"???({repr(exc)[:32]})"
     # NOTE: assuming that the reponse content is never too large
     log.info(
         "Response: %s %s %s   %db in %s",

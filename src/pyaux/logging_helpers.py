@@ -1,5 +1,3 @@
-# coding: utf8
-
 import logging
 import time
 from logging import handlers
@@ -75,7 +73,7 @@ class TaggedSysLogHandler(TaggedSysLogHandlerBase):
 
     def __init__(self, *args, **kwargs):
         self._sbdbuf_size = kwargs.pop("sbdbuf_size", self._sndbuf_size)
-        super(TaggedSysLogHandler, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.configure_socket(self.socket)
 
     def configure_socket(self, sock):

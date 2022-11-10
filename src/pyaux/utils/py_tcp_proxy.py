@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# coding: utf8
 
 # This is a simple port-forward / proxy, written using only the default python
 # library. If you want to make a suggestion or fix something you can contact-me
@@ -59,7 +58,7 @@ def need_repr(string):
     return False
 
 
-class Forward(object):
+class Forward:
     def __init__(self):
         self.forwardsck = None
 
@@ -78,7 +77,7 @@ class Forward(object):
             return False
 
 
-class TheServer(object):
+class TheServer:
 
     _last_data = None
 
@@ -139,7 +138,7 @@ class TheServer(object):
         forward = Forward().start(*self.fwdparams)
         clientsock, clientaddr = self.server.accept()
         if forward:
-            _out("%s has connected" % (_addr_repr(clientaddr),))
+            _out(f"{_addr_repr(clientaddr)} has connected")
             self.input_list.append(clientsock)
             self.input_list.append(forward)
             self.forwardscks.add(forward)
@@ -251,7 +250,7 @@ def main():
 
     # Make a nicer datetime:
 
-    class DTSFormatter(logging.Formatter, object):
+    class DTSFormatter(logging.Formatter):
 
         converter = datetime.datetime.fromtimestamp
 

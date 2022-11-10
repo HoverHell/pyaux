@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# coding: utf8
 """
 A script to convert convenient text to markdown to html.
 """
@@ -181,12 +180,12 @@ class Worker:
             self.result.append(line)
             return
 
-        item_header = '<li value="%s">' % (num,)
+        item_header = f'<li value="{num}">'
 
         anchor_name = ''.join(
-            "%s__" % (info['name'],) for info in self.state__location)
+            "{}__".format(info['name']) for info in self.state__location)
         anchor_name = anchor_name + num.rstrip('.').replace('.', '_')
-        item_header = item_header + '<a name="%s"></a>' % (anchor_name,)
+        item_header = item_header + f'<a name="{anchor_name}"></a>'
         item_footer = self.item_footer
         item_info = dict(data, indent=indent)
 

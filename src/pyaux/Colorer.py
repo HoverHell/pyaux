@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# encoding: utf-8
 """ Module that adds coloring to the `logging` on `init()`.
 src: http://stackoverflow.com/questions/384076/how-can-i-color-python-logging-output/1336640#1336640
 
@@ -104,8 +103,8 @@ def add_coloring_to_emit_ansi(fn):
             color = "\x1b[35m"  # pink
         else:
             color = nocolor  # normal
-        record.msg = "%s%s%s" % (color, record.msg, nocolor)
-        record.levelname = "%s%s%s" % (color, record.levelname, nocolor)
+        record.msg = f"{color}{record.msg}{nocolor}"
+        record.levelname = f"{color}{record.levelname}{nocolor}"
         # TODO?: color msg.name with hashfunc-color of `name` or `module`?
         return fn(*args)
 

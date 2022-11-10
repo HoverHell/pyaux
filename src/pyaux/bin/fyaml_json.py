@@ -47,7 +47,7 @@ def main():
 
     def bailout(msg):
         sys.stderr.write(
-            "ERROR: fjson_yaml: %s; original data as follows (on stdout)\n" % (msg,))
+            f"ERROR: fjson_yaml: {msg}; original data as follows (on stdout)\n")
         sys.stdout.write(data_in)
         return 13
 
@@ -55,7 +55,7 @@ def main():
     try:
         data_data = yaml.load(data_in, Loader=Loader)
     except Exception as exc:
-        return bailout("Error parsing as yaml: %s" % (exc,))
+        return bailout(f"Error parsing as yaml: {exc}")
 
     json_kwargs = dict(
         ensure_ascii=params.ensure_ascii,
@@ -72,7 +72,7 @@ def main():
     try:
         out = json.dumps(data_data, **json_kwargs)
     except Exception as exc:
-        return bailout("Error dumping as json: %s" % (exc,))
+        return bailout(f"Error dumping as json: {exc}")
 
     sys.stdout.write(out)
     if out[-1] != '\n':  # Just in case
