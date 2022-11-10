@@ -20,7 +20,7 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
-requres-python = ">=3.7"
+requires-python = ">=3.7"
 dynamic = ["version", "description"]
 dependencies = []
 
@@ -47,6 +47,7 @@ req = [
     "requests[ssl]",
 ]
 tests = [
+    "autoflake>=1.5.3",
     "docutils>=0.19",
     "flake8>=5.0.4",
     "flake8-future-import>=0.4.7",
@@ -236,10 +237,6 @@ requires =
     tox-pip-version==0.0.7
 skipsdist = {env:TOXBUILD:false}
 envlist =
-    isort
-    flake8
-    pylint
-    mypy
     py37
     py38
     py39
@@ -254,11 +251,12 @@ deps=
 commands =
     isort --check --diff ./
     black --check ./
+    autoflake --in-place --recursive --ignore-init-module-imports --remove-all-unused-imports --check --quiet .
     pflake8
     pylint --rcfile=pyproject.toml --disable=fixme ./ || true
     mypy --config-file=pyproject.toml --warn-unused-configs ./
     py.test \
-         --doctest-modules \
+        --doctest-modules \
         --cov=pyaux \
         --cov-report term \
         --cov-report html:_cov_html \

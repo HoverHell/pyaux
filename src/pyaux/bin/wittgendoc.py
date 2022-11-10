@@ -271,7 +271,6 @@ def main(src_ext='.txt'):
         with open(basename + '.md', 'w') as fo:
             fo.write(result_s)
 
-    import markdown
     result_html_base = _markdown_process(result_s)
     result_html = worker.header + result_html_base + worker.footer
     with open(basename + '.html', 'w') as fo:

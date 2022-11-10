@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import errno
 import functools
-import itertools
 import json
 import logging
 import math
@@ -12,11 +11,60 @@ import sys
 import time
 import traceback
 import unicodedata
-from copy import deepcopy
 from decimal import Decimal
-from itertools import chain, islice, repeat
-from typing import Any, Literal
-from urllib.parse import urljoin
+from typing import Literal
+
+__all__ = (
+    "repr_call",
+    "DebugPlug",
+    "split_list",
+    "dict_maybe_items",
+    "split_dict",
+    "obj2dict",
+    "mk_logging_property",
+    "sign",
+    "try_parse",
+    "human_sort_key",
+    "ThrottledCall",
+    "throttled_call",
+    "lazystr",
+    "LazyRepr",
+    "ReprObj",
+    "o_repr_g",
+    "o_repr",
+    "OReprMixin",
+    "stdin_bin_lines",
+    "stdin_lines",
+    "stdout_lines",
+    "_sqrt",
+    "chunks",
+    "group",
+    "group2",
+    "mangle_items",
+    "mangle_dict",
+    "colorize",
+    "colorize_yaml",
+    "colorize_diff",
+    "configurable_wrapper",
+    "simple_memoize_argless",
+    "memoize",
+    "memoize_method",
+    "memoized_property",
+    "mkdir_p",
+    "hashabledict_st",
+    "group3",
+    "to_bytes",
+    "to_text",
+    "import_module",
+    "import_func",
+    "find_files",
+    "exclogwrap",
+    "repr_cut",
+    "slstrip",
+    "get_env_flag",
+    "current_frame",
+    "find_caller",
+)
 
 
 def repr_call(args, kwargs):
@@ -929,6 +977,7 @@ memoize_property = memoized_property
 
 
 def mkdir_p(path):
+    """Probably no better than `os.makedirs(path, exist_ok=True)`"""
     try:
         os.makedirs(path)
     except OSError as exc:
@@ -1247,7 +1296,10 @@ def repr_cut(some_str, length):
 
 
 def slstrip(self, substring):
-    """Strip a substring from the string at left side"""
+    """
+    Strip a substring from the string at left side.
+    Similar to `removeprefix` but requires the prefix.
+    """
     if not self.startswith(substring):
         raise ValueError(
             "Value %r does not start with substring %r"

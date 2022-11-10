@@ -10,7 +10,7 @@ __all__ = (
     "Url",
     "_url_re",
     "_cut",
-    "IPNBDFDisplay",
+    "displaydf",
     "_re_largest_matching_start",
 )
 
@@ -69,15 +69,15 @@ _url_re = (
 )
 
 
-def IPNBDFDisplay(df, *ar, **kwa):
+def displaydf(df, *ar, **kwa):
     """A helper to display a pandas DataFrame in the IPython notebook.
 
     Recommended things to do:
-    pandas.options.display.max_colwidth = 2000
-    H = IPNBDFDisplay
+
+        pd.options.display.max_colwidth = 2000
 
     :param head: (default 200) runs df = df.head(head); has default to
-        avoid accidentally outputing too much; needs explicit
+        avoid accidentally outputing too much; use an explicit
         `head=None` to disable.
 
     :param cutlinks: automatically converts all URLs in the resulting HTML

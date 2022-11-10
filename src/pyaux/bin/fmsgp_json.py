@@ -4,8 +4,6 @@ import json
 import os
 import sys
 
-from pyaux.base import to_bytes
-
 
 def main():
     import msgpack

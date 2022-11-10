@@ -6,23 +6,16 @@ Logs local variables at each traceback level when possible
 Replaces sys.excepthook on `init()`.
 Can be included in 'sitecustomize.py'
 """
-
+# # Extracts from django.views.debug
+# # (should not require django)
+# from django.template.filters import force_escape
 from __future__ import annotations
 
 import logging
 import re
+import reprlib
 import sys
 import traceback
-
-# # Extracts from django.views.debug
-# # (should not require django)
-try:  # pretty printing
-    # # That one is a little bit preettier
-    from IPython.lib.pretty import pretty as pformat
-except ImportError:
-    from pprint import pformat
-# from django.template.filters import force_escape
-import reprlib
 
 from pyaux.base import to_text
 

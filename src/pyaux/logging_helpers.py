@@ -1,5 +1,3 @@
-import logging
-import time
 from logging import handlers
 
 from .base import to_bytes

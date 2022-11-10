@@ -1214,8 +1214,6 @@ class dodd(DefaultDotDictMixin, OrderedDict):
     """DotOrderedDefaultDict. Set `_default` attribute on it to a factory to
     use it as a defaultdict. NOTE: ignores attributes starting with '_'"""
 
-    pass
-
 
 class mvdodd(DefaultDotDictMixin, MVOD):
     pass

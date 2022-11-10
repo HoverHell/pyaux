@@ -1,11 +1,9 @@
 """
 ...
 """
-
-# from __future__ import generator_stop, annotations
+from __future__ import annotations
 
 import asyncio
-import signal
 import types
 from concurrent.futures import Future
 
@@ -28,9 +26,11 @@ def _await(*args, **kwargs):
         result = _await(awaitable(*args, **kwargs))
 
     See also:
-    https://github.com/django/asgiref/blob/master/asgiref/sync.py
-    https://stackoverflow.com/a/48479665
-    https://github.com/ipython/ipython/pull/11155
+
+      * https://github.com/django/asgiref/blob/master/asgiref/sync.py
+      * https://stackoverflow.com/a/48479665
+      * https://github.com/ipython/ipython/pull/11155
+      * `asyncio.run`
     """
     awaitable, args = args[0], args[1:]
 

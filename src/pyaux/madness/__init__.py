@@ -7,8 +7,8 @@ from __future__ import annotations
 
 import sys
 
+from ..aio import *
 from . import aio, madness_datadiff, madness_oneliny, madness_reprstuff, madness_stuffstuff
-from .aio import *
 from .madness_datadiff import *
 from .madness_oneliny import *
 from .madness_reprstuff import *
@@ -18,12 +18,12 @@ __all__ = (
     # __builtin__ hacks
     "_olt_into_builtin",
     "_into_builtin",
+    *madness_datadiff.__all__,
+    *madness_oneliny.__all__,
+    *madness_reprstuff.__all__,
+    *madness_stuffstuff.__all__,
+    *aio.__all__,
 )
-__all__ += madness_datadiff.__all__
-__all__ += madness_oneliny.__all__
-__all__ += madness_reprstuff.__all__
-__all__ += madness_stuffstuff.__all__
-__all__ += aio.__all__
 
 
 # # Builtin-madness # #
