@@ -2,9 +2,8 @@
 """ madstuff: other stuff stuff """
 
 import re
-from six.moves import urllib_parse as urlparse
-from six.moves import xrange
-from pyaux import dotdict
+import urllib.parse
+from pyaux.dicts import dotdict
 from pyaux.dicts import MVOD
 from pyaux.base import repr_cut as _cut
 
@@ -33,19 +32,19 @@ class Url(dotdict):
 
     def __init__(self, url, **kwa):
         self.url = url
-        urldata = urlparse.urlparse(url, **kwa)
+        urldata = urllib.parse.urlparse(url, **kwa)
         for key in self._components:
             val = getattr(urldata, key)
             setattr(self, key, val)
 
         self.query_str = urldata.query
-        self.queryl = urlparse.parse_qs(urldata.query)
-        self.query = MVOD(urlparse.parse_qsl(urldata.query))
+        self.queryl = urllib.parse.parse_qs(urldata.query)
+        self.query = MVOD(urllib.parse.parse_qsl(urldata.query))
         # TODO?: self.query = pyaux.dicts.MVOD(urldata.query)
 
     def to_string(self):
-        query_str = urlparse.urlencode(list(self.query.items()))
-        return urlparse.urlunparse((
+        query_str = urllib.parse.urlencode(list(self.query.items()))
+        return urllib.parse.urlunparse((
             self[key] if key != 'query' else query_str
             for key in self._base_components))
 
@@ -124,7 +123,7 @@ def _re_largest_matching_start(regex, value, return_regexp=False):
     """
     # Yet Another Insane Horror
 
-    all_regexes = [regex[:idx] for idx in xrange(len(regex) + 1)]
+    all_regexes = [regex[:idx] for idx in range(len(regex) + 1)]
 
     def _try_match(rex, st):
         try:
@@ -135,7 +134,7 @@ def _re_largest_matching_start(regex, value, return_regexp=False):
     # all_match_tries = [_try_match(subreg, s) for subreg in all_regexes]
 
     # Even more horrible:
-    all_substrings = [value[:idx] for idx in xrange(len(value) + 1)]
+    all_substrings = [value[:idx] for idx in range(len(value) + 1)]
     all_match_tries = (
         (subreg, _try_match(subreg, substr))
         for subreg in all_regexes

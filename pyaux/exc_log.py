@@ -8,7 +8,7 @@ Replaces sys.excepthook on `init()`.
 Can be included in 'sitecustomize.py'
 """
 
-from __future__ import print_function, unicode_literals, absolute_import, division
+from __future__ import annotations
 
 import re
 import sys
@@ -23,8 +23,7 @@ try:  # pretty printing
 except ImportError:
     from pprint import pformat
 # from django.template.filters import force_escape
-from six.moves import reprlib
-from pyaux import edi  # 'templating'.
+import reprlib
 from pyaux.base import to_text
 
 
@@ -197,15 +196,10 @@ def render_frames_data(frames, exc_type=None, exc_value=None):
     if frames:
         res += "Traceback details:\n"
         for frame in frames:
-            #res += ("%(frame['filename'])s:%(frame['lineno'])d:"
-            #  " %(frame['function'])r -> %(frame['context_line'])s\n") % edi()
             res += (
-                "---- File %(frame['filename'])s, line %(frame['lineno'])d, in"
-                " %(frame['function'])r:\n  > %(frame['context_line'])s\n") % edi()
-            # if frame.pre_context: frame.id; for i, line in enumerate(frame.pre_context): frame.pre_context_lineno + i, line
-            # if frame.context_line:
-            #     res += "  %(frame.lineno): %(frame.context_line)s" % edi()
-            # if frame.post_context: for i, line in enumerate(frame.post_context): frame.lineno + 1 + i, line
+                f"---- File {frame['filename']}, line {frame['lineno']}, in"
+                f" {frame['function']}:\n  > {frame['context_line']}\n"
+            )
             if frame['vars']:
                 res += "  Local vars:"
                 for var in sorted(frame['vars'], key=lambda v: v[0]):
@@ -214,7 +208,7 @@ def render_frames_data(frames, exc_type=None, exc_value=None):
                     #   space than printing each from a new line (and
                     #   then adding spaces anyway).
                     res += " " * 13
-                    res += "%(var[0])s: %(var[1])s;" % edi()
+                    res += f"{var[0]}: {var[1]};"
                 res += "\n"
     if exc_type or exc_value:
         res += render_exc_repr(exc_type, exc_value)

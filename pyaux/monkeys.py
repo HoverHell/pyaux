@@ -4,7 +4,7 @@
 Monkey-patching of various things
 """
 
-from __future__ import division, absolute_import, print_function, unicode_literals
+from __future__ import annotations
 
 
 __all__ = (

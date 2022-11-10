@@ -85,12 +85,12 @@ def rast_to_pattern(rast, _parent_type=None, **kwargs):
 
     if isinstance(rast, sre_parse.SubPattern):
 
-        kwargs['flags'] = kwargs.get('flags', 0) | rast.pattern.flags
+        kwargs['flags'] = kwargs.get('flags', 0) | rast.state.flags
 
         if kwargs.get('group_to_name') is None:
             kwargs['group_to_name'] = {
                 val: key
-                for key, val in rast.pattern.groupdict.items()}
+                for key, val in rast.state.groupdict.items()}
 
         # Tricky point: support 'branch inside subpattern does not require extra parentheses',
         # AST goes like `SUBPATTERN -> SubPattern -> BRANCH`.
@@ -642,9 +642,9 @@ def cutoff_rast(rast, **kwargs):
 
     def make_cutoff_obj(lst):
         cutoff_obj = copy.copy(rast)
-        cutoff_obj.pattern = copy.copy(cutoff_obj.pattern)
-        # TODO?: mockup the cutoff_obj.pattern.str using rast_to_pattern
-        cutoff_obj.pattern.str = None
+        cutoff_obj.state = copy.copy(cutoff_obj.state)
+        # TODO?: mockup the cutoff_obj.state.str using rast_to_pattern
+        cutoff_obj.state.str = None
 
         cutoff_obj.data = lst
         return cutoff_obj
@@ -721,7 +721,7 @@ def main():
     string = sys.argv[2]
     print('Regex: {!r}, string: {!r}'.format(rex, string), file=sys.stderr)
     for result in find_matching_subregexes(rex, string, verbose=True):
-        print('{pattern_round.pattern!r} -> {substring!r}'.format(**result))
+        print('{pattern_round.state!r} -> {substring!r}'.format(**result))
 
 
 if __name__ == '__main__':

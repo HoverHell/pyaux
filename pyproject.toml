@@ -1,0 +1,261 @@
+[build-system]
+requires = ["flit_core >=3.2,<4"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "pyaux"
+authors = [{name = "HoverHell", email = "hoverhell@gmail.com"}]
+readme = "README.rst"
+license = {file = "LICENSE"}
+classifiers = [
+    "Development Status :: 6 - Mature",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+requres-python = ">=3.7"
+dynamic = ["version", "description"]
+dependencies = []
+
+[project.optional-dependencies]
+# Things that are useful to simply have around:
+recommended = [
+    "ipdb",
+    "ipython",
+    "orjson",
+    "PyYAML",
+    "toml",
+]
+# All things that are known to be used in some part of this
+# library or another.
+known = [
+    "Cython",  # at least one pyx module
+    "django",  # in the psql helper
+    "line_profiler",
+    "pandas",  # here and there
+    "Pygments",  # json / yaml coloring
+    "pylzma",  # helpers for it
+]
+req = [
+    "requests[ssl]",
+]
+tests = [
+    "docutils>=0.19",
+    "flake8>=5.0.4",
+    "flake8-future-import>=0.4.7",
+    "flake8-print>=5.0.0",
+    "isort>=5.10.1",
+    "mock>=4.0.3",
+    "mypy>=0.990",
+    "pep8-naming>=0.13.2",
+    "Pygments>=2.13.0",
+    "pylint>=2.15.5",
+    "pyproject-flake8>=5.0.4.post1",
+    "pytest>=7.2.0",
+    "pytest-asyncio>=0.20.1",
+    "pytest-cov>=4.0.0",
+    "pytest-html>=3.2.0",
+    "requests>=2.28.1",
+    "tox>=3.27.0",
+]
+dev = [
+    "black",
+    "isort",
+]
+
+
+[project.scripts]
+pylzcat = "pyaux.lzcat:_lzcat_main"
+pyunlzma = "pyaux.lzcat:_lzcat_main"
+pyenlzma = "pyaux.lzmah:_lzma_main"
+fjson_yaml = "pyaux.bin.fjson_yaml:main"
+fyaml_json = "pyaux.bin.fyaml_json:main"
+fjson.py = "pyaux.bin.fjson:main"
+fmsgp_json = "pyaux.bin.fmsgp_json:main"
+f_convert = "pyaux.bin.f_convert:main"
+
+[project.urls]
+Home = "https://gitlab.com/hoverhell/pyaux"
+
+[tool.flit.sdist]
+include = [
+    "LICENSE",
+    "README.rst",
+]
+# Minimal set of files, just for the installation.
+exclude = [
+    ".gitignore",
+    "docker-compose.yml",
+    "_up",
+    "doc/*",
+    "tests/*",
+]
+
+[tool.flake8]
+ignore = [
+    "FI58",  # requiring `from __future__ import annotations` (FI18)
+    "W503",  # preferring line breaks *before* the operator (W504)
+    "N818",  # `N818 exception name ... should be named with an Error suffix`
+]
+max_line_length = 100
+min_version = "3.7"
+require_code = "true"
+
+
+[tool.isort]
+line_length = 80
+combine_as_imports = true
+use_parentheses = true
+balanced_wrapping = true
+include_trailing_comma = true
+# `WrapModes.VERTICAL_GRID_GROUPED`:
+multi_line_output = 5
+# known_third_party = "_pytest, pytest"
+# no_lines_before = "LOCALFOLDER"
+# order_by_type = false
+# reverse_relative = true
+
+
+[tool.mypy]
+warn_unused_configs = true
+disallow_untyped_defs = true
+check_untyped_defs = true
+strict_optional = true
+
+[[tool.mypy.overrides]]
+module = [
+    "aioredis.*",
+    "pytest.*",
+]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false
+
+
+[tool.pylint.MASTER]
+# Use multiple processes to speed up Pylint. Specifying 0 will auto-detect the
+# number of processors available to use.
+jobs = 0
+
+[tool.pylint.'MESSAGES CONTROL']
+disable = [
+    "missing-module-docstring",  # overdocumentation is a sin too
+    "missing-class-docstring",
+    "missing-function-docstring",
+    # "line-too-long",
+    "invalid-name",  # TODO: make up the correct regexes instead
+    "no-self-use",  # defining overridable methods' fingerprint
+    "too-few-public-methods",
+]
+
+[tool.pylint.REPORTS]
+output-format = "colorized"
+reports = "no"
+score = "yes"
+
+[tool.pylint.BASIC]
+# Good variable names which should always be accepted, separated by a comma.
+good-names = ""
+
+[tool.pylint.MISCELLANEOUS]
+# List of note tags to take in consideration, separated by a comma.
+notes = ["FIXME", "XXX", "TODO"]
+
+[tool.pylint.SIMILARITIES]
+# Minimum lines number of a similarity.
+min-similarity-lines = 6
+
+[tool.pylint.STRING]
+# This flag controls whether inconsistent-quotes generates a warning when the
+# character used as a quote delimiter is used inconsistently within a module.
+check-quote-consistency = "yes"
+
+# This flag controls whether the implicit-str-concat should generate a warning
+# on implicit string concatenation in sequences defined over several lines.
+check-str-concat-over-line-jumps = "yes"
+
+[tool.pylint.DESIGN]
+# Maximum number of arguments for function / method.
+max-args = 8
+
+# Maximum number of attributes for a class (see R0902).
+max-attributes = 9
+
+# Maximum number of boolean expressions in an if statement (see R0916).
+max-bool-expr = 5
+
+# Maximum number of branch for function / method body.
+max-branches = 12
+
+# Maximum number of locals for function / method body.
+max-locals = 15
+
+# Maximum number of parents for a class (see R0901).
+max-parents = 7
+
+# Maximum number of public methods for a class (see R0904).
+max-public-methods = 20
+
+# Maximum number of return / yield for function / method body.
+max-returns = 6
+
+# Maximum number of statements in function / method body.
+max-statements = 50
+
+# Minimum number of public methods for a class (see R0903).
+min-public-methods = 2
+
+[tool.pylint.EXCEPTIONS]
+# Exceptions that will emit a warning when being caught. Defaults to
+# "BaseException, Exception".
+overgeneral-exceptions=["BaseException", "Exception"]
+
+
+[tool.tox]
+legacy_tox_ini = """
+[tox]
+isolated_build = True
+requires =
+    pip==22.3.1
+    wheel==0.37.1
+    tox==3.27.0
+    tox-pip-version==0.0.7
+skipsdist = {env:TOXBUILD:false}
+envlist =
+    isort
+    flake8
+    pylint
+    mypy
+    py37
+    py38
+    py39
+    py310
+
+
+[testenv]
+sitepackages = False
+deps=
+    -e .[known,req,tests,dev]
+
+commands =
+    isort --check --diff ./
+    black --check
+    pflake8
+    pylint --rcfile=pyproject.toml --disable=fixme ./ || true
+    mypy --config-file=pyproject.toml --warn-unused-configs ./
+    py.test \
+         --doctest-modules \
+        --cov=pyaux \
+        --cov-report term \
+        --cov-report html:_cov_html \
+        --html=_report.html
+"""

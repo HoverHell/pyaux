@@ -5,7 +5,7 @@ Wide variety of helper methods for working with iterables.
 A kind-of addition to `itertools`.
 """
 
-from __future__ import print_function, unicode_literals, absolute_import, division
+from __future__ import annotations
 
 import os
 from itertools import chain, repeat, islice

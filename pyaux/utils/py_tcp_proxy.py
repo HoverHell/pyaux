@@ -6,7 +6,7 @@
 # at voorloop_at_gmail.com
 # Distributed over IDC(I Don't Care) license
 
-from __future__ import print_function, unicode_literals, absolute_import, division
+from __future__ import annotations
 
 import os
 import socket

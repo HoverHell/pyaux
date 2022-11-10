@@ -1,11 +1,10 @@
 # coding: utf8
 """ madstuff: oneliners and debug-useful stuff """
 
-from __future__ import print_function, unicode_literals, absolute_import, division
+from __future__ import annotations
 
 import sys
 import traceback
-import six
 from .base import o_repr
 from .madness_reprstuff import GenReprWrapWrap
 from .madness_datadiff import _dumprepr
@@ -143,8 +142,6 @@ def _yprint(obj, ret=False, **kwa):
     kwa.setdefault('default_flow_style', None)
     kwa.setdefault('allow_unsorted_dicts', True)
     res_text = _dumprepr(obj, **kwa)
-    if six.PY2 and isinstance(res_text, six.text_type):
-        res_text = res_text.encode("utf-8")
     print(res_text)
     if ret:
         return obj

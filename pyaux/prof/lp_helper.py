@@ -18,7 +18,7 @@ It is also possible to use `get_prof()` before all other imports and add
  instead of `get_prof` and this whole module.
 """
 
-from __future__ import print_function, unicode_literals, absolute_import, division
+from __future__ import annotations
 
 import sys
 import inspect
@@ -60,8 +60,7 @@ def get_prof(proftype='lp', add_builtin=True):
     else:
         raise Exception("Unknown `proftype`.")
     if add_builtin:  # add/replace/whatever
-        from six.moves import builtins
-        builtins.__dict__['profile'] = profile
+        __builtins__.profile = profile
     return profile
 
 

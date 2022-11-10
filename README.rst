@@ -9,9 +9,8 @@ Install the latest version with
 
 Contains:
 
-* **bubble**: syntactic sugar for super(...)
 * **window**: iterator over a 'window' of N adjacent elements
-* **SmartDict**: attr→item dict subclass (e.g. for `d.key` instead of
+* **dotdict**: attr→item dict subclass (e.g. for `d.key` instead of
   `d['key']`)
 * **DebugPlug**: recursive duck-object for debug and testing
   purposes
@@ -21,8 +20,6 @@ Contains:
   equivalents for float (without error accumulation) and Decimal
 * **dict_fget**, **dict_fsetdefault**: versions of `dict.get` and
   `dict.setdefault` with lazy-computation of the default value
-* **interp**, **edi**: two versions (simplified and format-supporting) of
-  convenient string interpolation (or simplified templating)
 * **split_list**: simple one-pass splitting of list into two by a condition
 * **use_cdecimal**: forced instance-wide use (by monkey-hack) of `cdecimal`
   instead of `decimal` (for performance)
@@ -53,8 +50,3 @@ Also, in separate submodules:
     development runscripts).
   * **sigeventer**: list-based signal handler for SIGINT and SIGTERM (for
     appending handler functions, similarly to `atexit`)
-  * **make_manhole**: init a Twisted SSH manhole with set up locals,
-    key-based auth, etc.
-
-* **twisted_aux**: use_exc_log-equivalent for twisted (and a helper to
-  remove the default logger).

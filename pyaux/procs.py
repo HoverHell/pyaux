@@ -3,12 +3,11 @@
 Additional utils for working with subprocesses.
 """
 
-from __future__ import print_function, unicode_literals, absolute_import, division
+from __future__ import annotations
 
+import time
 import datetime
 import subprocess
-
-from .base import monotonic_now
 
 
 def _out_cb_default_common(tag, line, timestamp=None, encoding='utf-8', errors='replace'):
@@ -69,7 +68,7 @@ def poll_fds(
     """
     import select
 
-    start_time = monotonic_now()
+    start_time = time.monotonic()
     end_time = None
     if total_timeout:
         end_time = start_time + total_timeout
@@ -88,14 +87,14 @@ def poll_fds(
         fdlist = list(fdrev)
         timeout = inner_timeout
         if end_time:
-            timeout = min(end_time - monotonic_now(), timeout)
+            timeout = min(end_time - time.monotonic(), timeout)
             if timeout < 0.00001:
                 raise ProcessTimeoutError(total_timeout)
 
         ready_fds, _, _ = select.select(fdlist, (), (), timeout)
         for fdesc in ready_fds:
             tag = fdrev[fdesc]
-            timestamp = monotonic_now()
+            timestamp = time.monotonic()
             if nonblocking:
                 try:
                     data = fdesc.read()

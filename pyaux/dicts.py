@@ -85,30 +85,211 @@ remvdodd('mod': ..., 'u1': 'y', 1: 3, 5: 2)
 # ipy to doctest:  sed -r 's/^In[^:]+: />>> /; s/^Out[^:]+: //; /^ *$/ d'
 # test to locals:  from pyaux import dicts; reload(dicts); from pyaux.dicts import *; exec '\n'.join(v[4:] for v in dicts.__doc__.split('\n\n')[-1].splitlines() if v.startswith('>>> '))
 
-from __future__ import print_function
+from __future__ import annotations
 
-import six
 import copy
 import itertools
-try:
-    from UserDict import DictMixin
-except ImportError:
-    try:
-        from collections.abc import MutableMapping as DictMixin
-    except ImportError:
-        from collections import MutableMapping as DictMixin
+from collections.abc import MutableMapping as MutableMapping
 
-from pyaux.base import uniq_g
-from pyaux.base import dotdict
+from pyaux.iterables import uniq, iterator_is_over
 
 
 __all__ = (
+    "dict_fget",
+    "dict_fsetdefault",
+    "dotdict",
+    "dotdictify",
+    "dict_is_subset",
+    "dict_merge",
     'ODReprMixin', 'OrderedDict',
     'MVOD',
     'hasattr_x',
     'dotdictx', 'defaultdictx', 'DefaultDotDictMixin',
     'dodd', 'mvdodd', 'remvdodd', 'redodd',
 )
+
+
+def dict_fget(D, k, d):
+    """ dict_get(D, k, d) -> D[k] if k in D, else d().
+      - a lazy-evaluated dict.get.
+      (d is mandatory but can be None). """
+    if k in D:
+        return D[k]
+    return d() if d is not None else d
+
+
+def dict_fsetdefault(D, k, d):
+    """ dict_fsetdefault(D, k, d) -> dict_fget(D, k, d), also set D[k]=d() if k not in D.
+      - a lazy-evaluated dict.setdefault.
+      (d is mandatory but can be None).  """
+    # Can be `D[k] = dict_fget(D, k, d); return D[k]`, but let's micro-optimize.
+    # NOTE: not going over 'keyerror' for the defaultdict or alike classes.
+    if k in D:
+        return D[k]
+    v = d() if d is not None else d
+    D[k] = v
+    return v
+
+
+def dict_is_subset(
+        smaller_obj,
+        larger_obj,
+        recurse_iterables=False,
+        require_structure_match=True):
+    """ Recursive check "smaller_dict's keys are subset of
+    larger_dict's keys.
+
+    NOTE: in practice, supports non-dict values at top.
+
+    >>> value = {"a": 1, "b": [2, {"c": 3, "d": None}]}
+    >>> dict_is_subset({}, value)
+    True
+    >>> dict_is_subset({"a": 1}, value)
+    True
+    >>> dict_is_subset({"a": 2}, value)
+    False
+    >>> dict_is_subset({"a": {"x": 4}}, value, require_structure_match=False)
+    True
+    >>> dict_is_subset({"b": [2]}, value, recurse_iterables=False)
+    False
+    >>> dict_is_subset({"b": [2]}, value, recurse_iterables=True, require_structure_match=True)
+    False
+    >>> dict_is_subset({"b": [2]}, value, recurse_iterables=True, require_structure_match=False)
+    True
+    >>> dict_is_subset({"b": [2, {}]}, value, recurse_iterables=True)
+    True
+    >>> dict_is_subset({"b": [2, {"c": 3}]}, value, recurse_iterables=True)
+    True
+    >>> dict_is_subset({"b": [2, {"c": 4}]}, value, recurse_iterables=True)
+    False
+    """
+    kwa = dict(
+        recurse_iterables=recurse_iterables,
+        require_structure_match=require_structure_match,
+    )
+    if isinstance(smaller_obj, dict):
+        if not isinstance(larger_obj, dict):
+            return False if require_structure_match else True
+
+        # Both are dicts.
+        for key, val in smaller_obj.items():
+            try:
+                lval = larger_obj[key]
+            except KeyError:
+                return False
+            # 'compare' the values whatever they are
+            if not dict_is_subset(val, lval, **kwa):
+                return False
+
+        return True
+
+    # else:
+    if recurse_iterables and hasattr(smaller_obj, '__iter__'):
+        if not hasattr(larger_obj, '__iter__'):
+            return False if require_structure_match else True
+        # smaller_value_iter, larger_value_iter
+        svi = iter(smaller_obj)
+        lvi = iter(larger_obj)
+        for sval, lval in zip(svi, lvi):
+            if not dict_is_subset(sval, lval, **kwa):
+                return False
+        if require_structure_match:
+            if not iterator_is_over(svi) or not iterator_is_over(lvi):
+                # One of the iterables was longer and thus was not
+                # consumed entirely by the izip
+                return False
+        return True
+
+    # else:
+    # elif not dict or iterable:
+    return smaller_obj == larger_obj
+
+
+def dict_merge(target, source, instancecheck=None, dictclass=dict,
+               del_obj=object(), _copy=True, inplace=False):
+    """ do update() on 'dict of dicts of di...' structure recursively.
+    Also, see sources for details.
+    NOTE: does not keep target's specific tree structure (forces source's)
+    :param del_obj: allows for deletion of keys if the key in the `source` is set to this.
+
+    >>> data = {}
+    >>> data = dict_merge(data, {'open_folders': {'my_folder_a': False}})
+    >>> data
+    {'open_folders': {'my_folder_a': False}}
+    >>> data = dict_merge(data, {'open_folders': {'my_folder_b': True}})
+    >>> assert data == {'open_folders': {'my_folder_a': False, 'my_folder_b': True}}
+    >>> _del = object()
+    >>> data = dict_merge(data, {'open_folders': {'my_folder_b': _del}}, del_obj=_del)
+    >>> assert data == {'open_folders': {'my_folder_a': False}}
+    """
+    if instancecheck is None:  # funhorrible ducktypings
+        def instancecheck_default(iv):
+            return hasattr(iv, 'items')
+
+        instancecheck = instancecheck_default
+
+    # Recursive parameters shorthand
+    kwa = dict(instancecheck=instancecheck, dictclass=dictclass, del_obj=del_obj)
+
+    if _copy and not inplace:  # 'both are default'
+        target = copy.deepcopy(target)
+
+    for key, val in source.items():
+        if val is del_obj:
+            target.pop(key, None)
+        elif instancecheck(val):  # (val -> source -> items())
+            # NOTE: if target[key] wasn't a dict - it will be, now.
+            target[key] = dict_merge(
+                dict_fget(target, key, dictclass), val, **kwa)
+        else:  # nowhere to recurse into - just replace
+            # NOTE: if target[key] was a dict - it won't be, anymore.
+            target[key] = val
+
+    return target
+
+
+class dotdict(dict):
+    """ A simple dict subclass with items also available over attributes """
+
+    def __getattr__(self, name: str) -> Any:
+        try:
+            return self[name]
+        except KeyError as exc:
+            raise AttributeError(name) from exc
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        self[name] = value
+
+
+_dotdictify_marker = object()
+
+
+class dotdictify(dict):
+    """ Recursive automatic doctdict thingy """
+
+    def __init__(self, value=None):
+        if value is None:
+            pass
+        elif isinstance(value, dict):
+            for key in value:
+                self.__setitem__(key, value[key])
+        else:
+            raise TypeError('expected a dict')
+
+    def __setitem__(self, key, value):
+        if isinstance(value, dict) and not isinstance(value, dotdictify):
+            value = dotdictify(value)
+        dict.__setitem__(self, key, value)
+
+    def __getitem__(self, key):
+        found = self.get(key, _dotdictify_marker)
+        if found is _dotdictify_marker:
+            found = dotdictify()
+            dict.__setitem__(self, key, found)
+        return found
+
+    __setattr__ = __setitem__
+    __getattr__ = __getitem__
 
 
 class ODReprMixin(object):
@@ -155,7 +336,7 @@ class ODReprMixin(object):
 # https://pypi.python.org/pypi/ordereddict
 # or /usr/lib/python2.7/collections.py
 # with modifications
-class OrderedDict(ODReprMixin, dict, DictMixin):
+class OrderedDict(ODReprMixin, dict, MutableMapping):
 
     __end = None
     __map = None
@@ -232,16 +413,16 @@ class OrderedDict(ODReprMixin, dict, DictMixin):
     def keys(self):
         return list(self)
 
-    setdefault = DictMixin.setdefault
-    update = DictMixin.update
-    pop = DictMixin.pop
-    values = DictMixin.values
-    items = DictMixin.items
+    setdefault = MutableMapping.setdefault
+    update = MutableMapping.update
+    pop = MutableMapping.pop
+    values = MutableMapping.values
+    items = MutableMapping.items
 
     # Will be provided in any version from whichever is available.
-    iterkeys = getattr(DictMixin, 'iterkeys', None) or getattr(DictMixin, 'keys')
-    itervalues = getattr(DictMixin, 'itervalues', None) or getattr(DictMixin, 'values')
-    iteritems = getattr(DictMixin, 'iteritems', None) or getattr(DictMixin, 'items')
+    iterkeys = getattr(MutableMapping, 'iterkeys', None) or getattr(MutableMapping, 'keys')
+    itervalues = getattr(MutableMapping, 'itervalues', None) or getattr(MutableMapping, 'values')
+    iteritems = getattr(MutableMapping, 'iteritems', None) or getattr(MutableMapping, 'items')
 
     def copy(self):
         return self.__class__(self)
@@ -405,7 +586,7 @@ class MultiValueDict(dict):
         """Appends an item to the internal list associated with key."""
         self.setlistdefault(key).append(value)
 
-    def _iteritems(self):
+    def iteritems(self):
         """
         Yields (key, value) pairs, where value is the last item in the list
         associated with the key.
@@ -413,32 +594,23 @@ class MultiValueDict(dict):
         for key in self:
             yield key, self[key]
 
-    def _iterlists(self):
+    def iterlists(self):
         """Yields (key, list) pairs."""
-        return six.iteritems(super(MultiValueDict, self))
+        return super(MultiValueDict, self).items()
 
-    def _itervalues(self):
+    def itervalues(self):
         """Yield the last value on every key list."""
         for key in self:
             yield self[key]
 
-    if six.PY3:
-        items = _iteritems
-        lists = _iterlists
-        values = _itervalues
-    else:
-        iteritems = _iteritems
-        iterlists = _iterlists
-        itervalues = _itervalues
+    def items(self):
+        return list(self.iteritems())
 
-        def items(self):
-            return list(self.iteritems())
+    def lists(self):
+        return list(self.iterlists())
 
-        def lists(self):
-            return list(self.iterlists())
-
-        def values(self):
-            return list(self.itervalues())
+    def values(self):
+        return list(self.itervalues())
 
     def copy(self):
         """Returns a shallow copy of this object."""
@@ -462,7 +634,7 @@ class MultiValueDict(dict):
                         self.setlistdefault(key).append(value)
                 except TypeError:
                     raise ValueError("MultiValueDict.update() takes either a MultiValueDict or dictionary")
-        for key, value in six.iteritems(kwargs):
+        for key, value in kwargs.items():
             self.setlistdefault(key).append(value)
 
     def dict(self):
@@ -663,47 +835,17 @@ class MVOD_Common(ODReprMixin, object):
     def __iter__(self):
         return self._iterkeys()
 
-    # # six:
+    def items(self, *args, **kwargs):
+        return self._iteritems(*args, **kwargs)
 
-    if six.PY3:
+    def lists(self, *args, **kwargs):
+        return self._iterlists(*args, **kwargs)
 
-        def items(self, *args, **kwargs):
-            return self._iteritems(*args, **kwargs)
+    def values(self, *args, **kwargs):
+        return self._itervalues(*args, **kwargs)
 
-        def lists(self, *args, **kwargs):
-            return self._iterlists(*args, **kwargs)
-
-        def values(self, *args, **kwargs):
-            return self._itervalues(*args, **kwargs)
-
-        def keys(self, *args, **kwargs):
-            return self._iterkeys(*args, **kwargs)
-
-    else:
-
-        def iteritems(self, *args, **kwargs):
-            return self._iteritems(*args, **kwargs)
-
-        def iterlists(self, *args, **kwargs):
-            return self._iterlists(*args, **kwargs)
-
-        def itervalues(self, *args, **kwargs):
-            return self._itervalues(*args, **kwargs)
-
-        def iterkeys(self, *args, **kwargs):
-            return self._iterkeys(*args, **kwargs)
-
-        def items(self, *args, **kwargs):
-            return list(self.iteritems(*args, **kwargs))
-
-        def lists(self, *args, **kwargs):
-            return list(self.iterlists(*args, **kwargs))
-
-        def values(self, *args, **kwargs):
-            return list(self.itervalues(*args, **kwargs))
-
-        def keys(self, *args, **kwargs):
-            return list(self.iterkeys(*args, **kwargs))
+    def keys(self, *args, **kwargs):
+        return self._iterkeys(*args, **kwargs)
 
     # Bit more copypaste from UserDict.DictMixin (because most other
     # methods from it are unnecessary)
@@ -849,10 +991,10 @@ class MVOD(MVOD_Common, dict):
             return self.deduplicate_last()
         else:
             raise ValueError("Unknown deduplication `how`: %r" % (how,))
-        self._data_checked = tuple(uniq_g(self._data, key=lambda item: item[0]))
+        self._data_checked = tuple(uniq(self._data, key=lambda item: item[0]))
 
     def deduplicate_last(self):
-        data_pre = uniq_g(reversed(self._data), key=lambda item: item[0])
+        data_pre = uniq(reversed(self._data), key=lambda item: item[0])
         data_pre = list(data_pre)
         self._data_checked = tuple(reversed(data_pre))
 
@@ -986,10 +1128,7 @@ class MVLOD(MVOD_Common, MultiValueDict):
     def _iterlists(self, ordered=False):
         if ordered:
             return super(MVLOD, self)._iterlists(ordered=ordered)
-        if six.PY3:
-            return dict.items(self)
-        else:
-            return dict.iteritems(self)
+        return dict.items(self)
 
 
 # NOTE: A simpler form is available in the `base`

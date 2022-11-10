@@ -4,10 +4,10 @@
 Also, things that are useful in an ipython interactice shell.
 """
 
-from __future__ import print_function, unicode_literals, absolute_import, division
+from __future__ import annotations
 
-from six.moves import builtins
-from .base import PY_3
+import sys
+
 from . import madness_datadiff
 from .madness_datadiff import *
 from . import madness_oneliny
@@ -16,6 +16,8 @@ from . import madness_reprstuff
 from .madness_reprstuff import *
 from . import madness_stuffstuff
 from .madness_stuffstuff import *
+from . import aio
+from .aio import *
 
 
 __all__ = (
@@ -27,12 +29,7 @@ __all__ += madness_datadiff.__all__
 __all__ += madness_oneliny.__all__
 __all__ += madness_reprstuff.__all__
 __all__ += madness_stuffstuff.__all__
-
-
-if PY_3:
-    from . import aio
-    from .aio import *
-    __all__ += aio.__all__
+__all__ += aio.__all__
 
 
 # # Builtin-madness # #
@@ -41,7 +38,7 @@ if PY_3:
 def _into_builtin(dct):
     """ Helper to put stuff (like the one-liner-helpers) into builtins """
     for key, val in dct.items():
-        setattr(builtins, key, val)
+        setattr(__builtins__, key, val)
 
 
 # For _into_builtin
@@ -55,7 +52,7 @@ try:
     __all_stuff.update(pprint=pprint, pretty=pretty, pformat=pretty)
     __all_stuff_e.update(pprint=pprint, pretty=pretty, pformat=pretty)
 except ImportError as __e:
-    print("What, no IPython?", __e)
+    print("What, no IPython?", __e, file=sys.stderr)
 
 
 # For explicit call:

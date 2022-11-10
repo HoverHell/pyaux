@@ -1,13 +1,9 @@
 # coding: utf8
-# pylint: disable=unused-import,wildcard-import,unused-wildcard-import,useless-object-inheritance
-
-# NOTE: no modules imported here should import `decimal` (otherwise
-#   `use_cdecimal` might become problematic for them)
-
-from __future__ import absolute_import, print_function
+from __future__ import annotations
 
 import os
 import sys
+from decimal import Decimal
 
 from copy import deepcopy
 import errno
@@ -20,115 +16,9 @@ import math
 import re
 import time
 import traceback
+from typing import Any, Literal
 import unicodedata
-
-
-# Note: no `__all__` here so that for all things defined here, `from pyaux import ...` works too.
-
-from .minisix import PY3, PY_3, text_type, unicode, izip, xrange, reraise
-
-# Compat.
-from . import ranges
-from .ranges import *
-
-from . import interpolate
-from .interpolate import *
-
-from . import iterables
-from .iterables import *
-
-from . import monkeys
-from .monkeys import *
-PY_35 = sys.version_info >= (3, 5)
-PY_352 = sys.version_info >= (3, 5, 2)
-
-
-def bubble(*args, **kwargs):
-    """
-    Prettified super():
-    Calls `super(ThisClass, this_instance).this_method(...)`.
-
-    Not super-performant but quite prettifying ("Performance is 5
-    times worse than super() call").
-
-    src:
-    http://stackoverflow.com/questions/2706623/super-in-python-2-x-without-args/2706703#2706703
-    """
-    import inspect
-
-    def find_class_by_code_object(back_self, method_name, code):
-        for cls in inspect.getmro(type(back_self)):
-            if method_name in cls.__dict__:
-                method_fun = getattr(cls, method_name)
-                if method_fun.im_func.func_code is code:
-                    return cls
-        raise Exception("Should not have ended here")
-
-    frame = inspect.currentframe().f_back
-    back_self = frame.f_locals['self']
-    method_name = frame.f_code.co_name
-
-    for _ in xrange(5):
-        code = frame.f_code
-        cls = find_class_by_code_object(back_self, method_name, code)
-        if cls:
-            super_ = super(cls, back_self)
-            return getattr(super_, method_name)(*args, **kwargs)
-        try:
-            frame = frame.f_back
-        except Exception:
-            return None
-    raise Exception("Went too far")
-
-
-class dotdict(dict):
-    """ A simple dict subclass with items also available over attributes """
-
-    def __getattr__(self, name):
-        try:
-            return self[name]
-        except KeyError:
-            # A little less confusing way:
-            _et, _ev, _tb = sys.exc_info()
-            reraise(AttributeError, AttributeError(*_ev.args), _tb)
-
-    def __setattr__(self, name, value):
-        self[name] = value
-
-
-# Compat alias
-SmartDict = dotdict
-
-
-_dotdictify_marker = object()
-
-
-class dotdictify(dict):
-    """ Recursive automatic doctdict thingy """
-
-    def __init__(self, value=None):
-        if value is None:
-            pass
-        elif isinstance(value, dict):
-            for key in value:
-                self.__setitem__(key, value[key])
-        else:
-            raise TypeError('expected a dict')
-
-    def __setitem__(self, key, value):
-        if isinstance(value, dict) and not isinstance(value, dotdictify):
-            value = dotdictify(value)
-        dict.__setitem__(self, key, value)
-
-    def __getitem__(self, key):
-        found = self.get(key, _dotdictify_marker)
-        if found is _dotdictify_marker:
-            found = dotdictify()
-            dict.__setitem__(self, key, found)
-        return found
-
-    __setattr__ = __setitem__
-    __getattr__ = __getitem__
+from urllib.parse import urljoin
 
 
 def repr_call(args, kwargs):
@@ -193,28 +83,6 @@ def DebugPlug(name, mklogger=None):
 
 # ###### dict-lazies
 
-def dict_fget(D, k, d):
-    """ dict_get(D, k, d) -> D[k] if k in D, else d().
-      - a lazy-evaluated dict.get.
-      (d is mandatory but can be None). """
-    if k in D:
-        return D[k]
-    return d() if d is not None else d
-
-
-def dict_fsetdefault(D, k, d):
-    """ dict_fsetdefault(D, k, d) -> dict_fget(D, k, d), also set D[k]=d() if k not in D.
-      - a lazy-evaluated dict.setdefault.
-      (d is mandatory but can be None).  """
-    # Can be `D[k] = dict_fget(D, k, d); return D[k]`, but let's micro-optimize.
-    # NOTE: not going over 'keyerror' for the defaultdict or alike classes.
-    if k in D:
-        return D[k]
-    v = d() if d is not None else d
-    D[k] = v
-    return v
-
-
 
 def split_list(iterable, condition):
     """
@@ -245,14 +113,13 @@ def split_dict(source, condition, cls=dict):
     return cls(matching), cls(nonmatching)
 
 
-# ...
 # TODO: make a recurser that supports and recurses, maintains,
 # optionally-replaces various classes such as tuple, defaultdict, and
 # other containers. Possibly use pickle/deepcopy's logic.
 
 
 def obj2dict(obj, add_type=False, add_instance=False, do_lists=True,
-             dict_class=dotdict):
+             dict_class=dict):
     """" Recursive obj -> obj.__dict__ """
     kwa = dict(
         add_type=add_type, add_instance=add_instance,
@@ -308,7 +175,7 @@ def mk_logging_property(actual_name, logger_name='_log'):
     return property(do_get, do_set)
 
 
-def sign(value):
+def sign(value: int | float | Decimal) -> Literal[-1, 0, 1]:
     """
     Sign of value.
 
@@ -514,17 +381,6 @@ class LazyRepr(object):
         return to_text(self.func())
 
 
-uniq_g = iterables.uniq  # Compat.
-
-
-def uniq(lst, key=lambda v: v):  # pylint: disable=function-redefined
-    """ RTFS """
-    return list(iterables.uniq(lst, key=key))
-
-
-list_uniq = uniq_g  # Compat.  # pylint: disable=invalid-name
-
-
 # Helper for o_repr that displays '???'
 class ReprObj(object):
     """ A class for inserting specific text in __repr__ outputs.  """
@@ -655,10 +511,9 @@ class OReprMixin(object):
 
 def stdin_bin_lines(strip_newlines=True):
     """ Iterate over stdin lines in a 'line-buffered' way """
-    source = sys.stdin.buffer if PY_3 else sys.stdin
     while True:
         try:
-            line = source.readline()
+            line = sys.stdin.buffer.readline()
         except KeyboardInterrupt:
             # Generally, there's no point in dropping a traceback in a
             # script within an interrupted shell pipe.
@@ -672,10 +527,10 @@ def stdin_bin_lines(strip_newlines=True):
         yield line
 
 
-def stdin_lines(strip_newlines=True):
+def stdin_lines(strip_newlines=True, errors="replace"):
     """ Iterate over stdin lines in a 'line-buffered' way """
     for line in stdin_bin_lines(strip_newlines=strip_newlines):
-        line = to_text(line, errors='replace')
+        line = to_text(line, errors=errors)
         yield line
 
 
@@ -685,62 +540,18 @@ def stdout_lines(gen, flush=True):
 
     Generally intended to work with text strings rather than bytestrings.
     """
-    output = sys.stdout.buffer if PY_3 else sys.stdout
     for line in gen:
         line = to_bytes(line)
-        output.write(line)
-        output.write(b"\n")
+        sys.stdout.buffer.write(line)
+        sys.stdout.buffer.write(b"\n")
         if flush:
             sys.stdout.flush()
-
-
-def dict_merge(target, source, instancecheck=None, dictclass=dict,
-               del_obj=object(), _copy=True, inplace=False):
-    """ do update() on 'dict of dicts of di...' structure recursively.
-    Also, see sources for details.
-    NOTE: does not keep target's specific tree structure (forces source's)
-    :param del_obj: allows for deletion of keys if the key in the `source` is set to this.
-
-    >>> data = {}
-    >>> data = dict_merge(data, {'open_folders': {'my_folder_a': False}})
-    >>> data
-    {'open_folders': {'my_folder_a': False}}
-    >>> data = dict_merge(data, {'open_folders': {'my_folder_b': True}})
-    >>> assert data == {'open_folders': {'my_folder_a': False, 'my_folder_b': True}}
-    >>> _del = object()
-    >>> data = dict_merge(data, {'open_folders': {'my_folder_b': _del}}, del_obj=_del)
-    >>> assert data == {'open_folders': {'my_folder_a': False}}
-    """
-    if instancecheck is None:  # funhorrible ducktypings
-        def instancecheck_default(iv):
-            return hasattr(iv, 'items')
-
-        instancecheck = instancecheck_default
-
-    # Recursive parameters shorthand
-    kwa = dict(instancecheck=instancecheck, dictclass=dictclass, del_obj=del_obj)
-
-    if _copy and not inplace:  # 'both are default'
-        target = deepcopy(target)
-
-    for key, val in source.items():
-        if val is del_obj:
-            target.pop(key, None)
-        elif instancecheck(val):  # (val -> source -> items())
-            # NOTE: if target[key] wasn't a dict - it will be, now.
-            target[key] = dict_merge(
-                dict_fget(target, key, dictclass), val, **kwa)
-        else:  # nowhere to recurse into - just replace
-            # NOTE: if target[key] was a dict - it won't be, anymore.
-            target[key] = val
-
-    return target
 
 
 def _sqrt(var):
     """ Duck-compatible sqrt(), needed to support classes like Decimal.
 
-    Approximately the same as in the python3's `statistics`. """
+    Approximately the same as in the `statistics`. """
     try:
         return var.sqrt()
     except AttributeError:
@@ -749,7 +560,7 @@ def _sqrt(var):
 
 def chunks(lst, size):
     """ Yield successive chunks from lst. No padding.  """
-    for idx in xrange(0, len(lst), size):
+    for idx in range(0, len(lst), size):
         yield lst[idx:idx + size]
 
 
@@ -835,9 +646,6 @@ def mangle_dict(input_dict, include=None, exclude=None, add=None, _return_list=F
     if _return_list:
         return res
     return dcls(res)
-
-
-filterdict = mangle_dict
 
 
 def colorize(text, fmt, outfmt='term', lexer_kwa=None, formatter_kwa=None, **kwa):
@@ -1150,7 +958,7 @@ def group3(items, to_hashable=_dict_to_hashable_json):
 def to_bytes(value, default=None, encoding='utf-8', errors='strict'):
     if isinstance(value, bytes):
         return value
-    if isinstance(value, text_type):
+    if isinstance(value, str):
         return value.encode(encoding, errors)
     if default is not None:
         return default(value)
@@ -1158,7 +966,7 @@ def to_bytes(value, default=None, encoding='utf-8', errors='strict'):
 
 
 def to_text(value, default=None, encoding='utf-8', errors='strict'):
-    if isinstance(value, text_type):
+    if isinstance(value, str):
         return value
     if isinstance(value, bytes):
         return value.decode(encoding, errors)
@@ -1167,26 +975,17 @@ def to_text(value, default=None, encoding='utf-8', errors='strict'):
     return value
 
 
-to_unicode = to_text  # legacy name  # pylint: disable=invalid-name
-
-
-if PY_3:
-    to_str = to_text  # pylint: disable=invalid-name
-else:
-    to_str = to_bytes  # pylint: disable=invalid-name
-
-
 def import_module(name, package=None):
-    """ ...
-
-    django.utils.importlib.import_module without the package support
+    """
+    `django.utils.importlib.import_module` without the package support
     """
     __import__(name)
     return sys.modules[name]
 
 
 def import_func(func_path, _check_callable=True):
-    """ Get an object (e.g. a function / callable) by import path.
+    """
+    Get an object (e.g. a function / callable) by import path.
 
     supports '<module>:<path>' notation as well as '<module>.<func_name>'.
     """
@@ -1224,80 +1023,6 @@ def import_func(func_path, _check_callable=True):
         raise _exc_cls("func does not seem to be a callable", func_path, func)
 
     return func
-
-
-def dict_is_subset(
-        smaller_obj,
-        larger_obj,
-        recurse_iterables=False,
-        require_structure_match=True):
-    """ Recursive check "smaller_dict's keys are subset of
-    larger_dict's keys.
-
-    NOTE: in practice, supports non-dict values at top.
-
-    >>> value = {"a": 1, "b": [2, {"c": 3, "d": None}]}
-    >>> dict_is_subset({}, value)
-    True
-    >>> dict_is_subset({"a": 1}, value)
-    True
-    >>> dict_is_subset({"a": 2}, value)
-    False
-    >>> dict_is_subset({"a": {"x": 4}}, value, require_structure_match=False)
-    True
-    >>> dict_is_subset({"b": [2]}, value, recurse_iterables=False)
-    False
-    >>> dict_is_subset({"b": [2]}, value, recurse_iterables=True, require_structure_match=True)
-    False
-    >>> dict_is_subset({"b": [2]}, value, recurse_iterables=True, require_structure_match=False)
-    True
-    >>> dict_is_subset({"b": [2, {}]}, value, recurse_iterables=True)
-    True
-    >>> dict_is_subset({"b": [2, {"c": 3}]}, value, recurse_iterables=True)
-    True
-    >>> dict_is_subset({"b": [2, {"c": 4}]}, value, recurse_iterables=True)
-    False
-    """
-    kwa = dict(
-        recurse_iterables=recurse_iterables,
-        require_structure_match=require_structure_match,
-    )
-    if isinstance(smaller_obj, dict):
-        if not isinstance(larger_obj, dict):
-            return False if require_structure_match else True
-
-        # Both are dicts.
-        for key, val in smaller_obj.items():
-            try:
-                lval = larger_obj[key]
-            except KeyError:
-                return False
-            # 'compare' the values whatever they are
-            if not dict_is_subset(val, lval, **kwa):
-                return False
-
-        return True
-
-    # else:
-    if recurse_iterables and hasattr(smaller_obj, '__iter__'):
-        if not hasattr(larger_obj, '__iter__'):
-            return False if require_structure_match else True
-        # smaller_value_iter, larger_value_iter
-        svi = iter(smaller_obj)
-        lvi = iter(larger_obj)
-        for sval, lval in izip(svi, lvi):
-            if not dict_is_subset(sval, lval, **kwa):
-                return False
-        if require_structure_match:
-            if not iterator_is_over(svi) or not iterator_is_over(lvi):
-                # One of the iterables was longer and thus was not
-                # consumed entirely by the izip
-                return False
-        return True
-
-    # else:
-    # elif not dict or iterable:
-    return smaller_obj == larger_obj
 
 
 def find_files(
@@ -1360,7 +1085,8 @@ def request(
         # NOTE: using JSON by default here.
         _dataser='json', timeout=5,
         _callinfo=True, session=True, _rfs=False, **kwa):
-    """ requests.request wrapper with conveniences.
+    """
+    `requests.request` wrapper with conveniences.
 
     :param session: default session if `True`, new session if `False`, or the specified session.
     :param _w_method: method to use for writing (if `data` or `files` are present).
@@ -1370,7 +1096,6 @@ def request(
     WARNING: Effectively deprecated; see `pyaux.req`.
     """
     import requests
-    from .minisix import urllib_parse
     log = logging.getLogger('request')
 
     # Different default, basically.
@@ -1381,7 +1106,7 @@ def request(
             raise Exception("Must specify _default_host for host-relative URLs")
         if '://' not in _default_host:
             _default_host = 'http://%s' % _default_host
-        url = urllib_parse.urljoin(_default_host, url)
+        url = urllib.parse.urljoin(_default_host, url)
 
     params = kwa.get('params') or {}
     if _extra_params:
@@ -1554,17 +1279,6 @@ def find_caller(extra_depth=1, skip_packages=()):
         result = (codeobj.co_filename, frame.f_lineno, codeobj.co_name)
         break
     return result
-
-
-try:
-    monotonic_now = time.monotonic
-except Exception:
-    try:
-        import monotonic  # pylint: disable=import-error
-        monotonic_now = monotonic.monotonic
-    except Exception:
-        # No proper implementation available.
-        monotonic_now = time.time
 
 
 if __name__ == '__main__':

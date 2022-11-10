@@ -11,14 +11,12 @@ Does not contain unsafe-to-import modules.
 
 from .madness import *
 from .runlib import *
-from .interpolate import *
 from .dicts import *
 from .urlhelpers import *
 from .ranges import *
 from .base import *
 from . import madness
 from . import runlib
-from . import interpolate
 from . import dicts
 from . import urlhelpers
 from . import ranges

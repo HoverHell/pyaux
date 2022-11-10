@@ -10,7 +10,8 @@ import string
 import time
 import datetime
 from IPython.display import HTML
-from pyaux.base import dict_merge, group
+from pyaux.base import group
+from pyaux.dicts import dict_merge
 
 
 def mk_uid():
@@ -232,15 +233,17 @@ def interleave(joiner, iterable):
     """
     Similar to `str.join` but for lists.
 
-    >>> interleave([1], [2, 3, 4])
+    >>> list(interleave([1], [2, 3, 4]))
     [2, 1, 3, 1, 4]
     """
+    iterable = iter(iterable)
     try:
         yield next(iterable)
     except StopIteration:  # empty
         return
     for item in iterable:
-        yield joiner
+        for subjoiner in joiner:
+            yield subjoiner
         yield item
 
 

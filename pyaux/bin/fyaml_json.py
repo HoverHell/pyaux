@@ -2,15 +2,10 @@
 # pylint: disable=broad-except
 """ yaml -> json for pretty-writing. """
 
-# import os
 import sys
 import argparse
-try:
-    import simplejson as json
-except Exception:
-    import json
+import json
 import yaml
-from pyaux.base import to_str
 
 
 def cmd_make_parser():
@@ -78,8 +73,7 @@ def main():
     except Exception as exc:
         return bailout("Error dumping as json: %s" % (exc,))
 
-    # TODO?: support output file
-    sys.stdout.write(to_str(out))
+    sys.stdout.write(out)
     if out[-1] != '\n':  # Just in case
         sys.stdout.write('\n')
     sys.stdout.flush()

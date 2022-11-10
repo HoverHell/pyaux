@@ -1,7 +1,7 @@
 # coding: utf8
 """ madstuff: datadiff stuff """
 
-from __future__ import print_function, unicode_literals, absolute_import, division
+from __future__ import annotations
 
 import re
 import sys

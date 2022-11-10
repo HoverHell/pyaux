@@ -6,7 +6,7 @@ See also:
 https://bitbucket.org/runeh/anyjson/src/default/anyjson/__init__.py
 """
 
-from __future__ import division, absolute_import, print_function, unicode_literals
+from __future__ import annotations
 
 try:
     import anyjson

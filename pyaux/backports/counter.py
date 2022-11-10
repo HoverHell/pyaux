@@ -1,7 +1,7 @@
 # coding: utf8
 
 # NOTE: not using unicode_literals because doctesting becomes a problem.
-from __future__ import print_function, absolute_import, division
+from __future__ import annotations
 
 
 from operator import itemgetter

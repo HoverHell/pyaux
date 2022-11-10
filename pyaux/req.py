@@ -1,20 +1,22 @@
 # coding: utf8
 """
 Requests for humans that have to deal with lots of stuff.
+
+TODO: `aiohttp`-based version.
 """
 # pylint: disable=arguments-differ,too-many-arguments
 
-from __future__ import division, absolute_import, print_function, unicode_literals
+from __future__ import annotations
 
 import sys
 import logging
 import functools
+import urllib.parse
 
 import requests
 import requests.adapters
 import requests.exceptions
 from requests.packages.urllib3.util import Retry  # pylint: disable=import-error
-from pyaux.minisix import text_type, urllib_parse
 from pyaux.base import (
     find_caller,
     split_dict, dict_maybe_items,
@@ -306,7 +308,7 @@ class RequesterBaseUrl(RequesterBase):
     # Warning: kwargs defaults are also duplicated in `Requester.request`.
     def _prepare_parameters(self, kwargs):
         if self.base_url:
-            kwargs['url'] = urllib_parse.urljoin(
+            kwargs['url'] = urllib.parse.urljoin(
                 self.base_url,
                 kwargs['url'])  # required parameter
         return super(RequesterBaseUrl, self)._prepare_parameters(kwargs)
@@ -536,7 +538,7 @@ class RequesterLog(RequesterBase):
         if self.log_response_headers:
             pieces.append('    response.headers={!r}'.format(response.headers))
         return ' '.join(
-            text_type(piece) if not isinstance(piece, text_type) else piece
+            str(piece) if not isinstance(piece, str) else piece
             for piece in pieces)
 
     # pylint: disable=unused-argument

@@ -1,6 +1,6 @@
 """ Various (un)necessary stuff for runscripts """
 
-from __future__ import print_function, unicode_literals, absolute_import, division
+from __future__ import annotations
 
 import os
 import sys
@@ -11,23 +11,12 @@ import logging
 import signal
 import atexit
 import traceback
-from six.moves import xrange
 
 
 __all__ = [
     'init_logging',
     'sigeventer',
 ]
-
-
-# TODO: lazy-imports
-try:
-    from pyaux.twisted_aux import (
-        make_manhole_telnet,
-        make_manhole,
-    )
-except ImportError:
-    pass
 
 
 def _make_short_levelnames(shortnum=True):
@@ -42,7 +31,7 @@ def _make_short_levelnames(shortnum=True):
         (logging.CRITICAL, 'CRIT'),
     ])
     if shortnum:
-        for i in xrange(1, 100):
+        for i in range(1, 100):
             _names.setdefault(i, "L%02d" % (i,))
     return _names
 
