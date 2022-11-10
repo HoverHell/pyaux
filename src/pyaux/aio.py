@@ -5,15 +5,12 @@
 
 # from __future__ import generator_stop, annotations
 
-import signal
 import asyncio
+import signal
 import types
 from concurrent.futures import Future
 
-
-__all__ = (
-    '_await',
-)
+__all__ = ("_await",)
 
 
 def _await(*args, **kwargs):
@@ -59,7 +56,9 @@ def _await(*args, **kwargs):
     except RuntimeError:
         main_loop = None
     if main_loop and main_loop.is_running():
-        raise RuntimeError("There's already a running loop, you probably shouldn't use this wrapper")
+        raise RuntimeError(
+            "There's already a running loop, you probably shouldn't use this wrapper"
+        )
 
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)

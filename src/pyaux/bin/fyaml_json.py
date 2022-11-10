@@ -2,9 +2,10 @@
 # pylint: disable=broad-except
 """ yaml -> json for pretty-writing. """
 
-import sys
 import argparse
 import json
+import sys
+
 import yaml
 
 

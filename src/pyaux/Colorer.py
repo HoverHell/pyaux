@@ -10,30 +10,31 @@ import logging
 
 
 def add_coloring_to_emit_windows(fn):
-        # add methods we need to the class
+    # add methods we need to the class
     def _out_handle(self):
         import ctypes
+
         return ctypes.windll.kernel32.GetStdHandle(self.STD_OUTPUT_HANDLE)
+
     out_handle = property(_out_handle)
 
     def _set_color(self, code):
         import ctypes
+
         # Constants from the Windows API
         self.STD_OUTPUT_HANDLE = -11
         hdl = ctypes.windll.kernel32.GetStdHandle(self.STD_OUTPUT_HANDLE)
         ctypes.windll.kernel32.SetConsoleTextAttribute(hdl, code)
 
-    setattr(logging.StreamHandler, '_set_color', _set_color)
+    setattr(logging.StreamHandler, "_set_color", _set_color)
 
     def new(*args):
         FOREGROUND_BLUE = 0x0001  # text color contains blue.
         FOREGROUND_GREEN = 0x0002  # text color contains green.
         FOREGROUND_RED = 0x0004  # text color contains red.
         FOREGROUND_INTENSITY = 0x0008  # text color is intensified.
-        FOREGROUND_WHITE = (
-            FOREGROUND_BLUE | FOREGROUND_GREEN |
-            FOREGROUND_RED)
-       # winbase.h
+        FOREGROUND_WHITE = FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED
+        # winbase.h
         STD_INPUT_HANDLE = -10
         STD_OUTPUT_HANDLE = -11
         STD_ERROR_HANDLE = -12
@@ -61,8 +62,12 @@ def add_coloring_to_emit_windows(fn):
 
         levelno = args[1].levelno
         if levelno >= 50:
-            color = (BACKGROUND_YELLOW | FOREGROUND_RED |
-                     FOREGROUND_INTENSITY | BACKGROUND_INTENSITY)
+            color = (
+                BACKGROUND_YELLOW
+                | FOREGROUND_RED
+                | FOREGROUND_INTENSITY
+                | BACKGROUND_INTENSITY
+            )
         elif levelno >= 40:
             color = FOREGROUND_RED | FOREGROUND_INTENSITY
         elif levelno >= 30:
@@ -77,8 +82,9 @@ def add_coloring_to_emit_windows(fn):
 
         ret = fn(*args)
         args[0]._set_color(FOREGROUND_WHITE)
-        #print "after"
+        # print "after"
         return ret
+
     return new
 
 
@@ -88,23 +94,23 @@ def add_coloring_to_emit_ansi(fn):
     def new(*args):
         record = args[1]
         levelno = record.levelno
-        nocolor = '\x1b[0m'
+        nocolor = "\x1b[0m"
         if levelno >= 50:
-            color = '\x1b[31m'  # red
+            color = "\x1b[31m"  # red
         elif levelno >= 40:
-            color = '\x1b[31m'  # red
+            color = "\x1b[31m"  # red
         elif levelno >= 30:
-            color = '\x1b[33m'  # yellow
+            color = "\x1b[33m"  # yellow
         elif levelno >= 20:
-            color = '\x1b[32m'  # green
+            color = "\x1b[32m"  # green
         elif levelno == 11:  # (useful for tmp-debug-messages)
-            color = '\x1b[36m'  # cyan
+            color = "\x1b[36m"  # cyan
         elif levelno >= 10:
-            color = '\x1b[35m'  # pink
+            color = "\x1b[35m"  # pink
         else:
             color = nocolor  # normal
-        record.msg = '%s%s%s' % (color, record.msg, nocolor)
-        record.levelname = '%s%s%s' % (color, record.levelname, nocolor)
+        record.msg = "%s%s%s" % (color, record.msg, nocolor)
+        record.levelname = "%s%s%s" % (color, record.levelname, nocolor)
         # TODO?: color msg.name with hashfunc-color of `name` or `module`?
         return fn(*args)
 
@@ -112,17 +118,20 @@ def add_coloring_to_emit_ansi(fn):
 
 
 def init():
-    """ Monkey-patch to add color support to logging.StreamHandler """
+    """Monkey-patch to add color support to logging.StreamHandler"""
     import platform
-    if platform.system() == 'Windows':
+
+    if platform.system() == "Windows":
         # Windows does not support ANSI escapes and we are using API calls
         # to set the console color
         logging.StreamHandler.emit = add_coloring_to_emit_windows(
-            logging.StreamHandler.emit)
+            logging.StreamHandler.emit
+        )
     else:
         # all non-Windows platforms are supporting ANSI escapes so we use them
         logging.StreamHandler.emit = add_coloring_to_emit_ansi(
-            logging.StreamHandler.emit)
+            logging.StreamHandler.emit
+        )
         # log = logging.getLogger()
         # log.addFilter(log_filter())
         # //hdlr = logging.StreamHandler()
@@ -130,7 +139,7 @@ def init():
 
 
 def test():
-    """ Provide a simple test-demonstration """
+    """Provide a simple test-demonstration"""
     logging.basicConfig(level=logging.DEBUG)
     logging.debug("debug")
     logging.warning("a warning")
@@ -138,5 +147,5 @@ def test():
     logging.info("some info")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     test()

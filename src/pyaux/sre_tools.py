@@ -10,19 +10,36 @@ NOTE: python3.5+ only (only tested on python3.7).
 
 import copy
 import re
+import sre_compile
+import sre_parse
+
 # pylint: disable=no-name-in-module
 from sre_constants import (
-    LITERAL, RANGE, IN, NOT_LITERAL, NEGATE, MIN_REPEAT, MAX_REPEAT, MAXREPEAT,
-    ANY, AT, AT_BEGINNING, AT_END, SUBPATTERN, BRANCH,
+    ANY,
+    AT,
+    AT_BEGINNING,
+    AT_END,
+    BRANCH,
+    IN,
+    LITERAL,
+    MAX_REPEAT,
+    MAXREPEAT,
+    MIN_REPEAT,
+    NEGATE,
+    NOT_LITERAL,
+    RANGE,
+    SUBPATTERN,
 )
-import sre_parse
-import sre_compile
-
 
 UNESCAPE = {val: key for key, val in sre_parse.ESCAPES.items()}
 UNCATEGORIES = {
-    ((val[0], tuple(val[1])) if isinstance(val, tuple) and len(val) == 2 and isinstance(val[1], list) else val): key
-    for key, val in sre_parse.CATEGORIES.items()}
+    (
+        (val[0], tuple(val[1]))
+        if isinstance(val, tuple) and len(val) == 2 and isinstance(val[1], list)
+        else val
+    ): key
+    for key, val in sre_parse.CATEGORIES.items()
+}
 
 
 def _ensure_grouped(pattern, source=None):
@@ -36,14 +53,14 @@ def _ensure_grouped(pattern, source=None):
     >>> _ensure_grouped(pattern='[abc]', source=[(IN, [(LITERAL, 97), (LITERAL, 98), (LITERAL, 99)])])
     '[abc]'
     """
-    if pattern.startswith('(') or pattern.startswith('['):
+    if pattern.startswith("(") or pattern.startswith("["):
         return pattern
     if len(pattern) == 1:
         return pattern
     # TODO: e.g. '\r*'
     # if not source: source = sre_parse.parse(pattern)
     # if len(source.data) == 1: return pattern
-    return '(?:{})'.format(pattern)
+    return "(?:{})".format(pattern)
 
 
 def _flags_to_list(flags):
@@ -85,22 +102,20 @@ def rast_to_pattern(rast, _parent_type=None, **kwargs):
 
     if isinstance(rast, sre_parse.SubPattern):
 
-        kwargs['flags'] = kwargs.get('flags', 0) | rast.state.flags
+        kwargs["flags"] = kwargs.get("flags", 0) | rast.state.flags
 
-        if kwargs.get('group_to_name') is None:
-            kwargs['group_to_name'] = {
-                val: key
-                for key, val in rast.state.groupdict.items()}
+        if kwargs.get("group_to_name") is None:
+            kwargs["group_to_name"] = {
+                val: key for key, val in rast.state.groupdict.items()
+            }
 
         # Tricky point: support 'branch inside subpattern does not require extra parentheses',
         # AST goes like `SUBPATTERN -> SubPattern -> BRANCH`.
         # Thus, in a general-ish case, pass parent through a single-element SubPattern.
         if len(rast.data) == 1:
-            kwargs['_parent_type'] = _parent_type
+            kwargs["_parent_type"] = _parent_type
 
-        return ''.join(
-            rast_to_pattern(child, **kwargs)
-            for child in rast)
+        return "".join(rast_to_pattern(child, **kwargs) for child in rast)
 
     # # Reference glue:
     # while True:
@@ -127,7 +142,7 @@ def rast_to_pattern(rast, _parent_type=None, **kwargs):
     elif isinstance(rast, tuple) and len(rast) == 2:
         item_type, item_value = rast
         # For recursion.
-        kwargs['_parent_type'] = item_type
+        kwargs["_parent_type"] = item_type
 
         # # Reference:
         # if this[0] == "\\":
@@ -213,10 +228,14 @@ def rast_to_pattern(rast, _parent_type=None, **kwargs):
         #                 raise source.error(msg, len(this) + 1 + len(that))
         #             setappend((RANGE, (lo, hi)))
 
-        elif item_type is RANGE and isinstance(item_value, tuple) and len(item_value) == 2:
+        elif (
+            item_type is RANGE
+            and isinstance(item_value, tuple)
+            and len(item_value) == 2
+        ):
             assert _parent_type is IN, _parent_type
             lo, hi = item_value
-            return '{}-{}'.format(re.escape(_chr(lo)), re.escape(_chr(hi)))
+            return "{}-{}".format(re.escape(_chr(lo)), re.escape(_chr(hi)))
 
         # # Reference:
         #         else:
@@ -232,7 +251,7 @@ def rast_to_pattern(rast, _parent_type=None, **kwargs):
         #         if negate:
         #             subpatternappend((NOT_LITERAL, set[0][1]))
         elif item_type is NOT_LITERAL:
-            raise Exception("TODO", dict(case='NOT_LITERAL', value=rast))
+            raise Exception("TODO", dict(case="NOT_LITERAL", value=rast))
 
             # # Reference:
             #     else:
@@ -242,16 +261,16 @@ def rast_to_pattern(rast, _parent_type=None, **kwargs):
             #         set.insert(0, (NEGATE, None))
         elif item_type is NEGATE and item_value is None:
             assert _parent_type is IN, _parent_type
-            return '^'
+            return "^"
             # # Reference:
             #     # charmap optimization can't be added here because
             #     # global flags still are not known
             #     subpatternappend((IN, set))
         elif item_type is IN:
             # XXXXX: needs re-checking
-            return '[{}]'.format(''.join(
-                rast_to_pattern(child, **kwargs)
-                for child in item_value))
+            return "[{}]".format(
+                "".join(rast_to_pattern(child, **kwargs) for child in item_value)
+            )
 
         # # Reference:
         # elif this in REPEAT_CHARS:
@@ -313,266 +332,273 @@ def rast_to_pattern(rast, _parent_type=None, **kwargs):
         # # Reference:
         #     else:
         #         subpattern[-1] = (MAX_REPEAT, (min, max, item))
-        elif item_type is MAX_REPEAT or item_type is MIN_REPEAT and len(item_value) == 3:
+        elif (
+            item_type is MAX_REPEAT or item_type is MIN_REPEAT and len(item_value) == 3
+        ):
             min_repeat, max_repeat, child = item_value
             if min_repeat == 0 and max_repeat == 1:
-                modifier = '?'
+                modifier = "?"
             elif min_repeat == 0 and max_repeat is MAXREPEAT:
-                modifier = '*'
+                modifier = "*"
             elif min_repeat == 1 and max_repeat is MAXREPEAT:
-                modifier = '+'
+                modifier = "+"
             elif min_repeat == max_repeat:  # `{a}`
-                modifier = '{{{}}}'.format(min_repeat)
+                modifier = "{{{}}}".format(min_repeat)
             else:  # `{a,b}`
-                modifier = '{{{},{}}}'.format(
-                    '' if min_repeat == 0 else min_repeat,
-                    '' if max_repeat is MAXREPEAT else max_repeat)
-            return '{}{}{}'.format(
+                modifier = "{{{},{}}}".format(
+                    "" if min_repeat == 0 else min_repeat,
+                    "" if max_repeat is MAXREPEAT else max_repeat,
+                )
+            return "{}{}{}".format(
                 _ensure_grouped(rast_to_pattern(child, **kwargs), source=child),
                 modifier,
                 # e.g. `.{4,}?` i.e. `(?:|.{4,})`
-                '?' if item_type is MIN_REPEAT else '')
+                "?" if item_type is MIN_REPEAT else "",
+            )
 
         # # Reference:
         # elif this == ".":
         #     subpatternappend((ANY, None))
         elif item_type is ANY and item_value is None:
-            return '.'
+            return "."
 
         # # Reference:
         # elif this == "(":
 
-            # # Reference:
-            # start = source.tell() - 1
-            # group = True
-            # name = None
-            # add_flags = 0
-            # del_flags = 0
-            # if sourcematch("?"):
-            #     # options
-            #     char = sourceget()
-            #     if char is None:
-            #         raise source.error("unexpected end of pattern")
-            #     if char == "P":
-            #         # python extensions
-            #         if sourcematch("<"):
-            #             # named group: skip forward to end of name
-            #             name = source.getuntil(">", "group name")
-            #             if not name.isidentifier():
-            #                 msg = "bad character in group name %r" % name
-            #                 raise source.error(msg, len(name) + 1)
-            #         elif sourcematch("="):
-            #             # named backreference
-            #             name = source.getuntil(")", "group name")
-            #             if not name.isidentifier():
-            #                 msg = "bad character in group name %r" % name
-            #                 raise source.error(msg, len(name) + 1)
-            #             gid = state.groupdict.get(name)
-            #             if gid is None:
-            #                 msg = "unknown group name %r" % name
-            #                 raise source.error(msg, len(name) + 1)
-            #             if not state.checkgroup(gid):
-            #                 raise source.error("cannot refer to an open group",
-            #                                    len(name) + 1)
-            #             state.checklookbehindgroup(gid, source)
-            #             subpatternappend((GROUPREF, gid))
-            #             continue
+        # # Reference:
+        # start = source.tell() - 1
+        # group = True
+        # name = None
+        # add_flags = 0
+        # del_flags = 0
+        # if sourcematch("?"):
+        #     # options
+        #     char = sourceget()
+        #     if char is None:
+        #         raise source.error("unexpected end of pattern")
+        #     if char == "P":
+        #         # python extensions
+        #         if sourcematch("<"):
+        #             # named group: skip forward to end of name
+        #             name = source.getuntil(">", "group name")
+        #             if not name.isidentifier():
+        #                 msg = "bad character in group name %r" % name
+        #                 raise source.error(msg, len(name) + 1)
+        #         elif sourcematch("="):
+        #             # named backreference
+        #             name = source.getuntil(")", "group name")
+        #             if not name.isidentifier():
+        #                 msg = "bad character in group name %r" % name
+        #                 raise source.error(msg, len(name) + 1)
+        #             gid = state.groupdict.get(name)
+        #             if gid is None:
+        #                 msg = "unknown group name %r" % name
+        #                 raise source.error(msg, len(name) + 1)
+        #             if not state.checkgroup(gid):
+        #                 raise source.error("cannot refer to an open group",
+        #                                    len(name) + 1)
+        #             state.checklookbehindgroup(gid, source)
+        #             subpatternappend((GROUPREF, gid))
+        #             continue
 
-            # # Reference:
-            #         else:
-            #             char = sourceget()
-            #             if char is None:
-            #                 raise source.error("unexpected end of pattern")
-            #             raise source.error("unknown extension ?P" + char,
-            #                                len(char) + 2)
-            #     elif char == ":":
-            #         # non-capturing group
-            #         group = None
-            #     elif char == "#":
-            #         # comment
-            #         while True:
-            #             if source.next is None:
-            #                 raise source.error("missing ), unterminated comment",
-            #                                    source.tell() - start)
-            #             if sourceget() == ")":
-            #                 break
-            #         continue
+        # # Reference:
+        #         else:
+        #             char = sourceget()
+        #             if char is None:
+        #                 raise source.error("unexpected end of pattern")
+        #             raise source.error("unknown extension ?P" + char,
+        #                                len(char) + 2)
+        #     elif char == ":":
+        #         # non-capturing group
+        #         group = None
+        #     elif char == "#":
+        #         # comment
+        #         while True:
+        #             if source.next is None:
+        #                 raise source.error("missing ), unterminated comment",
+        #                                    source.tell() - start)
+        #             if sourceget() == ")":
+        #                 break
+        #         continue
 
-            # # Reference:
-            #     elif char in "=!<":
-            #         # lookahead assertions
-            #         dir = 1
-            #         if char == "<":
-            #             char = sourceget()
-            #             if char is None:
-            #                 raise source.error("unexpected end of pattern")
-            #             if char not in "=!":
-            #                 raise source.error("unknown extension ?<" + char,
-            #                                    len(char) + 2)
-            #             dir = -1 # lookbehind
-            #             lookbehindgroups = state.lookbehindgroups
-            #             if lookbehindgroups is None:
-            #                 state.lookbehindgroups = state.groups
-            #         p = _parse_sub(source, state, verbose, nested + 1)
-            #         if dir < 0:
-            #             if lookbehindgroups is None:
-            #                 state.lookbehindgroups = None
-            #         if not sourcematch(")"):
-            #             raise source.error("missing ), unterminated subpattern",
-            #                                source.tell() - start)
-            #         if char == "=":
-            #             subpatternappend((ASSERT, (dir, p)))
-            #         else:
-            #             subpatternappend((ASSERT_NOT, (dir, p)))
-            #         continue
+        # # Reference:
+        #     elif char in "=!<":
+        #         # lookahead assertions
+        #         dir = 1
+        #         if char == "<":
+        #             char = sourceget()
+        #             if char is None:
+        #                 raise source.error("unexpected end of pattern")
+        #             if char not in "=!":
+        #                 raise source.error("unknown extension ?<" + char,
+        #                                    len(char) + 2)
+        #             dir = -1 # lookbehind
+        #             lookbehindgroups = state.lookbehindgroups
+        #             if lookbehindgroups is None:
+        #                 state.lookbehindgroups = state.groups
+        #         p = _parse_sub(source, state, verbose, nested + 1)
+        #         if dir < 0:
+        #             if lookbehindgroups is None:
+        #                 state.lookbehindgroups = None
+        #         if not sourcematch(")"):
+        #             raise source.error("missing ), unterminated subpattern",
+        #                                source.tell() - start)
+        #         if char == "=":
+        #             subpatternappend((ASSERT, (dir, p)))
+        #         else:
+        #             subpatternappend((ASSERT_NOT, (dir, p)))
+        #         continue
 
-            # # Reference:
-            #     elif char == "(":
-            #         # conditional backreference group
-            #         condname = source.getuntil(")", "group name")
-            #         if condname.isidentifier():
-            #             condgroup = state.groupdict.get(condname)
-            #             if condgroup is None:
-            #                 msg = "unknown group name %r" % condname
-            #                 raise source.error(msg, len(condname) + 1)
-            #         else:
-            #             try:
-            #                 condgroup = int(condname)
-            #                 if condgroup < 0:
-            #                     raise ValueError
-            #             except ValueError:
-            #                 msg = "bad character in group name %r" % condname
-            #                 raise source.error(msg, len(condname) + 1) from None
-            #             if not condgroup:
-            #                 raise source.error("bad group number",
-            #                                    len(condname) + 1)
-            #             if condgroup >= MAXGROUPS:
-            #                 msg = "invalid group reference %d" % condgroup
-            #                 raise source.error(msg, len(condname) + 1)
-            #         state.checklookbehindgroup(condgroup, source)
-            #         item_yes = _parse(source, state, verbose, nested + 1)
-            #         if source.match("|"):
-            #             item_no = _parse(source, state, verbose, nested + 1)
-            #             if source.next == "|":
-            #                 raise source.error("conditional backref with more than two branches")
-            #         else:
-            #             item_no = None
-            #         if not source.match(")"):
-            #             raise source.error("missing ), unterminated subpattern",
-            #                                source.tell() - start)
-            #         subpatternappend((GROUPREF_EXISTS, (condgroup, item_yes, item_no)))
-            #         continue
+        # # Reference:
+        #     elif char == "(":
+        #         # conditional backreference group
+        #         condname = source.getuntil(")", "group name")
+        #         if condname.isidentifier():
+        #             condgroup = state.groupdict.get(condname)
+        #             if condgroup is None:
+        #                 msg = "unknown group name %r" % condname
+        #                 raise source.error(msg, len(condname) + 1)
+        #         else:
+        #             try:
+        #                 condgroup = int(condname)
+        #                 if condgroup < 0:
+        #                     raise ValueError
+        #             except ValueError:
+        #                 msg = "bad character in group name %r" % condname
+        #                 raise source.error(msg, len(condname) + 1) from None
+        #             if not condgroup:
+        #                 raise source.error("bad group number",
+        #                                    len(condname) + 1)
+        #             if condgroup >= MAXGROUPS:
+        #                 msg = "invalid group reference %d" % condgroup
+        #                 raise source.error(msg, len(condname) + 1)
+        #         state.checklookbehindgroup(condgroup, source)
+        #         item_yes = _parse(source, state, verbose, nested + 1)
+        #         if source.match("|"):
+        #             item_no = _parse(source, state, verbose, nested + 1)
+        #             if source.next == "|":
+        #                 raise source.error("conditional backref with more than two branches")
+        #         else:
+        #             item_no = None
+        #         if not source.match(")"):
+        #             raise source.error("missing ), unterminated subpattern",
+        #                                source.tell() - start)
+        #         subpatternappend((GROUPREF_EXISTS, (condgroup, item_yes, item_no)))
+        #         continue
 
-            # # Reference:
-            #     elif char in FLAGS or char == "-":
-            #         # flags
-            #         flags = _parse_flags(source, state, char)
-            #         if flags is None:  # global flags
-            #             if not first or subpattern:
-            #                 import warnings
-            #                 warnings.warn(
-            #                     'Flags not at the start of the expression %r%s' % (
-            #                         source.string[:20],  # truncate long regexes
-            #                         ' (truncated)' if len(source.string) > 20 else '',
-            #                     ),
-            #                     DeprecationWarning, stacklevel=nested + 6
-            #                 )
-            #             if (state.flags & SRE_FLAG_VERBOSE) and not verbose:
-            #                 raise Verbose
-            #             continue
+        # # Reference:
+        #     elif char in FLAGS or char == "-":
+        #         # flags
+        #         flags = _parse_flags(source, state, char)
+        #         if flags is None:  # global flags
+        #             if not first or subpattern:
+        #                 import warnings
+        #                 warnings.warn(
+        #                     'Flags not at the start of the expression %r%s' % (
+        #                         source.string[:20],  # truncate long regexes
+        #                         ' (truncated)' if len(source.string) > 20 else '',
+        #                     ),
+        #                     DeprecationWarning, stacklevel=nested + 6
+        #                 )
+        #             if (state.flags & SRE_FLAG_VERBOSE) and not verbose:
+        #                 raise Verbose
+        #             continue
 
-            # # Reference:
-            #         add_flags, del_flags = flags
-            #         group = None
-            #     else:
-            #         raise source.error("unknown extension ?" + char,
-            #                            len(char) + 1)
+        # # Reference:
+        #         add_flags, del_flags = flags
+        #         group = None
+        #     else:
+        #         raise source.error("unknown extension ?" + char,
+        #                            len(char) + 1)
 
-            # # Reference:
-            # # parse group contents
-            # if group is not None:
-            #     try:
-            #         group = state.opengroup(name)
-            #     except error as err:
-            #         raise source.error(err.msg, len(name) + 1) from None
-            # sub_verbose = ((verbose or (add_flags & SRE_FLAG_VERBOSE)) and
-            #                not (del_flags & SRE_FLAG_VERBOSE))
-            # p = _parse_sub(source, state, sub_verbose, nested + 1)
+        # # Reference:
+        # # parse group contents
+        # if group is not None:
+        #     try:
+        #         group = state.opengroup(name)
+        #     except error as err:
+        #         raise source.error(err.msg, len(name) + 1) from None
+        # sub_verbose = ((verbose or (add_flags & SRE_FLAG_VERBOSE)) and
+        #                not (del_flags & SRE_FLAG_VERBOSE))
+        # p = _parse_sub(source, state, sub_verbose, nested + 1)
 
-            # # Reference glue: `_parse_sub` source:
-            # def _parse_sub(source, state, verbose, nested):
-            # # parse an alternation: a|b|c
+        # # Reference glue: `_parse_sub` source:
+        # def _parse_sub(source, state, verbose, nested):
+        # # parse an alternation: a|b|c
 
-            # # Reference: `_parse_sub` source:
-            # items = []
-            # itemsappend = items.append
-            # sourcematch = source.match
-            # start = source.tell()
-            # while True:
-            #     itemsappend(_parse(source, state, verbose, nested + 1,
-            #                        not nested and not items))
-            #     if not sourcematch("|"):
-            #         break
+        # # Reference: `_parse_sub` source:
+        # items = []
+        # itemsappend = items.append
+        # sourcematch = source.match
+        # start = source.tell()
+        # while True:
+        #     itemsappend(_parse(source, state, verbose, nested + 1,
+        #                        not nested and not items))
+        #     if not sourcematch("|"):
+        #         break
 
-            # # Reference: `_parse_sub` source:
-            # if len(items) == 1:
-            #     return items[0]
+        # # Reference: `_parse_sub` source:
+        # if len(items) == 1:
+        #     return items[0]
 
-            # # Reference: `_parse_sub` source:
-            # subpattern = SubPattern(state)
+        # # Reference: `_parse_sub` source:
+        # subpattern = SubPattern(state)
 
-            # # Reference: `_parse_sub` source:
-            # # check if all items share a common prefix
-            # while True:
-            #     prefix = None
-            #     for item in items:
-            #         if not item:
-            #             break
-            #         if prefix is None:
-            #             prefix = item[0]
-            #         elif item[0] != prefix:
-            #             break
-            #     else:
-            #         # all subitems start with a common "prefix".
-            #         # move it out of the branch
-            #         for item in items:
-            #             del item[0]
-            #         subpattern.append(prefix)
-            #         continue # check next one
-            #     break
+        # # Reference: `_parse_sub` source:
+        # # check if all items share a common prefix
+        # while True:
+        #     prefix = None
+        #     for item in items:
+        #         if not item:
+        #             break
+        #         if prefix is None:
+        #             prefix = item[0]
+        #         elif item[0] != prefix:
+        #             break
+        #     else:
+        #         # all subitems start with a common "prefix".
+        #         # move it out of the branch
+        #         for item in items:
+        #             del item[0]
+        #         subpattern.append(prefix)
+        #         continue # check next one
+        #     break
 
-            # # Reference: `_parse_sub` source:
-            # # check if the branch can be replaced by a character set
-            # set = []
-            # for item in items:
-            #     if len(item) != 1:
-            #         break
-            #     op, av = item[0]
-            #     if op is LITERAL:
-            #         set.append((op, av))
-            #     elif op is IN and av[0][0] is not NEGATE:
-            #         set.extend(av)
-            #     else:
-            #         break
-            # else:
-            #     # we can store this as a character set instead of a
-            #     # branch (the compiler may optimize this even more)
-            #     subpattern.append((IN, _uniq(set)))
-            #     return subpattern
+        # # Reference: `_parse_sub` source:
+        # # check if the branch can be replaced by a character set
+        # set = []
+        # for item in items:
+        #     if len(item) != 1:
+        #         break
+        #     op, av = item[0]
+        #     if op is LITERAL:
+        #         set.append((op, av))
+        #     elif op is IN and av[0][0] is not NEGATE:
+        #         set.extend(av)
+        #     else:
+        #         break
+        # else:
+        #     # we can store this as a character set instead of a
+        #     # branch (the compiler may optimize this even more)
+        #     subpattern.append((IN, _uniq(set)))
+        #     return subpattern
 
-            # # Reference: `_parse_sub` source:
-            # subpattern.append((BRANCH, (None, items)))
-            # return subpattern
+        # # Reference: `_parse_sub` source:
+        # subpattern.append((BRANCH, (None, items)))
+        # return subpattern
 
-        elif item_type is BRANCH and isinstance(item_value, tuple) and len(item_value) == 2 and item_value[0] is None:
+        elif (
+            item_type is BRANCH
+            and isinstance(item_value, tuple)
+            and len(item_value) == 2
+            and item_value[0] is None
+        ):
             _, children = item_value
             # XXXXXXX: needs re-checking:
-            result = '|'.join(
-                rast_to_pattern(child, **kwargs)
-                for child in children)
+            result = "|".join(rast_to_pattern(child, **kwargs) for child in children)
             # Tricky: branch inside subpattern does not require extra parentheses.
             if _parent_type is not SUBPATTERN:
-                result = '(?:{})'.format(result)
+                result = "(?:{})".format(result)
             return result
 
             # # Reference:
@@ -582,38 +608,43 @@ def rast_to_pattern(rast, _parent_type=None, **kwargs):
             # if group is not None:
             #     state.closegroup(group, p)
             # subpatternappend((SUBPATTERN, (group, add_flags, del_flags, p)))
-        elif item_type is SUBPATTERN and isinstance(item_value, tuple) and len(item_value) == 4:
+        elif (
+            item_type is SUBPATTERN
+            and isinstance(item_value, tuple)
+            and len(item_value) == 4
+        ):
             group, add_flags, del_flags, child = item_value
             flags = _flags_to_list(add_flags)
             if del_flags:
-                flags.append('-')
+                flags.append("-")
                 flags.extend(_flags_to_list(del_flags))
 
             if group is None:
-                flags.append(':')
+                flags.append(":")
             else:
-                group_to_name = kwargs.get('group_to_name')
+                group_to_name = kwargs.get("group_to_name")
                 name = group_to_name.get(group)
                 if name:
                     # NOTE: making a named group with changed flags is syntaxically impossible.
                     assert not flags
-                    flags = ['P<{}>'.format(name)] + flags
+                    flags = ["P<{}>".format(name)] + flags
 
-            return '({}{})'.format(
-                '?{}'.format(''.join(flags)) if flags else '',
-                rast_to_pattern(child, **kwargs))
+            return "({}{})".format(
+                "?{}".format("".join(flags)) if flags else "",
+                rast_to_pattern(child, **kwargs),
+            )
 
         # # Reference:
         # elif this == "^":
         #     subpatternappend((AT, AT_BEGINNING))
         elif item_type is AT and item_value is AT_BEGINNING:
-            return '^'
+            return "^"
 
         # # Reference:
         # elif this == "$":
         #     subpatternappend((AT, AT_END))
         elif item_type is AT and item_value is AT_END:
-            return '$'
+            return "$"
 
         # # Reference:
         # else:
@@ -651,7 +682,7 @@ def cutoff_rast(rast, **kwargs):
 
     for idx in reversed(range(len(rast))):
         # Will start with the entire list and end with one item.
-        cutoff = rast[:idx + 1]
+        cutoff = rast[: idx + 1]
 
         yield make_cutoff_obj(cutoff)
 
@@ -669,7 +700,9 @@ def cutoff_rast(rast, **kwargs):
                 subsubpattern_params = item_value[:-1]
                 subsubpattern = item_value[-1]
                 for subcutoff in cutoff_rast(subsubpattern, **kwargs):
-                    cutoff_rec = base_rast + [(item_type, subsubpattern_params + (subcutoff,))]
+                    cutoff_rec = base_rast + [
+                        (item_type, subsubpattern_params + (subcutoff,))
+                    ]
                     yield make_cutoff_obj(cutoff_rec)
 
             # '...(abc|de)' -> ['...(abc|de)', '...(abc|d)', '...(ab|d)', '...(a|d)', '...']
@@ -685,7 +718,9 @@ def cutoff_rast(rast, **kwargs):
                         # Mutating so that when a subsubpattern is exhausted it
                         # remains in the minimal form.
                         subsubpatterns[spidx] = subcutoff
-                        cutoff_rec = base_rast + [(item_type, subsubpattern_params + (subsubpatterns[:],))]
+                        cutoff_rec = base_rast + [
+                            (item_type, subsubpattern_params + (subsubpatterns[:],))
+                        ]
                         yield make_cutoff_obj(cutoff_rec)
 
 
@@ -709,7 +744,7 @@ def find_matching_subregexes(pattern, string, flags=0, verbose=False):
                     pattern_round=pattern_round,
                     match=match,
                     substring=match.group(0),
-                    substring_unmatched=string[match.end(0):],
+                    substring_unmatched=string[match.end(0) :],
                 )
             else:
                 yield pattern_round
@@ -717,12 +752,13 @@ def find_matching_subregexes(pattern, string, flags=0, verbose=False):
 
 def main():
     import sys
+
     rex = sys.argv[1]
     string = sys.argv[2]
-    print('Regex: {!r}, string: {!r}'.format(rex, string), file=sys.stderr)
+    print("Regex: {!r}, string: {!r}".format(rex, string), file=sys.stderr)
     for result in find_matching_subregexes(rex, string, verbose=True):
-        print('{pattern_round.state!r} -> {substring!r}'.format(**result))
+        print("{pattern_round.state!r} -> {substring!r}".format(**result))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

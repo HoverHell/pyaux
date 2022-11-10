@@ -8,22 +8,23 @@ from __future__ import annotations
 
 import sys
 
-from . import madness_datadiff
-from .madness_datadiff import *
-from . import madness_oneliny
-from .madness_oneliny import *
-from . import madness_reprstuff
-from .madness_reprstuff import *
-from . import madness_stuffstuff
-from .madness_stuffstuff import *
-from . import aio
+from . import (
+    aio,
+    madness_datadiff,
+    madness_oneliny,
+    madness_reprstuff,
+    madness_stuffstuff,
+)
 from .aio import *
-
+from .madness_datadiff import *
+from .madness_oneliny import *
+from .madness_reprstuff import *
+from .madness_stuffstuff import *
 
 __all__ = (
     # __builtin__ hacks
-    '_olt_into_builtin',
-    '_into_builtin',
+    "_olt_into_builtin",
+    "_into_builtin",
 )
 __all__ += madness_datadiff.__all__
 __all__ += madness_oneliny.__all__
@@ -36,7 +37,7 @@ __all__ += aio.__all__
 
 
 def _into_builtin(dct):
-    """ Helper to put stuff (like the one-liner-helpers) into builtins """
+    """Helper to put stuff (like the one-liner-helpers) into builtins"""
     for key, val in dct.items():
         setattr(__builtins__, key, val)
 
@@ -49,6 +50,7 @@ __all_stuff_e = dict((key, globals().get(key)) for key in __all__)
 try:
     # better pprint
     from IPython.lib.pretty import pprint, pretty
+
     __all_stuff.update(pprint=pprint, pretty=pretty, pformat=pretty)
     __all_stuff_e.update(pprint=pprint, pretty=pretty, pformat=pretty)
 except ImportError as __e:
@@ -61,7 +63,7 @@ def _olt_into_builtin():
 
 
 # For use as execfile()
-if locals().get('__into_builtin'):
+if locals().get("__into_builtin"):
     _olt_into_builtin()
 
 

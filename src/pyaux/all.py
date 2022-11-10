@@ -9,15 +9,10 @@ Does not contain unsafe-to-import modules.
 # Ordering is from least important to most important, with modules
 # themselves last.
 
-from .madness import *
-from .runlib import *
-from .dicts import *
-from .urlhelpers import *
-from .ranges import *
+from . import base, dicts, madness, ranges, runlib, urlhelpers
 from .base import *
-from . import madness
-from . import runlib
-from . import dicts
-from . import urlhelpers
-from . import ranges
-from . import base
+from .dicts import *
+from .madness import *
+from .ranges import *
+from .runlib import *
+from .urlhelpers import *

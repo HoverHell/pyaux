@@ -4,8 +4,8 @@ WARNING: this module will be moved to `pyauxm`.
 """
 
 from collections import deque
-import pandas
 
+import pandas
 
 __all__ = [
   'datadeque',

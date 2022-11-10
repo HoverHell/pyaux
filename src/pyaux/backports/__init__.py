@@ -3,7 +3,8 @@
 
 import re
 
-_sh_find_unsafe = re.compile(r'[^\w@%+=:,./-]').search
+_sh_find_unsafe = re.compile(r"[^\w@%+=:,./-]").search
+
 
 def sh_quote_prettier(s):
     r"""
@@ -24,7 +25,7 @@ def sh_quote_prettier(s):
     # Cleanup the empty excesses at the ends
     _overedge = "''"
     if result.startswith(_overedge):
-        result = result[len(_overedge):]
+        result = result[len(_overedge) :]
     if result.endswith(_overedge):
-        result = result[:-len(_overedge)]
+        result = result[: -len(_overedge)]
     return result

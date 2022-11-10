@@ -10,6 +10,7 @@ from __future__ import annotations
 
 try:
     import anyjson
+
     # Implementation that might be faster but does not provide any extra arguments.
     json_loads_simple = anyjson.loads  # pylint: disable=invalid-name
     json_dumps_simple = anyjson.dumps  # pylint: disable=invalid-name

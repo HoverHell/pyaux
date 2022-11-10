@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
+import json
 import os
 import sys
-import json
 
 from pyaux.base import to_bytes
 

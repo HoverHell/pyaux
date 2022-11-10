@@ -20,19 +20,24 @@ It is also possible to use `get_prof()` before all other imports and add
 
 from __future__ import annotations
 
-import sys
 import inspect
+import sys
 import traceback
 
 
 class DummyProfiler(object):
-    """ Dummy LineProfiler-like wrapper """
+    """Dummy LineProfiler-like wrapper"""
+
     def __call__(self, fn, *ar, **kwa):
         return fn  # do nothing as a wrapper
+
     def __enter__(self):
         return self  # do nothing as a context
+
     ## Do nothing for other LineProfiler-like functions
-    __exit__ = enable = disable = dump_stats = print_stats = lambda self, *ar, **kwa: None
+    __exit__ = (
+        enable
+    ) = disable = dump_stats = print_stats = lambda self, *ar, **kwa: None
 
 
 profile = None
@@ -44,18 +49,19 @@ def _check_add_builtin(force=True):
     global profile
 
 
-def get_prof(proftype='lp', add_builtin=True):
-    """ Initialize the global and buitin profiler *wrapper* (currently,
-    only meant for LineProfiler) """
+def get_prof(proftype="lp", add_builtin=True):
+    """Initialize the global and buitin profiler *wrapper* (currently,
+    only meant for LineProfiler)"""
     global profile
     global profile_type
     if profile is not None and profile_type == proftype:
         pass  ## ... nothing to generate.
     ## Otherwise - make one.
-    elif proftype == 'lp':
+    elif proftype == "lp":
         import line_profiler
+
         profile = line_profiler.LineProfiler()
-    elif proftype == 'dummy':
+    elif proftype == "dummy":
         profile = DummyProfiler()
     else:
         raise Exception("Unknown `proftype`.")
@@ -73,20 +79,20 @@ def _wrap_class_stuff(the_class, wrapf):
     # #   won't be a problem (they are damn rare after all)
     for i_name, i_val in inspect.getmembers(the_class, predicate=inspect.ismethod):
         try:
-            if getattr(i_val, '__prof_wrapped__', False):
+            if getattr(i_val, "__prof_wrapped__", False):
                 continue  # do not wrap wrapped wrapstuff.
             # XXX: do the sourcefilename check too?
             print("    Method wrapping: %s" % (i_name,))
             wrapped_val = wrapf(i_val)
-            setattr(wrapped_val, '__prof_wrapped__', True)
+            setattr(wrapped_val, "__prof_wrapped__", True)
             setattr(the_class, i_name, wrapped_val)
         except Exception as e:
             print("     ... Failed (%r). %r" % (i_name, e))
 
 
 def _wrap_module_stuff(module, wrapf):
-    """ Wrap each function and method in the module with the specified
-    function (e.g. LineProfiler) """
+    """Wrap each function and method in the module with the specified
+    function (e.g. LineProfiler)"""
     # This should not fail:
     # (Note: there's also `inspect.getfile; but it sometimes returns ...py and sometimes ...pyc)
     if not inspect.ismodule(module) and isinstance(module, object):
@@ -98,7 +104,7 @@ def _wrap_module_stuff(module, wrapf):
     for i_name in dir(module):
         try:
             i_val = getattr(module, i_name)
-            if getattr(i_val, '__prof_wrapped__', False):
+            if getattr(i_val, "__prof_wrapped__", False):
                 continue  # do not wrap wrapped wrapstuff.
             try:
                 i_filename = inspect.getsourcefile(i_val)
@@ -116,7 +122,7 @@ def _wrap_module_stuff(module, wrapf):
             elif callable(i_val):
                 print("  Wrapping: %s" % (i_name,))
                 wrapped_val = wrapf(i_val)
-                setattr(wrapped_val, '__prof_wrapped__', True)
+                setattr(wrapped_val, "__prof_wrapped__", True)
                 setattr(module, i_name, wrapped_val)
         except Exception as e:
             print("  ... Failed (%r). %r" % (i_name, e))
@@ -124,8 +130,8 @@ def _wrap_module_stuff(module, wrapf):
 
 # TODO: make it possible to specify down to particular objects to wrap.
 def wrap_packages(packages, wrapf=None, verbose=True):
-    """ Wraps all the currently imported modules within any package of
-    the `packages` (e.g. `['module1', 'package2', 'package3.module1']`) """
+    """Wraps all the currently imported modules within any package of
+    the `packages` (e.g. `['module1', 'package2', 'package3.module1']`)"""
     # Line-profiler: package-wrap.
     # NOTE: this would be more reliable if done on the import hook; but
     #   this is more simple and should be sufficient here.
@@ -149,24 +155,25 @@ def wrap_packages(packages, wrapf=None, verbose=True):
 
 ## TODO?: put into the main prof module
 def stgrab(sig, frame):
-    """ function that is supposed to be addd as a signal handler
-    (e.g. on USR2) and prints the stack trace when called """
+    """function that is supposed to be addd as a signal handler
+    (e.g. on USR2) and prints the stack trace when called"""
     ofra = inspect.getouterframes(frame)
     d = dict(_frame=frame)
     d.update(frame.f_globals)
     d.update(frame.f_locals)
-    trace_data = [(v[1], v[2], v[3], ''.join(v[4] or [])) for v in reversed(ofra)]
-    trace_formatted = ''.join(traceback.format_list(trace_data))
-    trace_last_src = ''.join(ofra[0][4] or [])
-    if (stgrab.check_polling
-            and any((v in trace_last_src) for v in stgrab.poll_codes)):
+    trace_data = [(v[1], v[2], v[3], "".join(v[4] or [])) for v in reversed(ofra)]
+    trace_formatted = "".join(traceback.format_list(trace_data))
+    trace_last_src = "".join(ofra[0][4] or [])
+    if stgrab.check_polling and any((v in trace_last_src) for v in stgrab.poll_codes):
         print(" ... Polling ...")  # don't spam that specific traceback
         return
     print(
-        " ------- %s\n" % (stgrab.header_str,) +
+        " ------- %s\n" % (stgrab.header_str,)
+        +
         # "Framedata: %s\n" % (name, d) +
-        "Traceback:\n%s" % (trace_formatted,) +
-        "")
+        "Traceback:\n%s" % (trace_formatted,)
+        + ""
+    )
 
 
 ## Funny place to put that:
@@ -174,4 +181,4 @@ stgrab.header_str = "Stack trace in process:"
 stgrab.check_polling = True
 ## Source code pieces of the known lines that do polling.
 ## MAYBEDO: add other known polling lines
-stgrab.poll_codes = ['   l = self._poller.poll(timeout']
+stgrab.poll_codes = ["   l = self._poller.poll(timeout"]

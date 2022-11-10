@@ -3,9 +3,10 @@
 
 from __future__ import annotations
 
-import sys
 import argparse
 import functools
+import sys
+
 from pyaux.iterables import prefetch_first
 
 
@@ -354,6 +355,7 @@ def make_outs_func(params):
         width = None
         try:
             import shutil
+
             # magic '8'
             width = shutil.get_terminal_size().columns - 8
         except Exception:  # pylint: disable=broad-except

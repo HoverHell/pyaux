@@ -8,33 +8,31 @@ A kind-of addition to `itertools`.
 from __future__ import annotations
 
 import os
-from itertools import chain, repeat, islice
-
+from itertools import chain, islice, repeat
 
 __all__ = (
-    'window',
-    'reversed_blocks',
-    'reversed_lines',
-    'uniq_g',
-    'IterStat',
-    'IterMean',
-    'chunks_g',
-    'next_or_fdefault',
-    'iterator_is_over',
+    "window",
+    "reversed_blocks",
+    "reversed_lines",
+    "uniq_g",
+    "IterStat",
+    "IterMean",
+    "chunks_g",
+    "next_or_fdefault",
+    "iterator_is_over",
 )
 
 
 # Iterate over a 'window' of adjacent elements
 # http://stackoverflow.com/questions/6998245/iterate-over-a-window-of-adjacent-elements-in-python
 def window(seq, size=2, fill=0, fill_left=False, fill_right=False):
-    """ Returns a sliding window (of width n) over data from the iterable:
-      s -> (s0,s1,...s[n-1]), (s1,s2,...,sn), ...
+    """Returns a sliding window (of width n) over data from the iterable:
+    s -> (s0,s1,...s[n-1]), (s1,s2,...,sn), ...
     """
     ssize = size - 1
     it = chain(
-        repeat(fill, ssize * fill_left),
-        iter(seq),
-        repeat(fill, ssize * fill_right))
+        repeat(fill, ssize * fill_left), iter(seq), repeat(fill, ssize * fill_right)
+    )
     result = tuple(islice(it, size))
     if len(result) == size:  # `<=` if okay to return seq if len(seq) < size
         yield result
@@ -81,8 +79,9 @@ def cumsum(iterable):
 # ###### Reading files backwards
 # http://stackoverflow.com/a/260433/62821
 
+
 def reversed_blocks(fileobj, blocksize=4096):
-    """ Read blocks of file's contents in reverse order.  """
+    """Read blocks of file's contents in reverse order."""
     fileobj.seek(0, os.SEEK_END)
     here = fileobj.tell()
     while here > 0:
@@ -92,9 +91,9 @@ def reversed_blocks(fileobj, blocksize=4096):
         here -= delta
 
 
-def reversed_lines(fileobj, sep=b''):
-    """ Read the lines of file in reverse order """
-    tail = []           # Tail of the line whose head is not yet read.
+def reversed_lines(fileobj, sep=b""):
+    """Read the lines of file in reverse order"""
+    tail = []  # Tail of the line whose head is not yet read.
     for block in reversed_blocks(fileobj):
         # A line is a list of strings to avoid quadratic concatenation.
         # (And trying to avoid 1-element lists would complicate the code.)
@@ -161,20 +160,21 @@ class IterStat(object):
     @property
     def std(self):
         from .base import _sqrt
+
         return _sqrt(self.variance)
 
 
 def IterMean(iterable, dtype=float):
-    """ Mean of an iterable """
+    """Mean of an iterable"""
     res_sum, cnt = dtype(), dtype()
     for val in iterable:
         res_sum += val
         cnt += 1
     if cnt == 0:  # NOTE.
         try:
-            return dtype('nan')
+            return dtype("nan")
         except Exception:
-            return float('nan')
+            return float("nan")
     return res_sum / cnt
 
 
@@ -259,7 +259,7 @@ def with_last(it):
 
 
 class NotEnoughItems(Exception):
-    """ Pretty much StopIteration but only for handling by user-code """
+    """Pretty much StopIteration but only for handling by user-code"""
 
 
 def prefetch_first(iterable, count=1, require=False):
@@ -325,7 +325,8 @@ def prefetch_first(iterable, count=1, require=False):
             if require:
                 raise NotEnoughItems(
                     "Could not prefetch the requested amount of items",
-                    dict(requested=count, found=len(prefetched), data=prefetched))
+                    dict(requested=count, found=len(prefetched), data=prefetched),
+                )
 
     # pylint: disable=dangerous-default-value
     def gen(iterable=iterable, prefetched=prefetched):
@@ -343,6 +344,7 @@ def prefetch_first(iterable, count=1, require=False):
     return gen()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import doctest
+
     doctest.testmod()

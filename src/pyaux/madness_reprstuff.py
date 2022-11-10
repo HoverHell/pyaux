@@ -2,13 +2,14 @@
 """ madstuff: repr stuff """
 
 __all__ = (
-    'GenReprWrap', 'GenReprWrapWrap',
+    "GenReprWrap",
+    "GenReprWrapWrap",
 )
 
 
 class GenReprWrap(object):
-    """ Generator proxy-wrapper that prints part of the child generator
-    on __repr__ (saving it in a list).  """
+    """Generator proxy-wrapper that prints part of the child generator
+    on __repr__ (saving it in a list)."""
 
     def __init__(self, gen, max_repr=20):
         self.gen = gen
@@ -32,13 +33,13 @@ class GenReprWrap(object):
     def __repr__(self):
         cache = self._make_cache()
         res = []
-        res.append('(')
+        res.append("(")
         if cache:
-            res.append(', '.join(repr(v) for v in cache))
+            res.append(", ".join(repr(v) for v in cache))
         if self._probably_more:
-            res.append(', ...')
-        res.append(')')
-        return ''.join(res)
+            res.append(", ...")
+        res.append(")")
+        return "".join(res)
 
     def next(self):
         try:  # Exhaust cache first.
@@ -57,7 +58,7 @@ def GenReprWrapWrap(fn=None, **wrap_kwa):
         @functools.wraps(w_fn)
         def _wrapped(*ar, **kwa):
             res = fn(*ar, **kwa)
-            if hasattr(res, '__iter__') and hasattr(res, 'next'):
+            if hasattr(res, "__iter__") and hasattr(res, "next"):
                 return GenReprWrap(res, **wrap_kwa)
             return res
 

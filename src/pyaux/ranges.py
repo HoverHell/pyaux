@@ -5,17 +5,21 @@ Various range-generating funcs.
 
 from __future__ import annotations
 
-
-
 __all__ = (
-    'fxrange', 'frange', 'dxrange', 'drange',
-    'date_xrange', 'date_range',
-    'date_add_months', 'date_months_xrange', 'date_months_range',
+    "fxrange",
+    "frange",
+    "dxrange",
+    "drange",
+    "date_xrange",
+    "date_range",
+    "date_add_months",
+    "date_months_xrange",
+    "date_months_range",
 )
 
 
 def fxrange(start, end=None, inc=None):
-    """ The xrange function for float """
+    """The xrange function for float"""
     assert inc != 0, "inc should not be zero"
     if end is None:
         end = start
@@ -25,22 +29,22 @@ def fxrange(start, end=None, inc=None):
     i = 0  # to prevent error accumulation
     while True:
         nextv = start + i * inc
-        if (inc > 0 and nextv >= end or
-                inc < 0 and nextv <= end):
+        if inc > 0 and nextv >= end or inc < 0 and nextv <= end:
             break
         yield nextv
         i += 1
 
 
 def frange(start, end=None, inc=None):
-    """ list(fxrange) """
+    """list(fxrange)"""
     return list(fxrange(start, end, inc))
 
 
 def dxrange(start, end=None, inc=None, include_end=False):
-    """ The xrange function for Decimal """
+    """The xrange function for Decimal"""
     # Imported here mostly because of use_cdecimal in this module
     from decimal import Decimal
+
     assert inc != 0, "inc should not be zero"
     if end is None:
         end = start
@@ -52,20 +56,24 @@ def dxrange(start, end=None, inc=None, include_end=False):
     end = Decimal(end)
     nextv = start
     while True:
-        if ((inc > 0) and (not include_end and nextv == end or nextv > end) or
-                (inc < 0) and (not include_end and nextv == end or nextv < end)):
+        if (
+            (inc > 0)
+            and (not include_end and nextv == end or nextv > end)
+            or (inc < 0)
+            and (not include_end and nextv == end or nextv < end)
+        ):
             break
         yield nextv
         nextv += inc
 
 
 def drange(*ar, **kwa):
-    """ list(dxrange) """
+    """list(dxrange)"""
     return list(dxrange(*ar, **kwa))
 
 
 def date_xrange(start, end, inc=None, include_end=False, precise=False):
-    """ The xrange function for datetime.
+    """The xrange function for datetime.
 
     NOTE: the semantics of 'start' and 'end' are different here: with
     end=None an infinite generator is returned.
@@ -91,6 +99,7 @@ def date_xrange(start, end, inc=None, include_end=False, precise=False):
     '2011-11-13T23:54:48.888863'
     """
     import datetime
+
     if inc is None:
         inc = 1  # default: 1 day
 
@@ -103,7 +112,7 @@ def date_xrange(start, end, inc=None, include_end=False, precise=False):
 
     assert inc_days  # should be nonzero
 
-    is_forward = (inc_days > 0)
+    is_forward = inc_days > 0
 
     idx = 0
     current = start
@@ -124,14 +133,15 @@ def date_xrange(start, end, inc=None, include_end=False, precise=False):
 
 
 def date_range(*ar, **kwa):
-    """ list(date_xrange) """
+    """list(date_xrange)"""
     return list(date_xrange(*ar, **kwa))
 
 
 def date_add_months(sourcedate, months=1):
-    """ Add months to date; can cap the day to the maximal value for
-    the month """
+    """Add months to date; can cap the day to the maximal value for
+    the month"""
     import calendar
+
     month = sourcedate.month - 1 + months
     year = sourcedate.year + month // 12
     month = month % 12 + 1
@@ -142,7 +152,7 @@ def date_add_months(sourcedate, months=1):
 
 
 def date_months_xrange(start, end, inc=1, include_end=False):
-    """ date_range with delta measured in months.
+    """date_range with delta measured in months.
 
     Similar semantics to date_xrange.
     Only accepts integer `inc` values.
@@ -173,5 +183,5 @@ def date_months_xrange(start, end, inc=1, include_end=False):
 
 
 def date_months_range(*ar, **kwa):
-    """ list(date_months_xrange) """
+    """list(date_months_xrange)"""
     return list(date_months_xrange(*ar, **kwa))

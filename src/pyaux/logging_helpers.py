@@ -1,14 +1,14 @@
 # coding: utf8
 
-import time
 import logging
+import time
 from logging import handlers
+
 from .base import to_bytes
 
-
 __all__ = (
-    'TaggedSysLogHandlerBase',
-    'TaggedSysLogHandler',
+    "TaggedSysLogHandlerBase",
+    "TaggedSysLogHandler",
 )
 
 
@@ -54,7 +54,7 @@ class TaggedSysLogHandlerBase(handlers.SysLogHandler):
     """
 
     def __init__(self, *args, **kwargs):
-        syslog_tag = kwargs.pop('syslog_tag')
+        syslog_tag = kwargs.pop("syslog_tag")
         syslog_tag = to_bytes(syslog_tag)
         self.syslog_tag = syslog_tag
         super(TaggedSysLogHandler, self).__init__(*args, **kwargs)
@@ -74,10 +74,11 @@ class TaggedSysLogHandler(TaggedSysLogHandlerBase):
     _sndbuf_size = 5 * 2**20  # 5 MiB
 
     def __init__(self, *args, **kwargs):
-        self._sbdbuf_size = kwargs.pop('sbdbuf_size', self._sndbuf_size)
+        self._sbdbuf_size = kwargs.pop("sbdbuf_size", self._sndbuf_size)
         super(TaggedSysLogHandler, self).__init__(*args, **kwargs)
         self.configure_socket(self.socket)
 
     def configure_socket(self, sock):
         import socket
+
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, self._sndbuf_size)

@@ -3,29 +3,43 @@
 
 import re
 import urllib.parse
-from pyaux.dicts import dotdict
-from pyaux.dicts import MVOD
-from pyaux.base import repr_cut as _cut
 
+from pyaux.base import repr_cut as _cut
+from pyaux.dicts import MVOD, dotdict
 
 __all__ = (
-    'Url',
-    '_url_re',
-    '_cut', 'IPNBDFDisplay',
-    '_re_largest_matching_start',
+    "Url",
+    "_url_re",
+    "_cut",
+    "IPNBDFDisplay",
+    "_re_largest_matching_start",
 )
 
 
 # See also: https://pypi.org/project/yarl/
 class Url(dotdict):
-    """ urlparse.ParseResult and parse_qs[l] in a dict-like non-lazy form """
+    """urlparse.ParseResult and parse_qs[l] in a dict-like non-lazy form"""
+
     _components = (
-        'scheme', 'netloc', 'path', 'params', 'query', 'fragment',
+        "scheme",
+        "netloc",
+        "path",
+        "params",
+        "query",
+        "fragment",
         # from ResultMixin
-        'username', 'password', 'hostname', 'port',
+        "username",
+        "password",
+        "hostname",
+        "port",
     )  # <scheme>://<netloc>/<path>;<params>?<query>#<fragment>
     _base_components = (
-        'scheme', 'netloc', 'path', 'params', 'query', 'fragment',
+        "scheme",
+        "netloc",
+        "path",
+        "params",
+        "query",
+        "fragment",
     )
 
     # TODO: urlunescaped parts
@@ -44,19 +58,23 @@ class Url(dotdict):
 
     def to_string(self):
         query_str = urllib.parse.urlencode(list(self.query.items()))
-        return urllib.parse.urlunparse((
-            self[key] if key != 'query' else query_str
-            for key in self._base_components))
+        return urllib.parse.urlunparse(
+            (
+                self[key] if key != "query" else query_str
+                for key in self._base_components
+            )
+        )
 
 
 _url_re = (
-    r'''(?i)\b((?:[a-z][\w-]+:(?:/{1,3}|[a-z0-9%])|www\d{0,3}[.]|[a-z0-9.\-]+'''
-    r'''[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+'''
-    r'''(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'".,<>?«»“”‘’]))''')
+    r"""(?i)\b((?:[a-z][\w-]+:(?:/{1,3}|[a-z0-9%])|www\d{0,3}[.]|[a-z0-9.\-]+"""
+    r"""[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+"""
+    r"""(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'".,<>?«»“”‘’]))"""
+)
 
 
 def IPNBDFDisplay(df, *ar, **kwa):
-    """ A helper to display a pandas DataFrame in the IPython notebook.
+    """A helper to display a pandas DataFrame in the IPython notebook.
 
     Recommended things to do:
     pandas.options.display.max_colwidth = 2000
@@ -69,14 +87,15 @@ def IPNBDFDisplay(df, *ar, **kwa):
     :param cutlinks: automatically converts all URLs in the resulting HTML
     to shortened values leading to the same addresses.
     """
-    from IPython.display import display, HTML
-    kwa.setdefault('float_format', lambda v: '%.6f' % (v,))
-    columns = kwa.pop('columns', None)
-    include = kwa.pop('include', None)
-    exclude = kwa.pop('exclude', None)
-    head = kwa.pop('head', 200)
-    cutlinks = kwa.pop('cutlinks', True)
-    do_display = kwa.pop('display', True)
+    from IPython.display import HTML, display
+
+    kwa.setdefault("float_format", lambda v: "%.6f" % (v,))
+    columns = kwa.pop("columns", None)
+    include = kwa.pop("include", None)
+    exclude = kwa.pop("exclude", None)
+    head = kwa.pop("head", 200)
+    cutlinks = kwa.pop("cutlinks", True)
+    do_display = kwa.pop("display", True)
 
     if head:
         df = df.head(head)
@@ -97,10 +116,7 @@ def IPNBDFDisplay(df, *ar, **kwa):
             result = '<a href="%s">%s</a>' % (link, _cut(link, cutlinks))
             return result
 
-        html = re.sub(
-            _url_re,
-            lambda match: cutlink(match.group(0)),
-            html)
+        html = re.sub(_url_re, lambda match: cutlink(match.group(0)), html)
 
     # TODO?: option to insert copious '<wb/>'s in all cells
 
@@ -111,7 +127,7 @@ def IPNBDFDisplay(df, *ar, **kwa):
 
 
 def _re_largest_matching_start(regex, value, return_regexp=False):
-    """ Find a largest match (from the start of the string) in a value
+    """Find a largest match (from the start of the string) in a value
     for the regex.
 
     WARN: computationally complex (d'uh).
@@ -138,16 +154,14 @@ def _re_largest_matching_start(regex, value, return_regexp=False):
     all_match_tries = (
         (subreg, _try_match(subreg, substr))
         for subreg in all_regexes
-        for substr in all_substrings)
+        for substr in all_substrings
+    )
     all_matchstrings = [
-        (subreg, val.group(0))
-        for subreg, val in all_match_tries
-        if val]
+        (subreg, val.group(0)) for subreg, val in all_match_tries if val
+    ]
     if not all_matchstrings:
-        return ''
-    lrex, lval = max(
-        all_matchstrings,
-        key=lambda val: len(val[1]))  # longest match
+        return ""
+    lrex, lval = max(all_matchstrings, key=lambda val: len(val[1]))  # longest match
     if return_regexp:
         return lrex, lval
     return lval

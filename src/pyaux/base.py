@@ -1,41 +1,40 @@
 # coding: utf8
 from __future__ import annotations
 
-import os
-import sys
-from decimal import Decimal
-
-from copy import deepcopy
 import errno
 import functools
 import itertools
-from itertools import chain, repeat, islice
 import json
 import logging
 import math
+import os
 import re
+import sys
 import time
 import traceback
-from typing import Any, Literal
 import unicodedata
+from copy import deepcopy
+from decimal import Decimal
+from itertools import chain, islice, repeat
+from typing import Any, Literal
 from urllib.parse import urljoin
 
 
 def repr_call(args, kwargs):
-    """ A helper function for pretty-printing a function call arguments """
-    res = ', '.join("%r" % (val,) for val in args)
+    """A helper function for pretty-printing a function call arguments"""
+    res = ", ".join("%r" % (val,) for val in args)
     if kwargs:
         if res:
-            res += ', '
-        res += ', '.join('%s=%r' % (key, val) for key, val in kwargs.items())
+            res += ", "
+        res += ", ".join("%s=%r" % (key, val) for key, val in kwargs.items())
     return res
 
 
-dbgs = {}   # global object for easier later access of dumped `__call__`s
+dbgs = {}  # global object for easier later access of dumped `__call__`s
 
 
 def DebugPlug(name, mklogger=None):
-    """ Create and return a recursive duck-object for plugging in
+    """Create and return a recursive duck-object for plugging in
     place of other objects for debug purposes.
 
     :param name: name for tracking the object and its (child) attributes.
@@ -55,13 +54,13 @@ def DebugPlug(name, mklogger=None):
     log = mklogger(name)
 
     class DebugPlugInternal(object):
-        """ An actual internal class of the DebugPlug """
+        """An actual internal class of the DebugPlug"""
 
         def __call__(self, *ar, **kwa):
             log("called with (%s)", repr_call(ar, kwa))
             global dbgs  ## Just to note it
             dbgs.setdefault(name, {})
-            dbgs[name]['__call__'] = (ar, kwa)
+            dbgs[name]["__call__"] = (ar, kwa)
 
         def __getattr__(self, attname):
             namef = "%s.%s" % (name, attname)
@@ -99,7 +98,7 @@ def split_list(iterable, condition):
 
 
 def dict_maybe_items(value):
-    items = getattr(value, 'items', None)
+    items = getattr(value, "items", None)
     if items is not None:
         return items()
     return value
@@ -107,9 +106,7 @@ def dict_maybe_items(value):
 
 def split_dict(source, condition, cls=dict):
     source = dict_maybe_items(source)
-    matching, nonmatching = split_list(
-        source,
-        lambda item: condition(item[0], item[1]))
+    matching, nonmatching = split_list(source, lambda item: condition(item[0], item[1]))
     return cls(matching), cls(nonmatching)
 
 
@@ -118,30 +115,30 @@ def split_dict(source, condition, cls=dict):
 # other containers. Possibly use pickle/deepcopy's logic.
 
 
-def obj2dict(obj, add_type=False, add_instance=False, do_lists=True,
-             dict_class=dict):
-    """" Recursive obj -> obj.__dict__ """
+def obj2dict(obj, add_type=False, add_instance=False, do_lists=True, dict_class=dict):
+    """ " Recursive obj -> obj.__dict__"""
     kwa = dict(
-        add_type=add_type, add_instance=add_instance,
-        do_lists=do_lists, dict_class=dict_class)
+        add_type=add_type,
+        add_instance=add_instance,
+        do_lists=do_lists,
+        dict_class=dict_class,
+    )
 
-    if hasattr(obj, '__dict__'):
+    if hasattr(obj, "__dict__"):
         res = dict_class()
         for key, val in obj.__dict__.items():
             res[key] = obj2dict(val, **kwa)
         if add_type:
-            res['__class__'] = obj.__class__
+            res["__class__"] = obj.__class__
         if add_instance:
-            res['__instance__'] = obj
+            res["__instance__"] = obj
         return res
 
     # Recurse through other types too:
     # NOTE: There might be subclasses of these that would not be
     # processed here.
     if isinstance(obj, dict):
-        return dict_class(
-            (key, obj2dict(val, **kwa))
-            for key, val in obj.items())
+        return dict_class((key, obj2dict(val, **kwa)) for key, val in obj.items())
 
     if isinstance(obj, list):
         return [obj2dict(val, **kwa) for val in obj]
@@ -149,7 +146,7 @@ def obj2dict(obj, add_type=False, add_instance=False, do_lists=True,
     return obj  # something else - return as-is.
 
 
-def mk_logging_property(actual_name, logger_name='_log'):
+def mk_logging_property(actual_name, logger_name="_log"):
     """
     Creates a property that logs the value and the caller in the
     setter, using logger under `self`'s logger_name, and stores the value
@@ -169,8 +166,8 @@ def mk_logging_property(actual_name, logger_name='_log'):
         # co.co_filename, r.f_lineno, co.co_name
         setattr(self, actual_name, val)
         getattr(self, logger_name).debug(
-            "%s set to %r from %s:%d, in %s",
-            actual_name, val, tb[0], tb[1], tb[2])
+            "%s set to %r from %s:%d, in %s", actual_name, val, tb[0], tb[1], tb[2]
+        )
 
     return property(do_get, do_set)
 
@@ -205,7 +202,7 @@ def sign(value: int | float | Decimal) -> Literal[-1, 0, 1]:
 
 
 def try_parse(val, fn=int):  # NOTE: generally similar to `.madness._try`
-    """ 'try parse' (with fn) """
+    """'try parse' (with fn)"""
     try:
         return fn(val)
     except Exception:
@@ -213,28 +210,24 @@ def try_parse(val, fn=int):  # NOTE: generally similar to `.madness._try`
 
 
 # Note: not localized (i.e. always as dot for decimal separator)
-_re_alphanum_f = re.compile(r'[0-9]+(?:\.[0-9]+)?|[^0-9]+')
+_re_alphanum_f = re.compile(r"[0-9]+(?:\.[0-9]+)?|[^0-9]+")
 
 
 def _split_numeric_f(string):
-    return [
-        try_parse(val, fn=float)
-        for val in _re_alphanum_f.findall(string)]
+    return [try_parse(val, fn=float) for val in _re_alphanum_f.findall(string)]
 
 
 # Or to avoid interpreting numbers as float:
-_re_alphanum_int = re.compile(r'\d+|\D+')
+_re_alphanum_int = re.compile(r"\d+|\D+")
 
 
 def _split_numeric(string):
-    return [
-        try_parse(val, fn=int)
-        for val in _re_alphanum_int.findall(string)]
+    return [try_parse(val, fn=int) for val in _re_alphanum_int.findall(string)]
 
 
 # Primary function:
 def human_sort_key(string, normalize=unicodedata.normalize, floats=True):
-    """ Sorting key for 'human' sorting """
+    """Sorting key for 'human' sorting"""
     string = to_text(string)
     string = normalize("NFD", string.lower())
     split_fn = _split_numeric_f if floats else _split_numeric
@@ -243,8 +236,9 @@ def human_sort_key(string, normalize=unicodedata.normalize, floats=True):
 
 # ####### ...
 
+
 class ThrottledCall(object):
-    """ Decorator for throttling calls to some functions (e.g. logging).
+    """Decorator for throttling calls to some functions (e.g. logging).
     Defined as class for various custom attributes and methods.
     Attributes:
       `handle_skip`: function(self, *ar, **kwa) to call when a call is
@@ -273,7 +267,7 @@ class ThrottledCall(object):
 
         self.__doc__ = doc
         self.__call__.__doc__ = doc
-        _f = getattr(self.__call__, '__func__')
+        _f = getattr(self.__call__, "__func__")
         if _f:
             _f.__doc__ = doc
         self.handle_skip = lambda self, *ar, **kwa: None
@@ -282,7 +276,7 @@ class ThrottledCall(object):
         return self.call_something(self.fn, *ar, **kwa)
 
     def call_something(self, fn, *ar, **kwa):
-        """ Call some (other) function with the same throttling """
+        """Call some (other) function with the same throttling"""
         now = time.time()
         # do_call = True
         # # NOTE: `throttle_cnt(throttle_sec(fn))` is emulated if both
@@ -302,7 +296,7 @@ class ThrottledCall(object):
         return res
 
     def call_value(self, val, fn, *ar, **kwa):
-        """ Call if the value hasn't changed (applying the other
+        """Call if the value hasn't changed (applying the other
         throttling parameters as well). Contains undocumented feature
         """
         if self._call_val != val:
@@ -324,8 +318,8 @@ class ThrottledCall(object):
 
 @functools.wraps(ThrottledCall)
 def throttled_call(*args, **kwargs):
-    """ Wraps the supplied function with ThrottledCall (or generates a
-    wrapper with the supplied parameters). """
+    """Wraps the supplied function with ThrottledCall (or generates a
+    wrapper with the supplied parameters)."""
     if args:
         func = args[0]
         args = args[1:]
@@ -383,7 +377,7 @@ class LazyRepr(object):
 
 # Helper for o_repr that displays '???'
 class ReprObj(object):
-    """ A class for inserting specific text in __repr__ outputs.  """
+    """A class for inserting specific text in __repr__ outputs."""
 
     def __init__(self, txt):
         self.txt = txt
@@ -393,36 +387,42 @@ class ReprObj(object):
 
 
 # _err_obj = type(b'ErrObj', (object,), dict(__repr__=lambda self: '???'))()
-_err_obj = ReprObj('???')
+_err_obj = ReprObj("???")
 
 
 # It is similar to using self.__dict__ in repr() but works over dir()
 def o_repr_g(
-        o, _colors=False, _colors256=False, _colorvs=None, _method=2,
-        _private=False, _callable=False):
-    """ Represent (most of) data on a python object in readable
+    o,
+    _colors=False,
+    _colors256=False,
+    _colorvs=None,
+    _method=2,
+    _private=False,
+    _callable=False,
+):
+    """Represent (most of) data on a python object in readable
     way. Useful default for a __repr__.
-    WARN: does not handle recursive structures; use carefully.  """
+    WARN: does not handle recursive structures; use carefully."""
 
     # TODO: handle recursive structures (similar to dict.__repr__)
     # TODO: process base types (dict / list / ...) in a special way
 
     def _color(x16, x256=None):
         if not _colors:
-            return ''
+            return ""
         if x16 is None and x256 is None:
-            return '\x1b[00m'
+            return "\x1b[00m"
         if _colors256 and x256:
-            return '\x1b[38;5;' + str(x256) + 'm'
-        return '\x1b[0' + str(x16) + 'm'
+            return "\x1b[38;5;" + str(x256) + "m"
+        return "\x1b[0" + str(x16) + "m"
 
     _colorvs_add = _colorvs
     _colorvs = dict(
-        base=('1;37', '230'),  # Base (punctuation)  # white / pink-white
-        clsn=('1;36', '123'),  # Class name  # bright cyan / cyan-white
-        attr=('0;32', '120'),  # Attribute name  # dark-green / green-white
-        func=('0;34', '75'),  # Function name  # blue / blue-cyan
-        val=('0;37', '252'),  # Value data  # light-gray / light-light-gray
+        base=("1;37", "230"),  # Base (punctuation)  # white / pink-white
+        clsn=("1;36", "123"),  # Class name  # bright cyan / cyan-white
+        attr=("0;32", "120"),  # Attribute name  # dark-green / green-white
+        func=("0;34", "75"),  # Function name  # blue / blue-cyan
+        val=("0;37", "252"),  # Value data  # light-gray / light-light-gray
         clear=(None, None),
     )
     _colorvs.update(_colorvs_add or {})
@@ -431,11 +431,11 @@ def o_repr_g(
         return _color(*_colorvs[n])
 
     yield _colorv("base")
-    yield '<'
+    yield "<"
     yield _colorv("clsn")
     yield str(o.__class__.__name__)
     yield _colorv("base")
-    yield '('
+    yield "("
 
     if _method == 3:
         # V3: check type for properties
@@ -446,14 +446,14 @@ def o_repr_g(
     for n in sorted(dir(o)):
 
         # skip 'private' stuff
-        if n.startswith('_') and not _private:
+        if n.startswith("_") and not _private:
             continue
 
         if first:
             first = False
         else:
             yield _colorv("base")
-            yield ', '
+            yield ", "
 
         keytype = "attr"
         has_val = True
@@ -491,17 +491,17 @@ def o_repr_g(
             except Exception:
                 v = _err_obj
             yield _colorv("base")
-            yield '='
+            yield "="
             yield _colorv("val")
             yield v
 
     yield _colorv("base")
-    yield ')>'
+    yield ")>"
     yield _colorv("clear")
 
 
 def o_repr(o, **kwa):
-    return ''.join(o_repr_g(o, **kwa))
+    return "".join(o_repr_g(o, **kwa))
 
 
 class OReprMixin(object):
@@ -510,7 +510,7 @@ class OReprMixin(object):
 
 
 def stdin_bin_lines(strip_newlines=True):
-    """ Iterate over stdin lines in a 'line-buffered' way """
+    """Iterate over stdin lines in a 'line-buffered' way"""
     while True:
         try:
             line = sys.stdin.buffer.readline()
@@ -522,13 +522,13 @@ def stdin_bin_lines(strip_newlines=True):
             # No more data to read (otherwise it would at least have an "\n")
             break
         # This might not be the case if the stream terminates with a non-newline at the end.
-        if strip_newlines and line[-1] == b'\n':
+        if strip_newlines and line[-1] == b"\n":
             line = line[:-1]
         yield line
 
 
 def stdin_lines(strip_newlines=True, errors="replace"):
-    """ Iterate over stdin lines in a 'line-buffered' way """
+    """Iterate over stdin lines in a 'line-buffered' way"""
     for line in stdin_bin_lines(strip_newlines=strip_newlines):
         line = to_text(line, errors=errors)
         yield line
@@ -549,9 +549,9 @@ def stdout_lines(gen, flush=True):
 
 
 def _sqrt(var):
-    """ Duck-compatible sqrt(), needed to support classes like Decimal.
+    """Duck-compatible sqrt(), needed to support classes like Decimal.
 
-    Approximately the same as in the `statistics`. """
+    Approximately the same as in the `statistics`."""
     try:
         return var.sqrt()
     except AttributeError:
@@ -559,13 +559,13 @@ def _sqrt(var):
 
 
 def chunks(lst, size):
-    """ Yield successive chunks from lst. No padding.  """
+    """Yield successive chunks from lst. No padding."""
     for idx in range(0, len(lst), size):
-        yield lst[idx:idx + size]
+        yield lst[idx : idx + size]
 
 
 def group(lst, cls=dict):
-    """ RTFS.
+    """RTFS.
 
     Similar to dict(MultiValueDict(lst).lists())
 
@@ -584,7 +584,7 @@ def group(lst, cls=dict):
 
 
 def group2(lst, key=lambda v: v[0]):
-    """ RTFS.
+    """RTFS.
 
     Not particularly better than `group((key(val), val) for val in lst)`.
     """
@@ -594,7 +594,9 @@ def group2(lst, key=lambda v: v[0]):
     return res.items()
 
 
-def mangle_items(items, include=None, exclude=None, add=None, replace=None, replace_inplace=None):
+def mangle_items(
+    items, include=None, exclude=None, add=None, replace=None, replace_inplace=None
+):
     """
     Functional-style dict editing core (working with a list of pairs).
 
@@ -639,8 +641,10 @@ def mangle_items(items, include=None, exclude=None, add=None, replace=None, repl
     return res
 
 
-def mangle_dict(input_dict, include=None, exclude=None, add=None, _return_list=False, dcls=dict):
-    """ Functional-style dict editing """
+def mangle_dict(
+    input_dict, include=None, exclude=None, add=None, _return_list=False, dcls=dict
+):
+    """Functional-style dict editing"""
     items = input_dict.items()
     res = mangle_items(items, include=include, exclude=exclude, add=add)
     if _return_list:
@@ -648,16 +652,21 @@ def mangle_dict(input_dict, include=None, exclude=None, add=None, _return_list=F
     return dcls(res)
 
 
-def colorize(text, fmt, outfmt='term', lexer_kwa=None, formatter_kwa=None, **kwa):
-    """ Convenience method for running pygments """
-    from pygments import highlight, lexers, formatters
+def colorize(text, fmt, outfmt="term", lexer_kwa=None, formatter_kwa=None, **kwa):
+    """Convenience method for running pygments"""
+    from pygments import formatters, highlight, lexers
+
     _colorize_lexers = dict(
-        yaml='YamlLexer', diff='DiffLexer',
-        py='PythonLexer', py2='PythonLexer', py3='Python3Lexer',
+        yaml="YamlLexer",
+        diff="DiffLexer",
+        py="PythonLexer",
+        py2="PythonLexer",
+        py3="Python3Lexer",
     )
     _colorize_formatters = dict(
-        term='TerminalFormatter', term256='Terminal256Formatter',
-        html='HtmlFormatter',
+        term="TerminalFormatter",
+        term256="Terminal256Formatter",
+        html="HtmlFormatter",
     )
     fmt = _colorize_lexers.get(fmt, fmt)
     outfmt = _colorize_formatters.get(outfmt, outfmt)
@@ -665,25 +674,26 @@ def colorize(text, fmt, outfmt='term', lexer_kwa=None, formatter_kwa=None, **kwa
     lexer_cls = getattr(lexers, fmt)
     formatter_cls = getattr(formatters, outfmt)
     return highlight(
-        text, lexer_cls(**(lexer_kwa or {})),
-        formatter_cls(**(formatter_kwa or {})))
+        text, lexer_cls(**(lexer_kwa or {})), formatter_cls(**(formatter_kwa or {}))
+    )
 
 
 def colorize_yaml(text, **kwa):
-    """ Attempt to colorize the yaml text using pygments (for console
-    output) """
-    return colorize(text, 'yaml', **kwa)
+    """Attempt to colorize the yaml text using pygments (for console
+    output)"""
+    return colorize(text, "yaml", **kwa)
 
 
 def colorize_diff(text, **kwa):
-    """ Attempt to colorize the [unified] diff text using pygments
-    (for console output) """
-    return colorize(text, 'diff', **kwa)
+    """Attempt to colorize the [unified] diff text using pygments
+    (for console output)"""
+    return colorize(text, "diff", **kwa)
 
 
 def _dict_hashable_1(dct):
-    """ Simple non-recursive dict -> hashable """
+    """Simple non-recursive dict -> hashable"""
     return tuple(sorted(dct.items()))
+
 
 _dict_hashable = _dict_hashable_1
 
@@ -773,10 +783,14 @@ def simple_memoize_argless(func):
 
 # TODO?: some clear-all-global-memos method. By singleton and weakrefs.
 class memoize(object):
-
     def __init__(
-            self, fn, timelimit=None, single_value=False,
-            force_kwarg='_memoize_force_new', timelimit_kwarg='_memoize_timelimit_override'):
+        self,
+        fn,
+        timelimit=None,
+        single_value=False,
+        force_kwarg="_memoize_force_new",
+        timelimit_kwarg="_memoize_timelimit_override",
+    ):
         """
         ...
 
@@ -819,7 +833,9 @@ class memoize(object):
         except KeyError:
             pass
         except TypeError:  # e.g. unhashable args
-            self.log.warning("memoize: Trying to memoize unhashable args %r, %r", ar, kwa)
+            self.log.warning(
+                "memoize: Trying to memoize unhashable args %r, %r", ar, kwa
+            )
             return self.fn(*ar, **kwa)
         else:
             if override:
@@ -838,7 +854,7 @@ class memoize(object):
 
 @configurable_wrapper
 def memoize_method(func, memo_attr=None, **cfg):
-    """ `memoize` for a method, saving the cache on an instance
+    """`memoize` for a method, saving the cache on an instance
     attribute.
 
     :param memo_attr: name of the attribute to save the cache on.
@@ -851,7 +867,7 @@ def memoize_method(func, memo_attr=None, **cfg):
         # will have the same name on the same instance despite
         # different contents. And figuring out the correct class name
         # at this point (like `self.__some_attr` does) is not viable.
-        memo_attr = '_cached_%s_%x' % (func.__name__, id(func))
+        memo_attr = "_cached_%s_%x" % (func.__name__, id(func))
 
     @functools.wraps(func)
     def _memoized_method(self, *c_ar, **c_kwa):
@@ -920,6 +936,7 @@ def memoized_property(*ar, **cfg):
 
 memoize_property = memoized_property
 
+
 def mkdir_p(path):
     try:
         os.makedirs(path)
@@ -931,7 +948,7 @@ def mkdir_p(path):
 
 
 def _dict_to_hashable_json(dct, dumps=json.dumps):
-    """ ...
+    """...
 
     NOTE: Not meant to be performant; tends towards collisions.
 
@@ -941,21 +958,22 @@ def _dict_to_hashable_json(dct, dumps=json.dumps):
 
 
 class hashabledict_st(dict):
-    """ sorted-tuple based hashable subclass of `dict` """
+    """sorted-tuple based hashable subclass of `dict`"""
+
     def __hash__(self):
         return hash(tuple(sorted(list(self.items()))))
 
 
 def group3(items, to_hashable=_dict_to_hashable_json):
-    """ Same as `group` but supports dicts as keys (and returns list
-    of pairs) """
+    """Same as `group` but supports dicts as keys (and returns list
+    of pairs)"""
     annotated = [(to_hashable(key), key, val) for key, val in items]
     hashes = dict((keyhash, key) for keyhash, key, val in annotated)
     groups = group((keyhash, val) for keyhash, key, val in annotated).items()
     return [(hashes[keyhash], lst) for keyhash, lst in groups]
 
 
-def to_bytes(value, default=None, encoding='utf-8', errors='strict'):
+def to_bytes(value, default=None, encoding="utf-8", errors="strict"):
     if isinstance(value, bytes):
         return value
     if isinstance(value, str):
@@ -965,7 +983,7 @@ def to_bytes(value, default=None, encoding='utf-8', errors='strict'):
     return value
 
 
-def to_text(value, default=None, encoding='utf-8', errors='strict'):
+def to_text(value, default=None, encoding="utf-8", errors="strict"):
     if isinstance(value, str):
         return value
     if isinstance(value, bytes):
@@ -994,15 +1012,15 @@ def import_func(func_path, _check_callable=True):
 
     _exc_cls = Exception
 
-    if ':' in func_path:
-        f_module, f_name = func_path.split(':', 1)
+    if ":" in func_path:
+        f_module, f_name = func_path.split(":", 1)
     else:
         try:
-            f_module, f_name = func_path.rsplit('.', 1)
+            f_module, f_name = func_path.rsplit(".", 1)
         except ValueError as exc:
             raise _exc_cls("func_path isn't a path", func_path, exc)
 
-    f_name_parts = f_name.split('.')
+    f_name_parts = f_name.split(".")
 
     try:
         mod = import_module(f_module)
@@ -1017,7 +1035,9 @@ def import_func(func_path, _check_callable=True):
             here = getattr(here, f_name_part)
         func = here
     except AttributeError as exc:
-        raise _exc_cls("func_path's module does not have the specified func", func_path, exc)
+        raise _exc_cls(
+            "func_path's module does not have the specified func", func_path, exc
+        )
 
     if _check_callable and not callable(func):
         raise _exc_cls("func does not seem to be a callable", func_path, func)
@@ -1026,10 +1046,16 @@ def import_func(func_path, _check_callable=True):
 
 
 def find_files(
-        in_dir, fname_re=None, older_than=None, skip_last=None,
-        _prewalk=True, strip_dir=False, include_base=False):
-    """ Return all full file paths under the directory `in_dir` whose
-    *filenames* match the `fname_re` regexp (if not None) """
+    in_dir,
+    fname_re=None,
+    older_than=None,
+    skip_last=None,
+    _prewalk=True,
+    strip_dir=False,
+    include_base=False,
+):
+    """Return all full file paths under the directory `in_dir` whose
+    *filenames* match the `fname_re` regexp (if not None)"""
     now = time.time()
     walk = os.walk(in_dir)
     if _prewalk:
@@ -1040,24 +1066,27 @@ def find_files(
 
         # Annotate with full path:
         file_list = (
-            (os.path.join(dir_name, file_name), file_name)
-            for file_name in file_list)
+            (os.path.join(dir_name, file_name), file_name) for file_name in file_list
+        )
 
         if strip_dir:
             # Strip the top dir from it
             file_list = (
-                (slstrip(fpath, dir_name).lstrip('/'), fname)
-                for fpath, fname in file_list)
+                (slstrip(fpath, dir_name).lstrip("/"), fname)
+                for fpath, fname in file_list
+            )
 
         if older_than is not None:
             file_list = (
-                (fpath, fname) for fpath, fname in file_list
-                if now - os.path.getmtime(fpath) >= older_than)
+                (fpath, fname)
+                for fpath, fname in file_list
+                if now - os.path.getmtime(fpath) >= older_than
+            )
 
         # Convenience shortcut
         if skip_last:
             file_list = sorted(list(file_list), key=lambda val: val[1])
-            file_list = file_list[:-int(skip_last)]
+            file_list = file_list[: -int(skip_last)]
 
         if not include_base:
             file_list = (fpath for fpath, fname in file_list)
@@ -1074,17 +1103,27 @@ def get_requests_session():
     WARNING: Effectively deprecated; see `pyaux.req`.
     """
     import requests
+
     return requests.session()
 
 
 def request(
-        url, data=None,
-        method=None, _w_method='post',
-        # Conveniences for overriding:
-        _extra_headers=None, _extra_params=None, _default_host=None,
-        # NOTE: using JSON by default here.
-        _dataser='json', timeout=5,
-        _callinfo=True, session=True, _rfs=False, **kwa):
+    url,
+    data=None,
+    method=None,
+    _w_method="post",
+    # Conveniences for overriding:
+    _extra_headers=None,
+    _extra_params=None,
+    _default_host=None,
+    # NOTE: using JSON by default here.
+    _dataser="json",
+    timeout=5,
+    _callinfo=True,
+    session=True,
+    _rfs=False,
+    **kwa,
+):
     """
     `requests.request` wrapper with conveniences.
 
@@ -1096,24 +1135,25 @@ def request(
     WARNING: Effectively deprecated; see `pyaux.req`.
     """
     import requests
-    log = logging.getLogger('request')
+
+    log = logging.getLogger("request")
 
     # Different default, basically.
-    kwa['timeout'] = timeout
+    kwa["timeout"] = timeout
 
-    if url.startswith('/'):
+    if url.startswith("/"):
         if _default_host is None:
             raise Exception("Must specify _default_host for host-relative URLs")
-        if '://' not in _default_host:
-            _default_host = 'http://%s' % _default_host
+        if "://" not in _default_host:
+            _default_host = "http://%s" % _default_host
         url = urllib.parse.urljoin(_default_host, url)
 
-    params = kwa.get('params') or {}
+    params = kwa.get("params") or {}
     if _extra_params:
         params.update(_extra_params)
-    kwa['params'] = params
+    kwa["params"] = params
 
-    headers = kwa.get('headers') or {}
+    headers = kwa.get("headers") or {}
     if _extra_headers:
         headers.update(_extra_headers)
 
@@ -1122,20 +1162,22 @@ def request(
             _cfile, _cline, _cfunc = _callinfo
         else:
             # TODO: custom function, extra_depth param.
-            _cfile, _cline, _cfunc = logging.Logger('').findCaller()
-        _prev_ua = headers.get('User-Agent') or requests.utils.default_user_agent()
-        headers.setdefault('User-Agent', '%(ua)s, %(cfile)s:%(cline)s: %(cfunc)s' % dict(
-            ua=_prev_ua, cfile=_cfile, cline=_cline, cfunc=_cfunc))
+            _cfile, _cline, _cfunc = logging.Logger("").findCaller()
+        _prev_ua = headers.get("User-Agent") or requests.utils.default_user_agent()
+        headers.setdefault(
+            "User-Agent",
+            "%(ua)s, %(cfile)s:%(cline)s: %(cfunc)s"
+            % dict(ua=_prev_ua, cfile=_cfile, cline=_cline, cfunc=_cfunc),
+        )
 
-    is_writing = data is not None or kwa.get('files') is not None
-    method = method if method is not None else (
-        _w_method if is_writing else 'get')
-    if method == 'get':
+    is_writing = data is not None or kwa.get("files") is not None
+    method = method if method is not None else (_w_method if is_writing else "get")
+    if method == "get":
         # From requests.get:
-        kwa.setdefault('allow_redirects', True)
+        kwa.setdefault("allow_redirects", True)
 
     # Put them back
-    kwa['headers'] = headers
+    kwa["headers"] = headers
 
     if session in (0, False, None):
         reqr = requests
@@ -1148,15 +1190,15 @@ def request(
         if isinstance(data, (bytes, unicode)):
             # Assume the data is already serialised
             pass
-        elif _dataser == 'json':
+        elif _dataser == "json":
             data = json.dumps(data)
             kwa.setdefault("headers", {}).setdefault("content-type", "application/json")
-        elif _dataser in ('url', 'urlencode', None):
+        elif _dataser in ("url", "urlencode", None):
             pass  # pretty much the default in `requests`
         else:
             raise Exception("Unknown _dataser", _dataser)
 
-        kwa['data'] = data
+        kwa["data"] = data
         # TODO?: log a piece of the data?
 
     # TODO?: put the params either entirely inthe url or entirely in
@@ -1166,13 +1208,18 @@ def request(
     resp = reqr.request(method, url, **kwa)
 
     try:
-        elapsed = '%.3fs' % (resp.elapsed.total_seconds(),)
+        elapsed = "%.3fs" % (resp.elapsed.total_seconds(),)
     except Exception as exc:  # Just in case
-        elapsed = '???(%s)' % (repr(exc)[:32],)
+        elapsed = "???(%s)" % (repr(exc)[:32],)
     # NOTE: assuming that the reponse content is never too large
     log.info(
         "Response: %s %s %s   %db in %s",
-        resp.status_code, resp.request.method, resp.url, len(resp.content), elapsed)
+        resp.status_code,
+        resp.request.method,
+        resp.url,
+        len(resp.content),
+        elapsed,
+    )
 
     if _rfs:
         resp.raise_for_status()
@@ -1186,7 +1233,6 @@ def exclogwrap(func=None, name=None, log=logging):
 
     Useful for e.g. send_robust signals.
     """
-
 
     def exclogwrap_configured(func):
         name_actual = name
@@ -1212,18 +1258,20 @@ def exclogwrap(func=None, name=None, log=logging):
 def repr_cut(some_str, length):
     if len(some_str) <= length:
         return some_str
-    return some_str[:length] + (u'…' if isinstance(some_str, unicode) else '…')
+    return some_str[:length] + ("…" if isinstance(some_str, unicode) else "…")
 
 
 def slstrip(self, substring):
-    """ Strip a substring from the string at left side """
+    """Strip a substring from the string at left side"""
     if not self.startswith(substring):
-        raise ValueError("Value %r does not start with substring %r" % (
-            repr_cut(self, len(substring) * 2), substring))
-    return self[len(substring):]
+        raise ValueError(
+            "Value %r does not start with substring %r"
+            % (repr_cut(self, len(substring) * 2), substring)
+        )
+    return self[len(substring) :]
 
 
-def get_env_flag(name, default=False, falses=('0',)):
+def get_env_flag(name, default=False, falses=("0",)):
     """
     Get a boolean flag from os.environ with support for `default`
     and some of the shell trickiness.
@@ -1243,7 +1291,7 @@ def current_frame(depth=1):
     """
     (from logging/__init__.py)
     """
-    func = getattr(sys, '_getframe', None)
+    func = getattr(sys, "_getframe", None)
     if func is not None:
         return func(depth)
     # fallback; probably not relevant anymore.
@@ -1281,6 +1329,7 @@ def find_caller(extra_depth=1, skip_packages=()):
     return result
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import doctest
+
     doctest.testmod()

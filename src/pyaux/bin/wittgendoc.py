@@ -6,8 +6,9 @@ A script to convert convenient text to markdown to html.
 
 
 import os
-import sys
 import re
+import sys
+
 import pyaux
 
 
@@ -241,6 +242,7 @@ class Worker:
 
 def _markdown_process(text, *ar, **kwa):
     import markdown
+
     # Not exactly by the standard, but visually better for the lists:
     kwa.setdefault('tab_length', 2)
     return markdown.Markdown(*ar, **kwa).convert(text)

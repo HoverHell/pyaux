@@ -8,19 +8,23 @@ TODO: `aiohttp`-based version.
 
 from __future__ import annotations
 
-import sys
-import logging
 import functools
+import logging
+import sys
 import urllib.parse
 
 import requests
 import requests.adapters
 import requests.exceptions
 from requests.packages.urllib3.util import Retry  # pylint: disable=import-error
+
 from pyaux.base import (
+    LazyRepr,
+    ReprObj,
+    dict_maybe_items,
     find_caller,
-    split_dict, dict_maybe_items,
-    LazyRepr, ReprObj, to_bytes,
+    split_dict,
+    to_bytes,
 )
 
 # Singleton session for connection pooling.
@@ -28,8 +32,8 @@ from pyaux.base import (
 SESSION = requests.Session()
 
 
-UNDEF = ReprObj('Unspecified')
-AUTO = ReprObj('Autoselected')
+UNDEF = ReprObj("Unspecified")
+AUTO = ReprObj("Autoselected")
 
 
 def _is_special(value, none=True, undef=True, auto=True):
@@ -46,17 +50,18 @@ def _is_special(value, none=True, undef=True, auto=True):
 
 
 def configure_session(
-        session,
-        retries_total=5,
-        retries_backoff_factor=0.5,
-        retries_status_forcelist=(500, 502, 503, 504, 521),
-        retries_method_whitelist=frozenset((
-            'HEAD', 'OPTIONS', 'TRACE', 'GET',
-            'POST', 'PUT', 'PATCH', 'DELETE')),
-        pool_connections=30,
-        pool_maxsize=30,
-        raise_on_status=False,
-        **kwargs):
+    session,
+    retries_total=5,
+    retries_backoff_factor=0.5,
+    retries_status_forcelist=(500, 502, 503, 504, 521),
+    retries_method_whitelist=frozenset(
+        ("HEAD", "OPTIONS", "TRACE", "GET", "POST", "PUT", "PATCH", "DELETE")
+    ),
+    pool_connections=30,
+    pool_maxsize=30,
+    raise_on_status=False,
+    **kwargs,
+):
     """
     Configure session with significant retries.
 
@@ -72,14 +77,16 @@ def configure_session(
         raise_on_status=raise_on_status,
     )
 
-    for prefix in ('http://', 'https://'):
+    for prefix in ("http://", "https://"):
         session.mount(
             prefix,
             requests.adapters.HTTPAdapter(
                 max_retries=retry_conf,
                 pool_connections=pool_connections,
                 pool_maxsize=pool_maxsize,
-                **kwargs))
+                **kwargs,
+            ),
+        )
 
     return session
 
@@ -102,19 +109,31 @@ SESSION_ZEALOUS = configure_session(requests.Session())
 class RequesterBase(object):
 
     apply_environment = True
-    length_cut_marker = b'...'
-    _prepare_request_keys = frozenset((
-        'method', 'url',
-        'headers', 'auth', 'cookies',
-        'params',
-        'data', 'files', 'json',
-        'hooks',
-    ))
-    send_request_keys = frozenset((
-        'proxies', 'cert', 'verify',
-        'stream', 'timeout',
-        'allow_redirects',
-    ))
+    length_cut_marker = b"..."
+    _prepare_request_keys = frozenset(
+        (
+            "method",
+            "url",
+            "headers",
+            "auth",
+            "cookies",
+            "params",
+            "data",
+            "files",
+            "json",
+            "hooks",
+        )
+    )
+    send_request_keys = frozenset(
+        (
+            "proxies",
+            "cert",
+            "verify",
+            "stream",
+            "timeout",
+            "allow_redirects",
+        )
+    )
 
     # Warning: argument defaults are also duplicated in `Requester.__init__`.
     def __init__(self, session=True):
@@ -123,7 +142,7 @@ class RequesterBase(object):
         elif _is_special(session):
             session = requests.Session()
         self.session = session
-        self.logger = logging.getLogger('req')
+        self.logger = logging.getLogger("req")
 
     # Warning: kwargs defaults are also duplicated in `Requester.request`.
     @staticmethod
@@ -131,16 +150,17 @@ class RequesterBase(object):
         """
         Separated out for easier overriding of `prepare_parameters` by subclasses.
         """
-        headers = kwargs.get('headers')
+        headers = kwargs.get("headers")
         # For common convenience, commonize the headers:
         if _is_special(headers):
             headers = {}
         else:
             # TODO?: OrderedDict?
             headers = {
-                key.lower().replace('_', '-'): value
-                for key, value in dict_maybe_items(headers)}
-        kwargs['headers'] = headers
+                key.lower().replace("_", "-"): value
+                for key, value in dict_maybe_items(headers)
+            }
+        kwargs["headers"] = headers
 
         return kwargs
 
@@ -149,7 +169,7 @@ class RequesterBase(object):
         return kwargs
 
     def request(self, url, **kwargs):
-        kwargs['url'] = url
+        kwargs["url"] = url
         request, send_kwargs = self._prepare_request(kwargs)
         return self.send_request(request, **send_kwargs)
 
@@ -161,22 +181,24 @@ class RequesterBase(object):
         Not to be confused with `Session.prepare_request`, which takes a
         request and returns only a request.
         """
-        session = kwargs.pop('session', None) or self.session
+        session = kwargs.pop("session", None) or self.session
 
         if run_processing:
             kwargs = self._preprepare_parameters(kwargs)
             kwargs = self._prepare_parameters(kwargs)
 
-        assert kwargs.get('method')
-        assert kwargs.get('url')
+        assert kwargs.get("method")
+        assert kwargs.get("url")
 
         prepare_keys = self._prepare_request_keys
         prepare_kwargs, send_kwargs = split_dict(
-            kwargs, lambda key, value: key in prepare_keys)
+            kwargs, lambda key, value: key in prepare_keys
+        )
 
         send_keys = self.send_request_keys
         send_kwargs, unknown_kwargs = split_dict(
-            send_kwargs, lambda key, value: key in send_keys)
+            send_kwargs, lambda key, value: key in send_keys
+        )
 
         if unknown_kwargs:
             raise ValueError("Unknown request arguments", unknown_kwargs)
@@ -187,9 +209,10 @@ class RequesterBase(object):
             send_kwargs_overrides = send_kwargs
             # http://docs.python-requests.org/en/master/user/advanced/#prepared-requests
             send_kwargs = session.merge_environment_settings(
-                request.url, {}, None, None, None)
+                request.url, {}, None, None, None
+            )
             send_kwargs.update(send_kwargs_overrides)
-        send_kwargs['session'] = session
+        send_kwargs["session"] = session
         return request, send_kwargs
 
     def send_request(self, request, **kwargs):
@@ -199,17 +222,16 @@ class RequesterBase(object):
         Essentially a wrap of `self.session.send_request` but the session
         object can be specified in arguments.
         """
-        session = kwargs.pop('session', None) or self.session
+        session = kwargs.pop("session", None) or self.session
         return session.send(request, **kwargs)
 
     def __call__(self, *args, **kwargs):
-        """ See `request` method """
-        kwargs['call_extra_depth'] = (kwargs.get('call_extra_depth') or 0) + 1
+        """See `request` method"""
+        kwargs["call_extra_depth"] = (kwargs.get("call_extra_depth") or 0) + 1
         return self.request(*args, **kwargs)
 
 
 class RequesterSessionWrap(RequesterBase):
-
     def __getattr__(self, key):
         return getattr(self.session, key)
 
@@ -220,45 +242,45 @@ class RequesterVerbMethods(RequesterBase):
     """
 
     def get(self, *args, **kwargs):
-        """ See `request` method """
-        kwargs['call_extra_depth'] = (kwargs.get('call_extra_depth') or 0) + 1
-        kwargs['method'] = 'get'
+        """See `request` method"""
+        kwargs["call_extra_depth"] = (kwargs.get("call_extra_depth") or 0) + 1
+        kwargs["method"] = "get"
         return self.request(*args, **kwargs)
 
     def options(self, *args, **kwargs):
-        """ See `request` method """
-        kwargs['call_extra_depth'] = (kwargs.get('call_extra_depth') or 0) + 1
-        kwargs['method'] = 'options'
+        """See `request` method"""
+        kwargs["call_extra_depth"] = (kwargs.get("call_extra_depth") or 0) + 1
+        kwargs["method"] = "options"
         return self.request(*args, **kwargs)
 
     def head(self, *args, **kwargs):
-        """ See `request` method """
-        kwargs['call_extra_depth'] = (kwargs.get('call_extra_depth') or 0) + 1
-        kwargs['method'] = 'head'
+        """See `request` method"""
+        kwargs["call_extra_depth"] = (kwargs.get("call_extra_depth") or 0) + 1
+        kwargs["method"] = "head"
         return self.request(*args, **kwargs)
 
     def post(self, *args, **kwargs):
-        """ See `request` method """
-        kwargs['call_extra_depth'] = (kwargs.get('call_extra_depth') or 0) + 1
-        kwargs['method'] = 'post'
+        """See `request` method"""
+        kwargs["call_extra_depth"] = (kwargs.get("call_extra_depth") or 0) + 1
+        kwargs["method"] = "post"
         return self.request(*args, **kwargs)
 
     def put(self, *args, **kwargs):
-        """ See `request` method """
-        kwargs['call_extra_depth'] = (kwargs.get('call_extra_depth') or 0) + 1
-        kwargs['method'] = 'put'
+        """See `request` method"""
+        kwargs["call_extra_depth"] = (kwargs.get("call_extra_depth") or 0) + 1
+        kwargs["method"] = "put"
         return self.request(*args, **kwargs)
 
     def patch(self, *args, **kwargs):
-        """ See `request` method """
-        kwargs['call_extra_depth'] = (kwargs.get('call_extra_depth') or 0) + 1
-        kwargs['method'] = 'patch'
+        """See `request` method"""
+        kwargs["call_extra_depth"] = (kwargs.get("call_extra_depth") or 0) + 1
+        kwargs["method"] = "patch"
         return self.request(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
-        """ See `request` method """
-        kwargs['call_extra_depth'] = (kwargs.get('call_extra_depth') or 0) + 1
-        kwargs['method'] = 'delete'
+        """See `request` method"""
+        kwargs["call_extra_depth"] = (kwargs.get("call_extra_depth") or 0) + 1
+        kwargs["method"] = "delete"
         return self.request(*args, **kwargs)
 
 
@@ -266,9 +288,12 @@ class RequesterDefaults(RequesterBase):
 
     # Warning: argument defaults are also duplicated in `Requester.__init__`.
     def __init__(
-            self, default_timeout=5.0, default_write_method='post',
-            default_allow_redirects=AUTO,
-            **kwargs):
+        self,
+        default_timeout=5.0,
+        default_write_method="post",
+        default_allow_redirects=AUTO,
+        **kwargs,
+    ):
         self.default_timeout = default_timeout
         self.default_write_method = default_write_method
         self.default_allow_redirects = default_allow_redirects
@@ -277,28 +302,31 @@ class RequesterDefaults(RequesterBase):
     # Warning: kwargs defaults are also duplicated in `Requester.request`.
     def _prepare_parameters(self, kwargs):
         # NOTE: will leave explicit `timeout=None` as-is.
-        if _is_special(kwargs.get('timeout'), none=False):
+        if _is_special(kwargs.get("timeout"), none=False):
             kwargs.update(timeout=self.default_timeout)
 
         # Determine the method by the presence of `data` / `files`.
-        if _is_special(kwargs.get('method')):
-            if kwargs.get('data') is not None or kwargs.get('files') is not None:
-                kwargs['method'] = self.default_write_method
+        if _is_special(kwargs.get("method")):
+            if kwargs.get("data") is not None or kwargs.get("files") is not None:
+                kwargs["method"] = self.default_write_method
             else:
-                kwargs['method'] = 'get'
+                kwargs["method"] = "get"
 
-        if _is_special(kwargs.get('allow_redirects')):
-            if self.default_allow_redirects == 'auto' or self.default_allow_redirects is AUTO:
+        if _is_special(kwargs.get("allow_redirects")):
+            if (
+                self.default_allow_redirects == "auto"
+                or self.default_allow_redirects is AUTO
+            ):
                 # From `requests.get` logic.
-                kwargs['allow_redirects'] = kwargs['method'] in ('get', 'options')
+                kwargs["allow_redirects"] = kwargs["method"] in ("get", "options")
             else:
-                kwargs['allow_redirects'] = self.default_allow_redirects
+                kwargs["allow_redirects"] = self.default_allow_redirects
 
         return super(RequesterDefaults, self)._prepare_parameters(kwargs)
 
 
 class RequesterBaseUrl(RequesterBase):
-    """ Common relative URL support for RequesterBase """
+    """Common relative URL support for RequesterBase"""
 
     # Warning: argument defaults are also duplicated in `Requester.__init__`.
     def __init__(self, base_url=None, **kwargs):
@@ -308,9 +336,9 @@ class RequesterBaseUrl(RequesterBase):
     # Warning: kwargs defaults are also duplicated in `Requester.request`.
     def _prepare_parameters(self, kwargs):
         if self.base_url:
-            kwargs['url'] = urllib.parse.urljoin(
-                self.base_url,
-                kwargs['url'])  # required parameter
+            kwargs["url"] = urllib.parse.urljoin(
+                self.base_url, kwargs["url"]
+            )  # required parameter
         return super(RequesterBaseUrl, self)._prepare_parameters(kwargs)
 
 
@@ -327,35 +355,39 @@ class RequesterContentType(RequesterBase):
     """
 
     # Warning: argument defaults are also duplicated in `Requester.__init__`.
-    def __init__(self, default_content_type='json', **kwargs):
+    def __init__(self, default_content_type="json", **kwargs):
         self.default_content_type = default_content_type
         super(RequesterContentType, self).__init__(**kwargs)
 
     # Warning: kwargs defaults are also duplicated in `Requester.request`.
     def _prepare_parameters(self, kwargs):
-        content_type = kwargs.pop('content_type', None)
+        content_type = kwargs.pop("content_type", None)
         if _is_special(content_type):
             content_type = self.default_content_type
-        data = kwargs.get('data')
-        json_data = kwargs.pop('json', None)
+        data = kwargs.get("data")
+        json_data = kwargs.pop("json", None)
         if json_data is not None:
-            raise Exception((
-                "Please don't use `json=...` keyword here."
-                " Use `content_type='json'` (likely, already the default)."))
+            raise Exception(
+                (
+                    "Please don't use `json=...` keyword here."
+                    " Use `content_type='json'` (likely, already the default)."
+                )
+            )
         if data is not None and content_type is not None:
             # # Maybe:
             # if content_type == 'multipart':
             #     kwargs.pop('data', None)
             #     kwargs['files'] = data
             data, content_type_header = self.serialize_data(
-                data, content_type=content_type, context=kwargs)
+                data, content_type=content_type, context=kwargs
+            )
             if data is not None:
-                kwargs['data'] = data
+                kwargs["data"] = data
                 if content_type_header is not None:
-                    kwargs['headers']['content-type'] = content_type_header
+                    kwargs["headers"]["content-type"] = content_type_header
         return super(RequesterContentType, self)._prepare_parameters(kwargs)
 
-    json_content_type = 'application/json; charset=utf-8'
+    json_content_type = "application/json; charset=utf-8"
 
     def serialize_data(self, data, content_type, context=None):
         """
@@ -373,20 +405,26 @@ class RequesterContentType(RequesterBase):
         # # Maybe:
         # if content_type == 'urlencode':
         #     return None, data
-        if content_type == 'json':
+        if content_type == "json":
             return self._serialize_data_json(data, context=context)
-        if content_type == 'ujson':  # Special case for dangerous performance.
+        if content_type == "ujson":  # Special case for dangerous performance.
             return self._serialize_data_ujson(data, context=context)
         raise Exception("Unknown data serialization content_type", content_type)
 
-    def _serialize_data_json(self, data, context=None):  # pylint: disable=unused-argument
-        """ Overridable point for json-serialization customization. """
+    def _serialize_data_json(
+        self, data, context=None
+    ):  # pylint: disable=unused-argument
+        """Overridable point for json-serialization customization."""
         from .anyjson import json_dumps
+
         data = to_bytes(json_dumps(data))
         return data, self.json_content_type
 
-    def _serialize_data_ujson(self, data, context=None):  # pylint: disable=unused-argument
+    def _serialize_data_ujson(
+        self, data, context=None
+    ):  # pylint: disable=unused-argument
         import ujson
+
         # pylint: disable=c-extension-no-member
         data = to_bytes(ujson.dumps(data, ensure_ascii=False))
         return data, self.json_content_type
@@ -402,12 +440,12 @@ class RequesterMeta(RequesterBase):
 
     # Warning: kwargs defaults are also duplicated in `Requester.request`.
     def _prepare_parameters(self, kwargs):
-        call_info = kwargs.pop('call_info', None)
+        call_info = kwargs.pop("call_info", None)
         if call_info and self.call_info_in_ua:
             # `call_info`: `(cfile, cline, cfunc)`.
-            kwargs['headers']['user-agent'] = '{}, {}:{}: {}'.format(
-                kwargs['headers'].get('user-agent') or '',
-                *call_info)
+            kwargs["headers"]["user-agent"] = "{}, {}:{}: {}".format(
+                kwargs["headers"].get("user-agent") or "", *call_info
+            )
         return super(RequesterMeta, self)._prepare_parameters(kwargs)
 
     def request(self, url, **kwargs):
@@ -418,10 +456,10 @@ class RequesterMeta(RequesterBase):
 
             kwargs['call_extra_depth'] = (kwargs.get('call_extra_depth') or 0) + 1
         """
-        call_extra_depth = kwargs.pop('call_extra_depth', 0)
-        if self.collect_call_info and kwargs.get('call_info') is None:
+        call_extra_depth = kwargs.pop("call_extra_depth", 0)
+        if self.collect_call_info and kwargs.get("call_info") is None:
             # Could actually filter out the current module, but that's costly and palliative.
-            kwargs['call_info'] = find_caller(extra_depth=call_extra_depth + 1)
+            kwargs["call_info"] = find_caller(extra_depth=call_extra_depth + 1)
         return super(RequesterMeta, self).request(url, **kwargs)
 
 
@@ -435,22 +473,24 @@ class RequesterAutoRaiseForStatus(RequesterBase):
     def _prepare_request(self, kwargs, **etcetera):
         # This could be done by auto-merging `send_request_keys` by the MRO /
         # property, but for a single case this is easier:
-        require = kwargs.pop('require', True)
-        request, send_kwargs = (
-            super(RequesterAutoRaiseForStatus, self)
-            ._prepare_request(kwargs, **etcetera))
-        send_kwargs['require'] = require
+        require = kwargs.pop("require", True)
+        request, send_kwargs = super(
+            RequesterAutoRaiseForStatus, self
+        )._prepare_request(kwargs, **etcetera)
+        send_kwargs["require"] = require
         return request, send_kwargs
 
     def send_request(self, request, **kwargs):
-        require = kwargs.pop('require', True)
-        response = super(RequesterAutoRaiseForStatus, self).send_request(request, **kwargs)
+        require = kwargs.pop("require", True)
+        response = super(RequesterAutoRaiseForStatus, self).send_request(
+            request, **kwargs
+        )
         if require:
             self.raise_for_status(response)
         return response
 
     def raise_for_status(self, response):
-        """ `response.raise_for_status()` or similar """
+        """`response.raise_for_status()` or similar"""
         if not self.raise_with_content:
             response.raise_for_status()
             return
@@ -463,9 +503,8 @@ class RequesterAutoRaiseForStatus(RequesterBase):
         # Note: cutting the bytestream.
         content = response.content
         content = _cut(
-            content,
-            length=self.raise_content_cap,
-            marker=self.length_cut_marker)
+            content, length=self.raise_content_cap, marker=self.length_cut_marker
+        )
         return content
 
     def raise_for_status_forced(self, response):
@@ -479,13 +518,15 @@ class RequesterAutoRaiseForStatus(RequesterBase):
         except Exception as exc:
             self.logger.warning("_get_raise_content failed: %r", exc)
             raise self.response_exception_cls(
-                "Status Error: {} {}".format(
-                    response.status_code, response.reason),
-                response=response)
+                "Status Error: {} {}".format(response.status_code, response.reason),
+                response=response,
+            )
         raise self.response_exception_cls(
             "Status Error: {} {}: {}".format(
-                response.status_code, response.reason, content),
-            response=response)
+                response.status_code, response.reason, content
+            ),
+            response=response,
+        )
 
 
 class RequesterLog(RequesterBase):
@@ -505,30 +546,31 @@ class RequesterLog(RequesterBase):
         return response
 
     def request_for_logging(self, request):
-        """ Make a log string out of a request """
+        """Make a log string out of a request"""
         url = request.url
         url_cap = self.logging_url_cap
         if url_cap and len(url) > url_cap:
-            url = '{}{}'.format(url[:url_cap], self.length_cut_marker)
+            url = "{}{}".format(url[:url_cap], self.length_cut_marker)
 
-        data_info = ''
+        data_info = ""
         if request.body:
             data_info = "  data_len={}".format(len(request.body))
 
         return "{method} {url}{data_info}".format(
-            method=request.method.upper(), url=url, data_info=data_info)
+            method=request.method.upper(), url=url, data_info=data_info
+        )
 
     def request_for_logging_lazy(self, request):
-        """ ... exactly what it says """
+        """... exactly what it says"""
         return LazyRepr(functools.partial(self.request_for_logging, request))
 
     def response_for_logging(self, response):
-        """ Make a log string out of a response """
+        """Make a log string out of a response"""
         pieces = [
             response.status_code,
             response.request.method,
             response.url,
-            '    {}b'.format(len(response.content or '')),
+            "    {}b".format(len(response.content or "")),
         ]
         try:
             elapsed = "in {:.3f}s".format(response.elapsed.total_seconds())
@@ -536,42 +578,40 @@ class RequesterLog(RequesterBase):
             elapsed = "in ???s"
         pieces.append(elapsed)
         if self.log_response_headers:
-            pieces.append('    response.headers={!r}'.format(response.headers))
-        return ' '.join(
-            str(piece) if not isinstance(piece, str) else piece
-            for piece in pieces)
+            pieces.append("    response.headers={!r}".format(response.headers))
+        return " ".join(
+            str(piece) if not isinstance(piece, str) else piece for piece in pieces
+        )
 
     # pylint: disable=unused-argument
     def log_before(self, request, level=logging.DEBUG, **kwargs):
-        """ Hook for logging before a request is sent """
+        """Hook for logging before a request is sent"""
         if not self.logger.isEnabledFor(level):
             return
-        self.logger.debug(
-            "Sending request: %s",
-            self.request_for_logging_lazy(request))
+        self.logger.debug("Sending request: %s", self.request_for_logging_lazy(request))
 
     # pylint: disable=unused-argument
     def log_after(self, request, response, level=logging.INFO, **kwargs):
-        """ Hook for logging after a response is received """
+        """Hook for logging after a response is received"""
         if not self.logger.isEnabledFor(level):
             return
         self.logger.log(
             level,
             "Response: %s    -> %s",
             self.request_for_logging_lazy(request),
-            self.response_for_logging(response))
+            self.response_for_logging(response),
+        )
 
     # pylint: disable=unused-argument
     def log_exc(self, request, exc, exc_info=None, level=logging.ERROR, **kwargs):
-        """ Log an exception that occured when getting a response """
+        """Log an exception that occured when getting a response"""
         if not self.logger.isEnabledFor(level):
             return
 
-        response_str = ''
-        response = getattr(exc, 'response', None)
+        response_str = ""
+        response = getattr(exc, "response", None)
         if response is not None:
-            response_str = ' ({})'.format(
-                self.response_for_logging(response))
+            response_str = " ({})".format(self.response_for_logging(response))
 
         self.logger.log(
             level,
@@ -579,22 +619,33 @@ class RequesterLog(RequesterBase):
             self.request_for_logging_lazy(request),
             exc,
             response_str,
-            exc_info=exc_info or True)
+            exc_info=exc_info or True,
+        )
 
 
 class Requester(
-        RequesterLog, RequesterAutoRaiseForStatus, RequesterMeta,
-        RequesterContentType, RequesterBaseUrl, RequesterDefaults,
-        RequesterVerbMethods, RequesterSessionWrap, RequesterBase):
-
+    RequesterLog,
+    RequesterAutoRaiseForStatus,
+    RequesterMeta,
+    RequesterContentType,
+    RequesterBaseUrl,
+    RequesterDefaults,
+    RequesterVerbMethods,
+    RequesterSessionWrap,
+    RequesterBase,
+):
     def __init__(
-            self,
-            session=True,
-            default_timeout=5.0, default_write_method='post', default_allow_redirects=AUTO,
-            base_url=None,
-            default_content_type='json',
-            collect_call_info=True, call_info_in_ua=True,
-            **kwargs):
+        self,
+        session=True,
+        default_timeout=5.0,
+        default_write_method="post",
+        default_allow_redirects=AUTO,
+        base_url=None,
+        default_content_type="json",
+        collect_call_info=True,
+        call_info_in_ua=True,
+        **kwargs,
+    ):
         """
         ...
 
@@ -634,22 +685,36 @@ class Requester(
             default_content_type=default_content_type,
             collect_call_info=collect_call_info,
             call_info_in_ua=call_info_in_ua,
-            **kwargs)
+            **kwargs,
+        )
 
     # TODO: make it possible to supply defaults for everything in `__init__`.
     # pylint: disable=unused-argument,too-many-locals
     def request(
-            self, url, params=None, data=None,
-            # *,  # someday, someday.
-            method=None, headers=None, auth=None, cookies=None,
-            content_type=None, files=None,
-            hooks=None, proxies=None, cert=None,
-            verify=True, stream=False,
-            timeout=UNDEF, allow_redirects=None,
-            call_extra_depth=0, call_info=None,
-            session=None,
-            require=True,
-            **kwargs):
+        self,
+        url,
+        params=None,
+        data=None,
+        # *,  # someday, someday.
+        method=None,
+        headers=None,
+        auth=None,
+        cookies=None,
+        content_type=None,
+        files=None,
+        hooks=None,
+        proxies=None,
+        cert=None,
+        verify=True,
+        stream=False,
+        timeout=UNDEF,
+        allow_redirects=None,
+        call_extra_depth=0,
+        call_info=None,
+        session=None,
+        require=True,
+        **kwargs,
+    ):
         """
         Send a request, return a response.
 
@@ -712,14 +777,26 @@ class Requester(
         return super(Requester, self).request(
             url,
             session=session,
-            method=method, headers=headers, auth=auth, cookies=cookies, params=params,
-            data=data, content_type=content_type, files=files,
+            method=method,
+            headers=headers,
+            auth=auth,
+            cookies=cookies,
+            params=params,
+            data=data,
+            content_type=content_type,
+            files=files,
             hooks=hooks,
-            proxies=proxies, cert=cert, verify=verify,
-            stream=stream, timeout=timeout, allow_redirects=allow_redirects,
-            call_extra_depth=call_extra_depth + 1, call_info=call_info,
+            proxies=proxies,
+            cert=cert,
+            verify=verify,
+            stream=stream,
+            timeout=timeout,
+            allow_redirects=allow_redirects,
+            call_extra_depth=call_extra_depth + 1,
+            call_info=call_info,
             require=require,
-            **kwargs)
+            **kwargs,
+        )
 
 
 class APIRequester(Requester):
@@ -738,8 +815,8 @@ class APIRequester(Requester):
             session = SESSION_ZEALOUS
         elif _is_special(session):
             session = configure_session(requests.Session())
-        kwargs.setdefault('default_timeout', 120)
-        kwargs.setdefault('default_allow_redirects', False)
+        kwargs.setdefault("default_timeout", 120)
+        kwargs.setdefault("default_allow_redirects", False)
         super(APIRequester, self).__init__(session=session, **kwargs)
 
     # '204' is often returned for `DELETE` requests.
@@ -752,18 +829,20 @@ class APIRequester(Requester):
 
 def test():
     from pyaux.runlib import init_logging
+
     init_logging(level=1)
     reqr = Requester()
-    resp = reqr.get('https://example.com?param1=a', params=dict(param2='b'))
+    resp = reqr.get("https://example.com?param1=a", params=dict(param2="b"))
     print(resp)
     assert resp.ok
     resp = reqr(
-        'https://example.com?param2=a',
-        params=dict(param1='b'),
-        headers={'Content-Type': 'nope, delete this'},
-        data=dict(param3=['c', 1]))
+        "https://example.com?param2=a",
+        params=dict(param1="b"),
+        headers={"Content-Type": "nope, delete this"},
+        data=dict(param3=["c", 1]),
+    )
     print(resp)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     test()

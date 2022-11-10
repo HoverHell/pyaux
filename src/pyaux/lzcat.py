@@ -4,17 +4,19 @@
 from __future__ import annotations
 
 import sys
+
 import pylzma
+
 from pyaux.lzmah import get_stdin, get_stdout
 
 
 def unlzma(fi, fo, fi_close=True, fo_close=True, bufs=6553500):
-    """ Decompress `fi` into `fo` (`file` or filename) """
+    """Decompress `fi` into `fo` (`file` or filename)"""
     if isinstance(fi, str):
-        fi, fi_n = open(fi, 'rb'), fi
+        fi, fi_n = open(fi, "rb"), fi
         # fi_close = True
     if isinstance(fo, str):
-        fo, fo_n = open(fo, 'wb'), fo
+        fo, fo_n = open(fo, "wb"), fo
         # fo_close = True
     # i.seek(0)
 
@@ -49,21 +51,21 @@ def _lzcat_main():
     if len(sys.argv) > 1:
         fi_a = sys.argv[1]
     else:
-        fi_a = '-'
+        fi_a = "-"
     if len(sys.argv) == 3:
         fo_a = sys.argv[2]
     else:
-        fo_a = '-'
+        fo_a = "-"
     if len(sys.argv) > 3:
         print("Basic usage: %s [<from_file> [<to_file>]]" % (sys.argv[0],))
         sys.exit()
 
-    if fi_a == '-':
+    if fi_a == "-":
         fi_a = get_stdin()
-    if fo_a == '-':
+    if fo_a == "-":
         fo_a = get_stdout()
     unlzma(fi_a, fo_a)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     _lzcat_main()

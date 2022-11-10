@@ -2,34 +2,35 @@
 
 from __future__ import annotations
 
-import os
-import sys
-import random
-import time
-import warnings
-import logging
-import signal
 import atexit
+import logging
+import os
+import random
+import signal
+import sys
+import time
 import traceback
-
+import warnings
 
 __all__ = [
-    'init_logging',
-    'sigeventer',
+    "init_logging",
+    "sigeventer",
 ]
 
 
 def _make_short_levelnames(shortnum=True):
-    """ Return a dict (levelnum -> levelname) with short names for logging.
+    """Return a dict (levelnum -> levelname) with short names for logging.
     `shortnum`: also shorten all 'Level #' names to 'L##'.
     """
-    _names = dict([
-        (logging.DEBUG, 'DBG'),
-        (logging.INFO, 'INFO'),  # d'uh
-        (logging.WARN, 'WARN'),
-        (logging.ERROR, 'ERR'),
-        (logging.CRITICAL, 'CRIT'),
-    ])
+    _names = dict(
+        [
+            (logging.DEBUG, "DBG"),
+            (logging.INFO, "INFO"),  # d'uh
+            (logging.WARN, "WARN"),
+            (logging.ERROR, "ERR"),
+            (logging.CRITICAL, "CRIT"),
+        ]
+    )
     if shortnum:
         for i in range(1, 100):
             _names.setdefault(i, "L%02d" % (i,))
@@ -38,15 +39,17 @@ def _make_short_levelnames(shortnum=True):
 
 # Current attempt: use bytes in py2, unicode in py3 (i.e. subvert unicode_literals just for these).
 BASIC_LOG_FORMAT = str("%(asctime)s: %(levelname)-13s: %(name)s: %(message)s")
-BASIC_LOG_FORMAT_TD = str("%(asctime)s(+%(time_diff)5.3fs): %(levelname)-13s: %(name)s: %(message)s")
+BASIC_LOG_FORMAT_TD = str(
+    "%(asctime)s(+%(time_diff)5.3fs): %(levelname)-13s: %(name)s: %(message)s"
+)
 
 
 def init_logging(*args, **kwargs):
-    """ Simple shorthand for neat and customizable logging init """
-    _td = kwargs.pop('_td', False)
+    """Simple shorthand for neat and customizable logging init"""
+    _td = kwargs.pop("_td", False)
     # Support for https://pypi.python.org/pypi/coloredlogs
     # Also, notable: https://pypi.python.org/pypi/verboselogs (but no special support here at the moment)
-    _try_coloredlogs = kwargs.pop('_try_coloredlogs', False)
+    _try_coloredlogs = kwargs.pop("_try_coloredlogs", False)
 
     if _try_coloredlogs:
         try:
@@ -55,26 +58,27 @@ def init_logging(*args, **kwargs):
             coloredlogs = None
             _try_coloredlogs = False
 
-    colored = kwargs.pop('colored', True)
+    colored = kwargs.pop("colored", True)
     if colored and not _try_coloredlogs:
         from . import use_colorer
+
         use_colorer()
 
-    short_levelnames = kwargs.pop('short_levelnames', True)
+    short_levelnames = kwargs.pop("short_levelnames", True)
     if short_levelnames:
         _names = _make_short_levelnames()
         for lvl, name in _names.items():
             logging.addLevelName(lvl, str(name))
 
-    kwargs.setdefault('level', logging.DEBUG)
+    kwargs.setdefault("level", logging.DEBUG)
 
     logformat = BASIC_LOG_FORMAT
     if _td:
         logformat = BASIC_LOG_FORMAT_TD
-    kwargs.setdefault('format', logformat)
+    kwargs.setdefault("format", logformat)
 
     if _try_coloredlogs:
-        kwargs['fmt'] = kwargs['format']
+        kwargs["fmt"] = kwargs["format"]
         coloredlogs.install(*args, **kwargs)
     else:
         logging.basicConfig(*args, **kwargs)
@@ -82,16 +86,17 @@ def init_logging(*args, **kwargs):
     if _td:
         # XX: do the same for all `logging.Logger.manager.loggerDict.values()`?
         from .logging_annotators import time_diff_annotator
+
         flt = time_diff_annotator()
         logging.root.addFilter(flt)
         for logger in logging.Logger.manager.loggerDict.values():
-            if hasattr(logger, 'addFilter'):
+            if hasattr(logger, "addFilter"):
                 logger.addFilter(flt)
 
 
 def argless_wrap(fn):
-    """ Wrap function to re-try calling it if calling it with arguments
-    failed """
+    """Wrap function to re-try calling it if calling it with arguments
+    failed"""
 
     def argless_internal(*ar, **kwa):
         try:
@@ -100,7 +105,7 @@ def argless_wrap(fn):
             try:
                 return fn()
             except TypeError as e2:
-                #raise e  # - traceback-inconvenient
+                # raise e  # - traceback-inconvenient
                 raise  # - error-inconvenient
 
     return argless_internal
@@ -116,7 +121,6 @@ def _atexit_wrap(n=None, f=None):
 
 
 class ListSigHandler(list):
-
     def __init__(self, try_argless, ignore_exc, verbose):
         self.try_argless = try_argless
         self.ignore_exc = ignore_exc
@@ -141,8 +145,14 @@ class ListSigHandler(list):
                     raise
 
 
-def sigeventer(add_defaults=True, add_previous=True, do_sysexit=True,
-               try_argless=True, ignore_exc=True, verbose=False):
+def sigeventer(
+    add_defaults=True,
+    add_previous=True,
+    do_sysexit=True,
+    try_argless=True,
+    ignore_exc=True,
+    verbose=False,
+):
     """
     Puts one list-based handler for SIGINT and SIGTERM that can be `append`ed to.
 
@@ -167,11 +177,14 @@ def sigeventer(add_defaults=True, add_previous=True, do_sysexit=True,
 
     if isinstance(curhandler_int, list) and isinstance(curhandler_term, list):
         # probaby us already; just return
-        assert curhandler_int is curhandler_term, \
-            "unexpected: different list-based term/int handlers"
+        assert (
+            curhandler_int is curhandler_term
+        ), "unexpected: different list-based term/int handlers"
         return curhandler_term
 
-    the_handler = ListSigHandler(try_argless=try_argless, ignore_exc=ignore_exc, verbose=verbose)
+    the_handler = ListSigHandler(
+        try_argless=try_argless, ignore_exc=ignore_exc, verbose=verbose
+    )
     signal.signal(signal.SIGINT, the_handler)
     signal.signal(signal.SIGTERM, the_handler)
 
@@ -182,8 +195,7 @@ def sigeventer(add_defaults=True, add_previous=True, do_sysexit=True,
         # Note that signal.SIG_DFL will be basically ignored.
         if callable(curhandler_term):
             the_handler.append(curhandler_term)
-        if (callable(curhandler_int) and
-                curhandler_int != curhandler_term):
+        if callable(curhandler_int) and curhandler_int != curhandler_term:
             # (Note that same previous handler still can be called twice)
             the_handler.append(curhandler_int)
     if add_defaults:

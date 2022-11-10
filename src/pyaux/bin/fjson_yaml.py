@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 """ json -> yaml for pretty-reading. """
 
+import argparse
+import json
 import os
 import sys
-import json
+
 import yaml
-import argparse
+
 from pyaux.base import colorize_yaml as colorize, to_text
 
 

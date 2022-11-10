@@ -3,8 +3,8 @@
 
 from __future__ import annotations
 
-import os
 import json
+import os
 import sys
 
 from pyaux.base import to_bytes

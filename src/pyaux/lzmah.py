@@ -6,18 +6,19 @@ Also can be used as a script for compressing a file.
 from __future__ import annotations
 
 import sys
+
 import pylzma
 
 
 def lzma_compress(fi, fo, fi_close=True, fo_close=True, bufs=65535):
-    """ Compress `fi` into `fo` (`file` or filename) """
+    """Compress `fi` into `fo` (`file` or filename)"""
     if isinstance(fi, str):
-        fi, fi_n = open(fi, 'rb'), fi
-        #fi_close = True
+        fi, fi_n = open(fi, "rb"), fi
+        # fi_close = True
     if isinstance(fo, str):
-        fo, fo_n = open(fo, 'wb'), fo
-        #fo_close = True
-    #fi.seek(0)
+        fo, fo_n = open(fo, "wb"), fo
+        # fo_close = True
+    # fi.seek(0)
     s = pylzma.compressfile(fi)
     while True:
         tmp = s.read(bufs)
@@ -32,8 +33,7 @@ def lzma_compress(fi, fo, fi_close=True, fo_close=True, bufs=65535):
 
 
 class _IgnoreTheError(Exception):
-    """ Used in `unjsllzma` to signify that the exception should be simply ignored
-    """
+    """Used in `unjsllzma` to signify that the exception should be simply ignored"""
 
 
 def _handle_fail_default(v, e):
@@ -42,7 +42,7 @@ def _handle_fail_default(v, e):
 
 
 def unjsllzma(fi, fi_close=True, parse_fn=None, handle_fail=None, bufs=655350):
-    """ Make a generator for reading an lzma-compressed file with
+    """Make a generator for reading an lzma-compressed file with
     json(or something else) in lines.
     `parse_fn` is th function(v) to process lines with (defaults to
       `json.loads`)
@@ -69,9 +69,9 @@ def unjsllzma(fi, fi_close=True, parse_fn=None, handle_fail=None, bufs=655350):
             return handle_fail(v, e)
 
     if isinstance(fi, str):
-        fi = open(fi, 'rb')
+        fi = open(fi, "rb")
 
-    tmp2 = ''  # buffer for unfunushed lines
+    tmp2 = ""  # buffer for unfunushed lines
     in_bufs = int(bufs / 100)  # XXX: see lzcat.py note around in_bufs
     s = pylzma.decompressobj()
     cont = True
@@ -83,7 +83,7 @@ def unjsllzma(fi, fi_close=True, parse_fn=None, handle_fail=None, bufs=655350):
         else:
             # XXX: TODO: use bytearray.extend (likely).
             tmp2 = tmp2 + s.decompress(tmp, bufs)
-        tmp3 = tmp2.split('\n')  # finished and unfinished lines
+        tmp3 = tmp2.split("\n")  # finished and unfinished lines
         for v in tmp3[:-1]:
             try:
                 r = try_loads(v)
@@ -119,12 +119,12 @@ def _lzma_main():
     fi_a = sys.argv[1]
     fo_a = sys.argv[2]
 
-    if fi_a == '-':
+    if fi_a == "-":
         fi_a = get_stdin()
-    if fo_a == '-':
+    if fo_a == "-":
         fo_a = get_stdout()
     lzma_compress(fi_a, fo_a)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     _lzma_main()
