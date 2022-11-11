@@ -3,10 +3,11 @@ Entry-module for the pyx-compiled `_datadeque` module.
 
 WARNING: this module will be moved to `pyauxm`.
 """
+from __future__ import annotations
 
 try:
     from . import _datadeque
-except ImportError as e1:
+except ImportError:
     import pyximport
 
     # WARNING: this will:

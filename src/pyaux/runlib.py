@@ -44,7 +44,8 @@ def init_logging(*args, **kwargs):
     """Simple shorthand for neat and customizable logging init"""
     _td = kwargs.pop("_td", False)
     # Support for https://pypi.python.org/pypi/coloredlogs
-    # Also, notable: https://pypi.python.org/pypi/verboselogs (but no special support here at the moment)
+    # Also, notable: https://pypi.python.org/pypi/verboselogs
+    # (but no special support here at the moment)
     _try_coloredlogs = kwargs.pop("_try_coloredlogs", False)
 
     if _try_coloredlogs:
@@ -97,10 +98,10 @@ def argless_wrap(fn):
     def argless_internal(*ar, **kwa):
         try:
             return fn(*ar, **kwa)
-        except TypeError as e:
+        except TypeError:
             try:
                 return fn()
-            except TypeError as e2:
+            except TypeError:
                 # raise e  # - traceback-inconvenient
                 raise  # - error-inconvenient
 
@@ -126,17 +127,17 @@ class ListSigHandler(list):
         for func in reversed(self):
             try:
                 if self.verbose:
-                    print(f"ListSigHandler: running {func!r}")
+                    sys.stderr.write(f"ListSigHandler: running {func!r}\n")
                 if self.try_argless:
                     func = argless_wrap(func)
                 func(n, f)
-            except Exception as e:
+            except Exception as exc:
                 if self.ignore_exc:
                     if self.verbose:
                         traceback.print_exc()
                     else:
                         # Still print something
-                        print(f"Exception ignored: {e!r}")
+                        sys.stderr.write(f"Exception ignored: {exc!r}\n")
                 else:
                     raise
 

@@ -13,11 +13,11 @@ import pylzma
 def lzma_compress(fi, fo, fi_close=True, fo_close=True, bufs=65535):
     """Compress `fi` into `fo` (`file` or filename)"""
     if isinstance(fi, str):
-        fi, fi_n = open(fi, "rb"), fi
-        # fi_close = True
+        fi = open(fi, "rb")
+        fi_close = True
     if isinstance(fo, str):
-        fo, fo_n = open(fo, "wb"), fo
-        # fo_close = True
+        fo = open(fo, "wb")
+        fo_close = True
     # fi.seek(0)
     s = pylzma.compressfile(fi)
     while True:
@@ -53,9 +53,9 @@ def unjsllzma(fi, fi_close=True, parse_fn=None, handle_fail=None, bufs=655350):
     """
     if parse_fn is None:
         try:
-            import simplejson as json
+            import orjson as json
         except ImportError:
-            print("Error importing (preferred) simplejson")
+            sys.stderr.write("Error importing (preferred) `orjson`\n")
             import json
         parse_fn = json.loads
 

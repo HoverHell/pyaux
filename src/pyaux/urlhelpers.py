@@ -58,7 +58,7 @@ def mangle_url_m(url, include=None, exclude=None, add=None):
     (`param -> [value1, …]`); sorts the resulting query"""
     url = to_bytes(url)
     url_parts = urllib.parse.urlparse(url)
-    ## NOTE: the order of the fields is still lost.
+    # NOTE: the order of the fields is still lost.
     query = urllib.parse.parse_qs(url_parts.query, keep_blank_values=1)
     query_new = mangle_dict(query, include=include, exclude=exclude, add=add)
     query_new = [(k, v) for k, vl in query_new.items() for v in vl]

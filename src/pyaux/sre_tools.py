@@ -3,10 +3,10 @@
 
 NOTE: python3.5+ only (only tested on python3.7).
 """
-# pylint: disable=no-else-return
 # pylint: disable=too-many-branches
 # pylint: disable=too-many-statements
 # pylint: disable=fixme
+from __future__ import annotations
 
 import copy
 import re
@@ -46,11 +46,20 @@ def _ensure_grouped(pattern, source=None):
     """
     ...
 
-    >>> _ensure_grouped(pattern='zxcv', source=[(LITERAL, 122), (LITERAL, 120), (LITERAL, 99), (LITERAL, 118)])
+    >>> _ensure_grouped(
+    ...     pattern='zxcv',
+    ...     source=[(LITERAL, 122), (LITERAL, 120), (LITERAL, 99), (LITERAL, 118)],
+    ... )
     '(?:zxcv)'
-    >>> _ensure_grouped(pattern='(?:zxcv)', source=[(LITERAL, 122), (LITERAL, 120), (LITERAL, 99), (LITERAL, 118)])
+    >>> _ensure_grouped(
+    ...     pattern='(?:zxcv)',
+    ...     source=[(LITERAL, 122), (LITERAL, 120), (LITERAL, 99), (LITERAL, 118)],
+    ... )
     '(?:zxcv)'
-    >>> _ensure_grouped(pattern='[abc]', source=[(IN, [(LITERAL, 97), (LITERAL, 98), (LITERAL, 99)])])
+    >>> _ensure_grouped(
+    ...     pattern='[abc]',
+    ...     source=[(IN, [(LITERAL, 97), (LITERAL, 98), (LITERAL, 99)])],
+    ... )
     '[abc]'
     """
     if pattern.startswith("(") or pattern.startswith("["):
@@ -80,12 +89,18 @@ def rast_to_pattern(rast, _parent_type=None, **kwargs):
 
     Partial implementation (to be completed as needed).
 
-    >>> rex = r'[abc]?(?:^|a{4,}?)[^IO](b\ (?P<zxcv>c|d)+)*($|...|[0-9×][^a-z])(?P<qwer>a-imsx:zxcv)(?a-xsmi:zxcv)'
-    >>> rast_to_pattern(sre_parse.parse(rex))
-    '[abc]?(?:^|a{4,}?)[^IO](b\\ (?P<zxcv>[cd])+)*($|...|[0-9×][^a-z])(?P<qwer>a\\-imsx:zxcv)(?a-imsx:zxcv)'
+    >>> rex = (
+    ...     r'[abc]?(?:^|a{4,}?)[^IO](b\ (?P<zxcv>c|d)+)*'
+    ...     r'($|...|[0-9×][^a-z])(?P<qwer>a-imsx:zxcv)(?a-xsmi:zxcv)'
+    ... )
+    >>> rast_to_pattern(sre_parse.parse(rex))[:44]
+    '[abc]?(?:^|a{4,}?)[^IO](b\\ (?P<zxcv>[cd])+)*'
+    >>> rast_to_pattern(sre_parse.parse(rex))[44:]
+    '($|...|[0-9×][^a-z])(?P<qwer>a\\-imsx:zxcv)(?a-imsx:zxcv)'
     """
     _chr = chr
-    # TODO: bytes-regex support: `if not kwargs.get(flags, 0) & re.UNICODE: _chr = lambda num: bytes([num])`
+    # TODO: bytes-regex support:
+    # `if not kwargs.get(flags, 0) & re.UNICODE: _chr = lambda num: bytes([num])`
 
     # # # Reference glue;
     # def _parse(source, state, verbose, nested, first=False):
@@ -739,9 +754,10 @@ def main():
 
     rex = sys.argv[1]
     string = sys.argv[2]
-    print(f"Regex: {rex!r}, string: {string!r}", file=sys.stderr)
+    sys.stdout.write(f"Regex: {rex!r}, string: {string!r}\n")
     for result in find_matching_subregexes(rex, string, verbose=True):
-        print("{pattern_round.state!r} -> {substring!r}".format(**result))
+        assert isinstance(result, dict)
+        sys.stdout.write(f"{result['pattern_round'].state!r} -> {result['substring']!r}")
 
 
 if __name__ == "__main__":

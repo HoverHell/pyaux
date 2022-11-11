@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 """ json -> yaml for pretty-reading. """
+from __future__ import annotations
 
 import argparse
 import json
@@ -88,11 +89,12 @@ def main():
     #   `--color=no` always skips this
     #   `--color`, `--color=yes`, `-c` always do this
     #   ``, `--color=auto` make this isatty-conditional.
-    if ((params.color == 'auto' and sys.stdout.isatty()) or
+    if (
+            (params.color == 'auto' and sys.stdout.isatty())
             # NOTE: `'auto'` is default, `None` means it was
             # specified without an argument (equals to 'always')
-            params.color in ('yes', 'always', True, None)):
-
+            or params.color in ('yes', 'always', True, None)
+    ):
         # pygments doesn't like utf-8 as-is; make it unicode
         if isinstance(out, bytes):
             out = out.decode('utf-8')

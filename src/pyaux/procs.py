@@ -1,11 +1,16 @@
 """
 Additional utils for working with subprocesses.
+
+Example CLI usage:
+
+    python -m pyaux.procs ping -c 4 -i 0.2 1.1.1.1
 """
 
 from __future__ import annotations
 
 import datetime
 import subprocess
+import sys
 import time
 
 
@@ -18,7 +23,7 @@ def _out_cb_default_common(tag, line, timestamp=None, encoding="utf-8", errors="
         line = line[:-1]
     else:  # disambiguate
         line += "\\"
-    print(timestamp_dt.strftime("%H:%M:%S"), tag, line)
+    sys.stderr.write(f"{timestamp_dt.strftime('%H:%M:%S')} {tag} {line}\n")
 
 
 def stdout_cb_default(line, timestamp=None, **kwargs):
@@ -144,5 +149,4 @@ def main():
 
 
 if __name__ == "__main__":
-    # python -m pyaux.procs ping -c 4 -i 0.2 1.1.1.1
     main()

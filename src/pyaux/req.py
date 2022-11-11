@@ -797,7 +797,7 @@ def test():
     init_logging(level=1)
     reqr = Requester()
     resp = reqr.get("https://example.com?param1=a", params=dict(param2="b"))
-    print(resp)
+    print(resp)  # noqa: T201
     assert resp.ok
     resp = reqr(
         "https://example.com?param2=a",
@@ -805,7 +805,7 @@ def test():
         headers={"Content-Type": "nope, delete this"},
         data=dict(param3=["c", 1]),
     )
-    print(resp)
+    print(resp)  # noqa: T201
 
 
 if __name__ == "__main__":

@@ -120,9 +120,13 @@ target-version = ["py37"]
 
 [tool.flake8]
 ignore = [
+    "E203",  # for whatever reason `black` does `var[val: ]`
     "FI58",  # requiring `from __future__ import annotations` (FI18)
     "W503",  # preferring line breaks *before* the operator (W504)
     "N818",  # `N818 exception name ... should be named with an Error suffix`
+]
+per-file-ignores = [
+    "__init__.py:F401,F403",  # “imported but unused”, “'import *' used”
 ]
 max_line_length = 100
 min_version = "3.7"
@@ -159,7 +163,6 @@ disable = [
     "missing-function-docstring",
     # "line-too-long",
     "invalid-name",  # TODO: make up the correct regexes instead
-    "no-self-use",  # defining overridable methods' fingerprint
     "too-few-public-methods",
 ]
 
@@ -241,20 +244,21 @@ envlist =
     py38
     py39
     py310
-
+allowlist_externals =
+    /bin/sh
 
 [testenv]
 sitepackages = False
 deps=
-    -e .[known,req,tests,dev]
+    -e .[recommended,known,req,tests,dev]
 
 commands =
     isort --check --diff ./
     black --check ./
     autoflake --in-place --recursive --ignore-init-module-imports --remove-all-unused-imports --check --quiet .
     pflake8
-    pylint --rcfile=pyproject.toml --disable=fixme ./ || true
-    mypy --config-file=pyproject.toml --warn-unused-configs ./
+    /bin/sh -c 'pylint --rcfile=pyproject.toml --disable=fixme ./src || true'
+    /bin/sh -c 'mypy --config-file=pyproject.toml --warn-unused-configs ./ || true'
     py.test \
         --doctest-modules \
         --cov=pyaux \

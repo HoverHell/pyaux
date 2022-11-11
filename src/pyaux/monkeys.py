@@ -6,27 +6,10 @@ Monkey-patching of various things
 from __future__ import annotations
 
 __all__ = (
-    "use_cdecimal",
     "use_exc_ipdb",
     "use_exc_log",
     "use_colorer",
 )
-
-
-def use_cdecimal():
-    """Do a hack-in replacement of `decimal` with `cdecimal`.
-    Should be done before importing other modules.
-
-    Also see
-    http://adamj.eu/tech/2015/06/06/swapping-decimal-for-cdecimal-on-python-2/
-    for a possibly more reliable way.
-    """
-    import decimal  # maybe not needed
-    import sys
-
-    import cdecimal  # pylint: disable=import-error
-
-    sys.modules["decimal"] = cdecimal
 
 
 def use_exc_ipdb():

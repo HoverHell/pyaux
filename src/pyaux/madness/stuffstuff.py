@@ -1,10 +1,11 @@
 """ madstuff: other stuff stuff """
+from __future__ import annotations
 
 import re
 import urllib.parse
 
 from pyaux.base import repr_cut as _cut
-from pyaux.dicts import MVOD, dotdict
+from pyaux.dicts import MVOD, DotDict
 
 __all__ = (
     "Url",
@@ -16,7 +17,7 @@ __all__ = (
 
 
 # See also: https://pypi.org/project/yarl/
-class Url(dotdict):
+class Url(DotDict):
     """urlparse.ParseResult and parse_qs[l] in a dict-like non-lazy form"""
 
     _components = (

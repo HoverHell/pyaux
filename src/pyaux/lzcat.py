@@ -13,11 +13,11 @@ from pyaux.lzmah import get_stdin, get_stdout
 def unlzma(fi, fo, fi_close=True, fo_close=True, bufs=6553500):
     """Decompress `fi` into `fo` (`file` or filename)"""
     if isinstance(fi, str):
-        fi, fi_n = open(fi, "rb"), fi
-        # fi_close = True
+        fi = open(fi, "rb")
+        fi_close = True
     if isinstance(fo, str):
-        fo, fo_n = open(fo, "wb"), fo
-        # fo_close = True
+        fo = open(fo, "wb")
+        fo_close = True
     # i.seek(0)
 
     # XXXX: better way?
@@ -57,7 +57,7 @@ def _lzcat_main():
     else:
         fo_a = "-"
     if len(sys.argv) > 3:
-        print(f"Basic usage: {sys.argv[0]} [<from_file> [<to_file>]]")
+        sys.stderr.write(f"Basic usage: {sys.argv[0]} [<from_file> [<to_file>]]\n")
         sys.exit()
 
     if fi_a == "-":

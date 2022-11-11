@@ -4,9 +4,7 @@ necessarily performant.
 
 Does not contain unsafe-to-import modules.
 """
-
-# Ordering is from least important to most important, with modules
-# themselves last.
+from __future__ import annotations
 
 from .. import base, dicts, madness, ranges, runlib, urlhelpers
 from ..base import *

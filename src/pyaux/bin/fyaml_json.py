@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # pylint: disable=broad-except
 """ yaml -> json for pretty-writing. """
+from __future__ import annotations
 
 import argparse
 import json
@@ -51,9 +52,9 @@ def main():
         sys.stdout.write(data_in)
         return 13
 
-    Loader = getattr(yaml, 'CSafeLoader', None) or yaml.SafeLoader
+    loader = getattr(yaml, 'CSafeLoader', None) or yaml.SafeLoader
     try:
-        data_data = yaml.load(data_in, Loader=Loader)
+        data_data = yaml.load(data_in, Loader=loader)
     except Exception as exc:
         return bailout(f"Error parsing as yaml: {exc}")
 

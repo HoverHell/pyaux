@@ -6,6 +6,7 @@ Can be included in 'sitecustomize.py'
 
 src: http://code.activestate.com/recipes/65287-automatically-start-the-debugger-on-an-exception/
 """
+from __future__ import annotations
 
 import sys
 
@@ -22,7 +23,6 @@ def info(type, value, tb):
 
         # we are NOT in interactive mode, print the exception...
         traceback.print_exception(type, value, tb)
-        print
         # ...then start the debugger in post-mortem mode.
         ipdb.pm()
 

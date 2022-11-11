@@ -197,9 +197,9 @@ def parse_json(data_in):
 
 def parse_yaml(data_in):
     import yaml
-    Loader = getattr(yaml, 'CSafeLoader', None) or yaml.SafeLoader
+    loader = getattr(yaml, 'CSafeLoader', None) or yaml.SafeLoader
     # TODO: support multi-document streams
-    return yaml.load_all(data_in, Loader=Loader)
+    return yaml.load_all(data_in, Loader=loader)
 
 
 def parse_msgp(data_in, input_encoding='utf-8'):
@@ -208,12 +208,8 @@ def parse_msgp(data_in, input_encoding='utf-8'):
     if input_encoding:
         kwargs.update(encoding=input_encoding)
 
-    # TODO: proper streaming
-    try:
-        from io import BytesIO as iowrap
-    except Exception:
-        from cStringIO import StringIO as iowrap
-    data_in = iowrap(data_in)
+    from io import BytesIO
+    data_in = BytesIO(data_in)
 
     stream = msgpack.Unpacker(data_in, **kwargs)
     try:
@@ -271,9 +267,9 @@ def dump_yamls(items, colorize=False, **kwargs):
     import yaml
     if colorize:
         from pyaux.base import colorize_yaml
-    Dumper = getattr(yaml, 'CSafeDumper', None) or yaml.SafeDumper
+    dumper = getattr(yaml, 'CSafeDumper', None) or yaml.SafeDumper
     # TODO: streamed
-    result = yaml.dump_all(items, Dumper=Dumper, **kwargs)
+    result = yaml.dump_all(items, Dumper=dumper, **kwargs)
     if colorize:
         if isinstance(result, bytes):
             result = result.decode('utf-8')
@@ -333,8 +329,9 @@ def make_outs_func(params):
 
     output_format = params.output_format
     colorize = (
-        params.color == 'yes' or
-        (params.color == 'auto' and isatty))
+        params.color == 'yes'
+        or (params.color == 'auto' and isatty)
+    )
     # TODO: add the 'auto => unsorted in py3.7+' feature for JSON and YAML
     sort_keys = params.sort_keys in ('yes', 'auto')
 

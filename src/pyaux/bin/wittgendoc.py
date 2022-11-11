@@ -2,7 +2,7 @@
 """
 A script to convert convenient text to markdown to html.
 """
-
+from __future__ import annotations
 
 import os
 import re
@@ -259,7 +259,6 @@ def main(src_ext='.txt'):
 
     with open(filename) as fo:
         data = fo.read()
-
 
     lines = data.splitlines()
 

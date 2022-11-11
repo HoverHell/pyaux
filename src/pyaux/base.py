@@ -11,12 +11,13 @@ import sys
 import time
 import traceback
 import unicodedata
+import urllib.parse
 from decimal import Decimal
 from typing import Literal
 
 __all__ = (
     "repr_call",
-    "DebugPlug",
+    "debug_plug",
     "split_list",
     "dict_maybe_items",
     "split_dict",
@@ -27,7 +28,7 @@ __all__ = (
     "human_sort_key",
     "ThrottledCall",
     "throttled_call",
-    "lazystr",
+    "LazyStr",
     "LazyRepr",
     "ReprObj",
     "o_repr_g",
@@ -47,11 +48,11 @@ __all__ = (
     "colorize_diff",
     "configurable_wrapper",
     "simple_memoize_argless",
-    "memoize",
+    "Memoize",
     "memoize_method",
     "memoized_property",
     "mkdir_p",
-    "hashabledict_st",
+    "HashableDictST",
     "group3",
     "to_bytes",
     "to_text",
@@ -80,7 +81,7 @@ def repr_call(args, kwargs):
 dbgs = {}  # global object for easier later access of dumped `__call__`s
 
 
-def DebugPlug(name, mklogger=None):
+def debug_plug(name, mklogger=None):
     """Create and return a recursive duck-object for plugging in
     place of other objects for debug purposes.
 
@@ -105,14 +106,14 @@ def DebugPlug(name, mklogger=None):
 
         def __call__(self, *ar, **kwa):
             log("called with (%s)", repr_call(ar, kwa))
-            global dbgs  ## Just to note it
+            global dbgs  # Just to note it, mutating but not actually replacing it.
             dbgs.setdefault(name, {})
             dbgs[name]["__call__"] = (ar, kwa)
 
         def __getattr__(self, attname):
             namef = f"{name}.{attname}"
             # Recursive!
-            dpchild = DebugPlug(name=namef, mklogger=mklogger)
+            dpchild = debug_plug(name=namef, mklogger=mklogger)
             # setattr(self, attname, dpchild)
             object.__setattr__(self, attname, dpchild)
             return dpchild
@@ -125,9 +126,6 @@ def DebugPlug(name, mklogger=None):
             return object.__setattr__(self, attname, value)
 
     return DebugPlugInternal()
-
-
-# ###### dict-lazies
 
 
 def split_list(iterable, condition):
@@ -380,7 +378,7 @@ def throttled_call(*args, **kwargs):
     return lambda func: functools.wraps(func)(ThrottledCall(func, *args, **kwargs))
 
 
-class lazystr:
+class LazyStr:
     """
     A simple class for lazy-computed processing into string,
     e.g. for use in logging.
@@ -413,12 +411,9 @@ class LazyRepr:
         self.func = func
 
     def __repr__(self):
-        return to_str(self.func())
+        return to_text(self.func())
 
     def __str__(self):
-        return to_str(self.func())
-
-    def __unicode__(self):
         return to_text(self.func())
 
 
@@ -612,7 +607,8 @@ def chunks(lst, size):
 
 
 def group(lst, cls=dict):
-    """RTFS.
+    """
+    RTFS.
 
     Similar to dict(MultiValueDict(lst).lists())
 
@@ -823,7 +819,7 @@ def simple_memoize_argless(func):
 
 
 # TODO?: some clear-all-global-memos method. By singleton and weakrefs.
-class memoize:
+class Memoize:
     def __init__(
         self,
         fn,
@@ -914,7 +910,7 @@ def memoize_method(func, memo_attr=None, **cfg):
         # same lifetime as the instance.
         cache = getattr(self, memo_attr, None)
         if cache is None:
-            cache = memoize(func, **cfg)
+            cache = Memoize(func, **cfg)
             cache.skip_first_arg = True
             setattr(self, memo_attr, cache)
 
@@ -997,7 +993,7 @@ def _dict_to_hashable_json(dct, dumps=json.dumps):
     return dumps(dct, skipkeys=True, default=id)
 
 
-class hashabledict_st(dict):
+class HashableDictST(dict):
     """sorted-tuple based hashable subclass of `dict`"""
 
     def __hash__(self):
@@ -1071,7 +1067,7 @@ def import_func(func_path, _check_callable=True):
         here = mod
         for f_name_part in f_name_parts:
             if not f_name_part:
-                continue  ## allows for weirder things to be done.
+                continue  # allows for weirder things to be done.
             here = getattr(here, f_name_part)
         func = here
     except AttributeError as exc:
@@ -1092,8 +1088,10 @@ def find_files(
     strip_dir=False,
     include_base=False,
 ):
-    """Return all full file paths under the directory `in_dir` whose
-    *filenames* match the `fname_re` regexp (if not None)"""
+    """
+    Return all full file paths under the directory `in_dir` whose
+    *filenames* match the `fname_re` regexp (if not None).
+    """
     now = time.time()
     walk = os.walk(in_dir)
     if _prewalk:
@@ -1129,7 +1127,7 @@ def find_files(
         yield from file_list
 
 
-@memoize
+@Memoize
 def get_requests_session():
     """
     Singleton with the common requests session (for maximal connection reuse).
@@ -1221,7 +1219,7 @@ def request(
         reqr = session
 
     if data:
-        if isinstance(data, (bytes, unicode)):
+        if isinstance(data, (bytes, str)):
             # Assume the data is already serialised
             pass
         elif _dataser == "json":
@@ -1292,7 +1290,7 @@ def exclogwrap(func=None, name=None, log=logging):
 def repr_cut(some_str, length):
     if len(some_str) <= length:
         return some_str
-    return some_str[:length] + ("…" if isinstance(some_str, unicode) else "…")
+    return some_str[:length] + ("…" if isinstance(some_str, str) else "…")
 
 
 def slstrip(self, substring):
@@ -1363,6 +1361,34 @@ def find_caller(extra_depth=1, skip_packages=()):
             continue
         result = (codeobj.co_filename, frame.f_lineno, codeobj.co_name)
         break
+    return result
+
+
+_sh_find_unsafe = re.compile(r"[^\w@%+=:,./-]").search
+
+
+def sh_quote_prettier(value):
+    r"""
+    Quote a value for copypasteability in a posix commandline.
+
+    A more readable version than the `shlex.quote`.
+
+    >>> sh_quote_prettier("'one's one'")
+    "\\''one'\\''s one'\\'"
+    """
+    if not value:
+        return "''"
+    if _sh_find_unsafe(value) is None:
+        return value
+
+    # A shorter version: backslash-escaped single quote.
+    result = "'" + value.replace("'", "'\\''") + "'"
+    # Cleanup the empty excesses at the ends
+    _overedge = "''"
+    if result.startswith(_overedge):
+        result = result[len(_overedge) :]
+    if result.endswith(_overedge):
+        result = result[: -len(_overedge)]
     return result
 
 

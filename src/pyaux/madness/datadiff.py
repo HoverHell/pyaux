@@ -9,7 +9,7 @@ import sys
 
 import yaml
 
-from .base import colorize_diff, colorize_yaml
+from ..base import colorize_diff, colorize_yaml
 
 __all__ = (
     "_dumprepr",
@@ -132,7 +132,8 @@ def word_diff_color(val1, val2, add="\x1b[32m", rem="\x1b[31;01m", clear="\x1b[3
     diffs = list(diffs)
     diffs_colored = (_postprocess(line) for line in diffs)
     # return diffs_colored
-    print("".join(diffs_colored))
+    sys.stdout.write("".join(diffs_colored))
+    sys.stdout.write("\n")
 
 
 def _diff_datadiff_data(val1, val2, n=3, **kwa):
@@ -169,4 +170,5 @@ def datadiff(val1, val2, colorize=False, colorize_as_yaml=False, **kwargs):
 def p_datadiff(val1, val2, **kwargs):
     """Print the values diff"""
     # TODO: yaml coloring *and* diff coloring?
-    print(datadiff(val1, val2, **kwargs))
+    sys.stdout.write(datadiff(val1, val2, **kwargs))
+    sys.stdout.write("\n")

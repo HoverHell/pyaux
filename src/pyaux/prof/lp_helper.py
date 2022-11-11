@@ -1,20 +1,22 @@
-""" Various methods and helpers for code profiling (especially
-LineProfiler)
+"""
+Various methods and helpers for code profiling (especially LineProfiler).
 
 Example usage of this all:
-  * `
+
     prof.wrap_packages(['mypackage.somemodule'])
     try:
         run_it_all()
     finally:
         prof.profile.dump_stats('some_file.prof')
-    `
-  * `python -m line_profiler some_file.prof`
-  * Bang you head into the output
+
+`python -m line_profiler some_file.prof`
+
+Bang you head into the output.
+
 It is also possible to use `get_prof()` before all other imports and add
- `@profile` wrapper specifically to the target functions, instead of
- using the `wrap_packages`; it is also possible to use `kernprof.py`
- instead of `get_prof` and this whole module.
+`@profile` wrapper specifically to the target functions, instead of
+using the `wrap_packages`; it is also possible to use `kernprof.py`
+instead of `get_prof` and this whole module.
 """
 
 from __future__ import annotations
@@ -22,6 +24,12 @@ from __future__ import annotations
 import inspect
 import sys
 import traceback
+
+__all__ = (
+    "get_prof",
+    "wrap_packages",
+    "stgrab",
+)
 
 
 class DummyProfiler:
@@ -33,7 +41,7 @@ class DummyProfiler:
     def __enter__(self):
         return self  # do nothing as a context
 
-    ## Do nothing for other LineProfiler-like functions
+    # Do nothing for other LineProfiler-like functions
     __exit__ = enable = disable = dump_stats = print_stats = lambda self, *ar, **kwa: None
 
 
@@ -42,7 +50,7 @@ profile_type = None
 
 
 def _check_add_builtin(force=True):
-    ## Do the scary global-state stuff
+    # Do the scary global-state stuff
     global profile
 
 
@@ -52,8 +60,8 @@ def get_prof(proftype="lp", add_builtin=True):
     global profile
     global profile_type
     if profile is not None and profile_type == proftype:
-        pass  ## ... nothing to generate.
-    ## Otherwise - make one.
+        pass  # ... nothing to generate.
+    # Otherwise - make one.
     elif proftype == "lp":
         import line_profiler
 
@@ -79,12 +87,12 @@ def _wrap_class_stuff(the_class, wrapf):
             if getattr(i_val, "__prof_wrapped__", False):
                 continue  # do not wrap wrapped wrapstuff.
             # XXX: do the sourcefilename check too?
-            print(f"    Method wrapping: {i_name}")
+            sys.stderr.write(f"    Method wrapping: {i_name}\n")
             wrapped_val = wrapf(i_val)
             setattr(wrapped_val, "__prof_wrapped__", True)
             setattr(the_class, i_name, wrapped_val)
-        except Exception as e:
-            print(f"     ... Failed ({i_name!r}). {e!r}")
+        except Exception as exc:
+            sys.stderr.write(f"     ... Failed ({i_name!r}). {exc!r}\n")
 
 
 def _wrap_module_stuff(module, wrapf):
@@ -105,24 +113,24 @@ def _wrap_module_stuff(module, wrapf):
                 continue  # do not wrap wrapped wrapstuff.
             try:
                 i_filename = inspect.getsourcefile(i_val)
-            except Exception as e:
+            except Exception:
                 i_filename = None
             if i_filename is not None and i_filename != module_filename:
-                ## Skip stuff that we know isn't from that module
+                # Skip stuff that we know isn't from that module
                 continue
             elif i_filename is None:
-                ## ... and skip, too, all the built-ins, non-(module/class/function/...)
+                # ... and skip, too, all the built-ins, non-(module/class/function/...)
                 continue
             if inspect.isclass(i_val):
-                print(f"  Class wrapping: {i_name}")
+                sys.stderr.write(f"  Class wrapping: {i_name}\n")
                 _wrap_class_stuff(i_val, wrapf=wrapf)
             elif callable(i_val):
-                print(f"  Wrapping: {i_name}")
+                sys.stderr.write(f"  Wrapping: {i_name}\n")
                 wrapped_val = wrapf(i_val)
                 setattr(wrapped_val, "__prof_wrapped__", True)
                 setattr(module, i_name, wrapped_val)
-        except Exception as e:
-            print(f"  ... Failed ({i_name!r}). {e!r}")
+        except Exception as exc:
+            sys.stderr.write(f"  ... Failed ({i_name!r}). {exc!r}\n")
 
 
 # TODO: make it possible to specify down to particular objects to wrap.
@@ -140,20 +148,22 @@ def wrap_packages(packages, wrapf=None, verbose=True):
         for pkg_to_wrap in packages:
             if pkg_name.startswith(pkg_to_wrap):
                 if verbose:
-                    print(f"Module-wrapping: {pkg_name}")
+                    sys.stderr.write(f"Module-wrapping: {pkg_name}\n")
                 try:
                     _wrap_module_stuff(pkg, wrapf)
                 except Exception as exc:
-                    print(" ... Failed.", exc)
+                    sys.stderr.write(" ... Failed.\n", exc)
                 break  # make sure not to wrap it many times.
     if verbose:
-        print("Wrapping done.")
+        sys.stderr.write("Wrapping done.\n")
 
 
-## TODO?: put into the main prof module
+# TODO?: put into the main prof module
 def stgrab(sig, frame):
-    """function that is supposed to be addd as a signal handler
-    (e.g. on USR2) and prints the stack trace when called"""
+    """
+    function that is supposed to be added as a signal handler (e.g. on USR2),
+    prints the stack trace when called.
+    """
     ofra = inspect.getouterframes(frame)
     d = dict(_frame=frame)
     d.update(frame.f_globals)
@@ -162,20 +172,14 @@ def stgrab(sig, frame):
     trace_formatted = "".join(traceback.format_list(trace_data))
     trace_last_src = "".join(ofra[0][4] or [])
     if stgrab.check_polling and any((v in trace_last_src) for v in stgrab.poll_codes):
-        print(" ... Polling ...")  # don't spam that specific traceback
+        sys.stderr.write(" ... Polling ...\n")  # don't spam that specific traceback
         return
-    print(
-        f" ------- {stgrab.header_str}\n"
-        +
-        # "Framedata: %s\n" % (name, d) +
-        f"Traceback:\n{trace_formatted}"
-        + ""
-    )
+    sys.stderr.write(f" ------- {stgrab.header_str}\n" "Traceback:\n" f"{trace_formatted}\n")
 
 
-## Funny place to put that:
+# Funny place to put that:
 stgrab.header_str = "Stack trace in process:"
 stgrab.check_polling = True
-## Source code pieces of the known lines that do polling.
-## MAYBEDO: add other known polling lines
+# Source code pieces of the known lines that do polling.
+# MAYBEDO: add other known polling lines
 stgrab.poll_codes = ["   l = self._poller.poll(timeout"]

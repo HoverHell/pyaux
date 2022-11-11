@@ -7,12 +7,18 @@ from __future__ import annotations
 
 import sys
 
+from .. import aio
 from ..aio import *
-from . import aio, madness_datadiff, madness_oneliny, madness_reprstuff, madness_stuffstuff
-from .madness_datadiff import *
-from .madness_oneliny import *
-from .madness_reprstuff import *
-from .madness_stuffstuff import *
+from . import (
+    datadiff as madness_datadiff,
+    oneliny as madness_oneliny,
+    reprstuff as madness_reprstuff,
+    stuffstuff as madness_stuffstuff,
+)
+from .datadiff import *
+from .oneliny import *
+from .reprstuff import *
+from .stuffstuff import *
 
 __all__ = (
     # __builtin__ hacks
@@ -47,7 +53,7 @@ try:
     __all_stuff.update(pprint=pprint, pretty=pretty, pformat=pretty)
     __all_stuff_e.update(pprint=pprint, pretty=pretty, pformat=pretty)
 except ImportError as __e:
-    print("What, no IPython?", __e, file=sys.stderr)
+    sys.stderr.write(f"What, no IPython? {__e!r}\n")
 
 
 # For explicit call:

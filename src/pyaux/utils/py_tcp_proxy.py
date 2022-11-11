@@ -124,7 +124,7 @@ class TheServer:
 
                 try:
                     data = sck.recv(self.buffer_size)
-                except Exception as exc:
+                except Exception:
                     _log.exception("...")
                     continue
 
@@ -245,7 +245,7 @@ def main():
         from pyaux import runlib
 
         runlib.init_logging(level=1)
-    except Exception as _exc:
+    except Exception:
         pass
 
     # Make a nicer datetime:
@@ -254,7 +254,7 @@ def main():
 
         converter = datetime.datetime.fromtimestamp
 
-        def formatTime(self, record, datefmt=None):
+        def formatTime(self, record, datefmt=None):  # noqa: N802 lowercase name
             def _proc(ct):
                 if _datefmt:
                     return ct.strftime(_datefmt)
@@ -277,7 +277,7 @@ def main():
     try:
         server.main_loop()
     except KeyboardInterrupt:
-        print("Ctrl C - Stopping server")
+        sys.stderr.write("Ctrl-C - Stopping server\n")
         sys.exit(1)
 
 

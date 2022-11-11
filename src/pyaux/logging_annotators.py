@@ -3,6 +3,7 @@ Logging: annotating filters
 
 https://docs.python.org/2/howto/logging-cookbook.html#adding-contextual-information-to-your-logging-output
 """
+from __future__ import annotations
 
 import logging
 import socket  # for hostnames
@@ -11,7 +12,7 @@ import time
 from .base import simple_memoize_argless
 
 __all__ = (
-    "time_diff_annotator",
+    "TimeDiffAnnotator",
     "short_hostname_annotator",
     "full_hostname_annotator",
 )
@@ -52,7 +53,7 @@ class Annotator(logging.Filter):
         return True
 
 
-class time_diff_annotator(Annotator):
+class TimeDiffAnnotator(Annotator):
     """A simple filter that adds `time_diff` to the record, which
     shows the time from the last log line of the same process. Mostly
     useful in development."""
@@ -114,8 +115,7 @@ celery_task_id_annotator = make_simple_annotating_filter(
 )
 
 
-class celery_process_name_annotator(Annotator):
-
+class CeleryProcessNameAnnotator(Annotator):
     attribute_name = "celery_process"
     skip_main_process = True
 

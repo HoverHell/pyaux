@@ -141,7 +141,7 @@ def get_traceback_frames(tb):
             frames.append(
                 {
                     "tb": tb,
-                    #'type': module_name.startswith('django.') and 'django' or 'user',
+                    # 'type': module_name.startswith('django.') and 'django' or 'user',
                     "filename": filename,
                     "function": function,
                     "lineno": lineno + 1,
@@ -160,7 +160,7 @@ def get_traceback_frames(tb):
 
 def _exc_safe_repr(exc_type, exc_value):
     """Mildly paranoid extraction of repr of exception"""
-    ## NOTE: returns a terminating newline. Strip if a problem
+    # NOTE: returns a terminating newline. Strip if a problem.
     return "".join(traceback.format_exception_only(exc_type, exc_value))
     # return (
     #  getattr(exc_type, '__module__', '<unknown module>'),
@@ -196,10 +196,10 @@ def render_exc_repr(exc_type, exc_value):
 
 
 def render_frames_data(frames, exc_type=None, exc_value=None):
-    ## A crappy way to do that compared to templates, but w/e really
+    # A crappy way to do that compared to templates, but w/e really
     res = ""
     if exc_type or exc_value:
-        ## Also convenient:
+        # Also convenient:
         res += _exc_safe_repr(exc_type, exc_value)
     if frames:
         res += "Traceback details:\n"
@@ -255,7 +255,7 @@ def advanced_info_safe(exc_type, exc_value, tb):
         try:
             info(exc_type, exc_value, tb)
         except Exception:
-            print("Everything is failing! Running the default excepthook.")
+            sys.stderr.write("Everything is failing! Running the default excepthook.\n")
             sys.__excepthook__(exc_type, exc_value, tb)
         raise e
 

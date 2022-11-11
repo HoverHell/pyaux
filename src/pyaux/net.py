@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import socket
+import sys
 
 
 def get_constants(
@@ -63,8 +64,8 @@ def gai_verbose(
     flags=0,
 ):
     """
-
-    :param addrconfig: return only address families (INET / INET6) that are configured on the current system.
+    :param addrconfig: return only address families (INET / INET6) that are
+    configured on the current system.
 
     :param canonname: populate the "canonname" field ("official name of the host").
 
@@ -170,4 +171,4 @@ def _gai_example():
 
 
 if __name__ == "__main__":
-    print(_gai_example())
+    sys.stdout.write(repr(_gai_example()) + "\n")

@@ -1,6 +1,7 @@
 """
 Helpers for using Highcharts / Highstock in an IPython notebook.
 """
+from __future__ import annotations
 
 import copy
 import datetime
@@ -19,7 +20,7 @@ def mk_uid():
     return "".join(random.choice(string.ascii_uppercase + string.digits) for _ in range(15))
 
 
-def Highcharts_old(
+def highcharts_old(
     chart_def=None,
     chart_def_json=None,
     height=400,
@@ -48,7 +49,9 @@ def Highcharts_old(
     <script src="%(hsscript)s"></script>
     <script src="http://code.highcharts.com/modules/exporting.src.js"></script>
 
-    <div id="chart_%(unique_id)s" style="min-width: %(min_width)spx; height: %(height)ipx; margin: 0 auto">Re-run cell if chart is not shown ...</div>
+    <div id="chart_%(unique_id)s"
+        style="min-width: %(min_width)spx; height: %(height)ipx; margin: 0 auto"
+        >Re-run cell if chart is not shown ...</div>
     <script>
         do_chart_%(unique_id)s = function() {
             $('#chart_%(unique_id)s').highcharts(%(hstag)s%(chart_def_json)s);
@@ -63,7 +66,7 @@ def Highcharts_old(
     return res
 
 
-def RunJS(js, delayed=50):
+def run_js(js, delayed=50):
     context = dict(js=js, unique_id=mk_uid(), delayed=delayed)
     if not delayed:
         html = (
@@ -89,7 +92,7 @@ def RunJS(js, delayed=50):
     return HTML(html)
 
 
-def Highcharts(chart_def=None, width=1800, height=800, highstock=True, **kwargs):
+def display_highcharts(chart_def=None, width=1800, height=800, highstock=True, **kwargs):
     if highstock:
         from highcharts import Highstock
 

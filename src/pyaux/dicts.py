@@ -1,15 +1,15 @@
 """
 Various dict-related special classes.
 
->>> mod = remvdodd([(1, 1), (2, 1.4), (1, 2)])
+>>> mod = REMVDODD([(1, 1), (2, 1.4), (1, 2)])
 >>> mod
-remvdodd(1: 1, 2: 1.4, 1: 2)
+REMVDODD(1: 1, 2: 1.4, 1: 2)
 >>> mod['mod'] = mod
 >>> mod
-remvdodd(1: 1, 2: 1.4, 1: 2, 'mod': ...)
+REMVDODD(1: 1, 2: 1.4, 1: 2, 'mod': ...)
 >>> mod.modmod = mod['mod']
 >>> mod
-remvdodd(1: 1, 2: 1.4, 1: 2, 'mod': ..., 'modmod': ...)
+REMVDODD(1: 1, 2: 1.4, 1: 2, 'mod': ..., 'modmod': ...)
 >>> import copy
 >>> mc = copy.deepcopy(mod)
 >>> mod.mod is mod.mod, mc.mod is not mod.mod
@@ -19,120 +19,132 @@ remvdodd(1: 1, 2: 1.4, 1: 2, 'mod': ..., 'modmod': ...)
 True
 >>> mcc.clear()
 >>> mcc
-remvdodd()
+REMVDODD()
 >>> mod
-remvdodd(1: 1, 2: 1.4, 1: 2, 'mod': ..., 'modmod': ...)
+REMVDODD(1: 1, 2: 1.4, 1: 2, 'mod': ..., 'modmod': ...)
 >>> mod.mod is mod
 True
 >>> mod.update(u1='y')
 >>> mod
-remvdodd(1: 1, 2: 1.4, 1: 2, 'mod': ..., 'modmod': ..., 'u1': 'y')
+REMVDODD(1: 1, 2: 1.4, 1: 2, 'mod': ..., 'modmod': ..., 'u1': 'y')
 >>> mod.update_inplace([(2, 2.6), (3, 3.6)])
 >>> mod
-remvdodd(1: 1, 2: 2.6, 1: 2, 'mod': ..., 'modmod': ..., 'u1': 'y', 3: 3.6)
+REMVDODD(1: 1, 2: 2.6, 1: 2, 'mod': ..., 'modmod': ..., 'u1': 'y', 3: 3.6)
 >>> mod.pop(3)
 3.6
 >>> mod.update_replace([(1, -1)])
 >>> mod
-remvdodd(2: 2.6, 'mod': ..., 'modmod': ..., 'u1': 'y', 1: -1)
+REMVDODD(2: 2.6, 'mod': ..., 'modmod': ..., 'u1': 'y', 1: -1)
 >>> del mod['modmod']
 >>> mod
-remvdodd(2: 2.6, 'mod': ..., 'u1': 'y', 1: -1)
+REMVDODD(2: 2.6, 'mod': ..., 'u1': 'y', 1: -1)
 >>> mod._data
-((2, 2.6), ('mod', remvdodd(2: 2.6, 'mod': ..., 'u1': 'y', 1: -1)), ('u1', 'y'), (1, -1))
+((2, 2.6), ('mod', REMVDODD(2: 2.6, 'mod': ..., 'u1': 'y', 1: -1)), ('u1', 'y'), (1, -1))
 >>> mod._data is not mod.items(), mod._data == tuple(mod.items())
 (True, True)
 >>> mod[1] = 3
 >>> mod
-remvdodd(2: 2.6, 'mod': ..., 'u1': 'y', 1: -1, 1: 3)
+REMVDODD(2: 2.6, 'mod': ..., 'u1': 'y', 1: -1, 1: 3)
 >>> mod.update(u1='n')
 >>> mod
-remvdodd(2: 2.6, 'mod': ..., 'u1': 'y', 1: -1, 1: 3, 'u1': 'n')
+REMVDODD(2: 2.6, 'mod': ..., 'u1': 'y', 1: -1, 1: 3, 'u1': 'n')
 >>> mod
-remvdodd(2: 2.6, 'mod': ..., 'u1': 'y', 1: -1, 1: 3, 'u1': 'n')
->>> list(mod.lists())
-[(2, [2.6]), ('mod', [remvdodd(2: 2.6, 'mod': ..., 'u1': 'y', 1: -1, 1: 3, 'u1': 'n')]), ('u1', ['y', 'n']), (1, [-1, 3])]
+REMVDODD(2: 2.6, 'mod': ..., 'u1': 'y', 1: -1, 1: 3, 'u1': 'n')
+>>> list(mod.lists())[:2]
+[(2, [2.6]), ('mod', [REMVDODD(2: 2.6, 'mod': ..., 'u1': 'y', 1: -1, 1: 3, 'u1': 'n')])]
+>>> list(mod.lists())[2:]
+[('u1', ['y', 'n']), (1, [-1, 3])]
 >>> mod.popitem()
 ('u1', 'n')
 >>> mod.popitem(last=False)
 (2, 2.6)
 >>> mod
-remvdodd('mod': ..., 'u1': 'y', 1: -1, 1: 3)
+REMVDODD('mod': ..., 'u1': 'y', 1: -1, 1: 3)
 >>> mod.deduplicate()
 >>> mod
-remvdodd('mod': ..., 'u1': 'y', 1: 3)
+REMVDODD('mod': ..., 'u1': 'y', 1: 3)
 >>> mod.u1 = 'yy'
 >>> mod
-remvdodd('mod': ..., 'u1': 'y', 1: 3, 'u1': 'yy')
+REMVDODD('mod': ..., 'u1': 'y', 1: 3, 'u1': 'yy')
 >>> mod.deduplicate(how='first')
 >>> mod
-remvdodd('mod': ..., 'u1': 'y', 1: 3)
+REMVDODD('mod': ..., 'u1': 'y', 1: 3)
 >>> list(reversed(mod))
 [1, 'u1', 'mod']
 >>> mod
-remvdodd('mod': ..., 'u1': 'y', 1: 3)
+REMVDODD('mod': ..., 'u1': 'y', 1: 3)
 >>> mod.setdefault(5, 2)
 2
 >>> mod
-remvdodd('mod': ..., 'u1': 'y', 1: 3, 5: 2)
+REMVDODD('mod': ..., 'u1': 'y', 1: 3, 5: 2)
 >>> mod.setdefault(5, 1)
 2
 >>> mod
-remvdodd('mod': ..., 'u1': 'y', 1: 3, 5: 2)
+REMVDODD('mod': ..., 'u1': 'y', 1: 3, 5: 2)
 """
-# not tested:  [iter](keys|values|lists), pop, fromkeys, eq
-# ipy to doctest:  sed -r 's/^In[^:]+: />>> /; s/^Out[^:]+: //; /^ *$/ d'
-# test to locals:  from pyaux import dicts; reload(dicts); from pyaux.dicts import *; exec '\n'.join(v[4:] for v in dicts.__doc__.split('\n\n')[-1].splitlines() if v.startswith('>>> '))
 
 from __future__ import annotations
 
 import copy
 import itertools
 from collections.abc import MutableMapping as MutableMapping
+from typing import Any
 
 from pyaux.iterables import iterator_is_over, uniq
 
 __all__ = (
     "dict_fget",
     "dict_fsetdefault",
-    "dotdict",
-    "dotdictify",
+    "DotDict",
+    "Dotdictify",
     "dict_is_subset",
     "dict_merge",
     "ODReprMixin",
     "OrderedDict",
     "MVOD",
     "hasattr_x",
-    "dotdictx",
-    "defaultdictx",
+    "DotDictExt",
+    "DefaultDictExt",
     "DefaultDotDictMixin",
-    "dodd",
-    "mvdodd",
-    "remvdodd",
-    "redodd",
+    "DODD",
+    "MVDODD",
+    "REMVDODD",
+    "REDODD",
 )
 
 
-def dict_fget(D, k, d):
-    """dict_get(D, k, d) -> D[k] if k in D, else d().
+def dict_fget(dictobj, key, default):
+    """
+    `dict_fget(dictobj, key, default)`
+    ->
+    `dictobj[key] if key in dictobj, else default().`
     - a lazy-evaluated dict.get.
-    (d is mandatory but can be None)."""
-    if k in D:
-        return D[k]
-    return d() if d is not None else d
+    (`default` is mandatory but can be None).
+    """
+    try:
+        return dictobj[key]
+    except KeyError:
+        if default is None:
+            return None
+        return default()
 
 
-def dict_fsetdefault(D, k, d):
-    """dict_fsetdefault(D, k, d) -> dict_fget(D, k, d), also set D[k]=d() if k not in D.
+def dict_fsetdefault(dictobj, key, default):
+    """
+    `dict_fsetdefault(dictobj, key, default)`
+    ->
+    `dictobj[key] if key in dictobj else dictobj.setdefault(key, default())`
     - a lazy-evaluated dict.setdefault.
-    (d is mandatory but can be None)."""
+    (`default` is mandatory but can be None).
+    """
     # Can be `D[k] = dict_fget(D, k, d); return D[k]`, but let's micro-optimize.
     # NOTE: not going over 'keyerror' for the defaultdict or alike classes.
-    if k in D:
-        return D[k]
-    v = d() if d is not None else d
-    D[k] = v
-    return v
+    try:
+        return dictobj[key]
+    except KeyError:
+        value = default() if default is not None else default
+        dictobj[key] = value
+        return value
 
 
 def dict_is_subset(smaller_obj, larger_obj, recurse_iterables=False, require_structure_match=True):
@@ -255,7 +267,7 @@ def dict_merge(
     return target
 
 
-class dotdict(dict):
+class DotDict(dict):
     """A simple dict subclass with items also available over attributes"""
 
     def __getattr__(self, name: str) -> Any:
@@ -268,10 +280,31 @@ class dotdict(dict):
         self[name] = value
 
 
+class DotDictExt(dict):
+    """
+    A dict subclass with items also available over
+    attributes. Skips the attributes starting with '_' (for
+    mixinability)
+    """
+
+    def __getattr__(self, name):
+        if name.startswith("__"):  # NOTE: two underscores.
+            return super().__getattr__(name)
+        try:
+            return self[name]
+        except KeyError as exc:
+            raise AttributeError(name) from exc
+
+    def __setattr__(self, name, value):
+        if name.startswith("_"):
+            return super().__setattr__(name, value)
+        self[name] = value
+
+
 _dotdictify_marker = object()
 
 
-class dotdictify(dict):
+class Dotdictify(dict):
     """Recursive automatic doctdict thingy"""
 
     def __init__(self, value=None):
@@ -284,14 +317,14 @@ class dotdictify(dict):
             raise TypeError("expected a dict")
 
     def __setitem__(self, key, value):
-        if isinstance(value, dict) and not isinstance(value, dotdictify):
-            value = dotdictify(value)
+        if isinstance(value, dict) and not isinstance(value, Dotdictify):
+            value = Dotdictify(value)
         dict.__setitem__(self, key, value)
 
     def __getitem__(self, key):
         found = self.get(key, _dotdictify_marker)
         if found is _dotdictify_marker:
-            found = dotdictify()
+            found = Dotdictify()
             dict.__setitem__(self, key, found)
         return found
 
@@ -657,7 +690,7 @@ class MultiValueDict(dict):
 # ######
 
 
-def _is_MultiValueDict(val, deep=False):
+def _is_multivaluedict(val, deep=False):
     """
     Check the object for MultiValueDict face (to support e.g. the
     django's one). Does not include MVODs.
@@ -669,8 +702,7 @@ def _is_MultiValueDict(val, deep=False):
         return False
     if deep:
         return any(cls.__name__ == "MultiValueDict" for cls in val.__class__.__mro__)
-    else:
-        return isinstance(val, dict)
+    return isinstance(val, dict)
 
 
 def _lists_group(items):
@@ -712,7 +744,7 @@ def _lists_ungroup(key_to_list_mapping):
     return result
 
 
-class MVOD_Common(ODReprMixin):
+class MVODCommon(ODReprMixin):
 
     _data_internal = ()
 
@@ -750,7 +782,7 @@ class MVOD_Common(ODReprMixin):
         arg = args[0] if args else []
         if isinstance(arg, MVOD):  # support init / update from antother MVOD
             arg = arg._data
-        elif _is_MultiValueDict(arg):  # Other `MultiValueDict`s
+        elif _is_multivaluedict(arg):  # Other `MultiValueDict`s
             arg = self._lists_ungroup(arg.lists())
         elif isinstance(arg, dict):
             arg = getattr(arg, "iteritems", arg.items)()
@@ -760,7 +792,7 @@ class MVOD_Common(ODReprMixin):
             # Append the keywords to the other stuff
             arg = itertools.chain(arg, kwds.items())
         if preprocess:
-            arg = self._preprocess_data(arg)  ## NOTE: iterates over it and makes a tuple.
+            arg = self._preprocess_data(arg)  # NOTE: iterates over it and makes a tuple.
         return arg
 
     # A set of properties to set the data with or without checking it
@@ -891,7 +923,7 @@ class MVOD_Common(ODReprMixin):
         WARN: `mvod == od` and `od == mvod` might have different
         results (because OD doesn't handle MVODs).
         """
-        if isinstance(other, (MVOD_Common, OrderedDict)):
+        if isinstance(other, (MVODCommon, OrderedDict)):
             # Quicker pre-check:
             if not dict.__eq__(self, other):
                 return False
@@ -899,7 +931,7 @@ class MVOD_Common(ODReprMixin):
             if self._data == tuple(other.items()):
                 return True
             return False
-        elif _is_MultiValueDict(other):
+        elif _is_multivaluedict(other):
             return self._data == tuple(self._lists_ungroup(other.lists()))
         else:
             return dict.__eq__(self, other)
@@ -912,7 +944,7 @@ class MVOD_Common(ODReprMixin):
     # XXX: some other methods?
 
 
-class MVOD(MVOD_Common, dict):
+class MVOD(MVODCommon, dict):
     """MultiValuedOrderedDict: A not-very-optimized (most write operations
     are at least O(N) with the re-hashing cost) somewhat-trivial verison.
     Stores a tuple of pairs as the actual data (in `_data`), uses it for
@@ -1013,7 +1045,7 @@ class MVOD(MVOD_Common, dict):
         return default
 
 
-class MVLOD(MVOD_Common, MultiValueDict):
+class MVLOD(MVODCommon, MultiValueDict):
     """
     A Multi-Value Ordered Dict with slow modification and fast
     value-list access.
@@ -1128,34 +1160,15 @@ class MVLOD(MVOD_Common, MultiValueDict):
         return dict.items(self)
 
 
-# NOTE: A simpler form is available in the `base`
-class dotdictx(dict):
-    """A dict subclass with items also available over
-    attributes. Skips the attributes starting with '_' (for
-    mixinability)"""
-
-    def __getattr__(self, name):
-        if name.startswith("__"):  # NOTE: two underscores.
-            return super().__getattr__(name)
-        try:
-            return self[name]
-        except KeyError as e:
-            raise AttributeError(e)
-
-    def __setattr__(self, name, value):
-        if name.startswith("_"):
-            return super().__setattr__(name, value)
-        self[name] = value
-
-
-class DotOrderedDict(dotdictx, OrderedDict):
+class DotOrderedDict(DotDictExt, OrderedDict):
     """..."""
 
 
-class defaultdictx(dict):
-    """A purepython & simplified `defaultdict` version that doesn't change
-    the interface except for the `_default` attribute (with the
-    default_factory)"""
+class DefaultDictExt(dict):
+    """
+    A purepython & simplified `defaultdict` version that doesn't change
+    the interface except for the `_default` attribute (with the default_factory)
+    """
 
     _default = None
 
@@ -1180,7 +1193,7 @@ def hasattr_x(obj, name):
     return True
 
 
-class DefaultDotDictMixin(dotdict, defaultdictx):
+class DefaultDotDictMixin(DotDict, DefaultDictExt):
     """A class that tries to combine DefaultDict and dotdict without causing
     too much of a mess. NOTE: skips _attributes on setattr and __attributes on
     getattr."""
@@ -1210,27 +1223,30 @@ class DefaultDotDictMixin(dotdict, defaultdictx):
         return super().__setattr__(name, value)  # __setitem__
 
 
-class dodd(DefaultDotDictMixin, OrderedDict):
-    """DotOrderedDefaultDict. Set `_default` attribute on it to a factory to
-    use it as a defaultdict. NOTE: ignores attributes starting with '_'"""
+class DODD(DefaultDotDictMixin, OrderedDict):
+    """
+    DotOrderedDefaultDict. Set `_default` attribute on it to a factory
+    to use it as a defaultdict.
+    NOTE: ignores attributes starting with '_'.
+    """
 
 
-class mvdodd(DefaultDotDictMixin, MVOD):
+class MVDODD(DefaultDotDictMixin, MVOD):
     pass
 
 
-class redodd(dodd):
+class REDODD(DODD):
     """Recursive dodd (by default)"""
 
 
-redodd._default = redodd
+REDODD._default = REDODD
 
 
-class remvdodd(mvdodd):
+class REMVDODD(MVDODD):
     """..."""
 
 
-remvdodd._default = remvdodd
+REMVDODD._default = REMVDODD
 
 
 # TODO: test... things...

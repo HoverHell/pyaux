@@ -5,9 +5,9 @@ from __future__ import annotations
 import sys
 import traceback
 
-from .base import o_repr
-from .madness_datadiff import _dumprepr
-from .madness_reprstuff import GenReprWrapWrap
+from ..base import o_repr
+from .datadiff import _dumprepr
+from .reprstuff import genreprwrap
 
 __all__ = (
     "_try",
@@ -31,9 +31,9 @@ def _try2(_function_thingie, *ar, **kwa):
     _exc_clss = kwa.pop("_exc_clss", Exception)
     # TODO?: return namedtuple?
     try:
-        return (_function_thingie(*ar, **kwa), None)
-    except _exc_clss as e:
-        return (None, e)
+        return _function_thingie(*ar, **kwa), None
+    except _exc_clss as exc:
+        return None, exc
 
 
 def _try(*ar, **kwa):
@@ -54,7 +54,7 @@ def _iter_ar(*args):
     return args
 
 
-@GenReprWrapWrap
+@genreprwrap
 def _filter(*ar):
     """Mostly the same as `filter(None, …)` but as a generator with
     conveniences."""
@@ -64,7 +64,7 @@ def _filter(*ar):
             yield i
 
 
-@GenReprWrapWrap
+@genreprwrap
 def _filter_n(*ar):
     """Filter out None specifically (also a generator with conveniences)"""
     it = _iter_ar(*ar)
@@ -75,7 +75,7 @@ def _filter_n(*ar):
 
 def _print(something):
     """Simple one-argument `print` one-liner; returns the argument"""
-    print(something)
+    print(something)  # noqa: T201 (print)
     return something
 
 
@@ -86,6 +86,7 @@ def _ipdbg(_a_function_thingie, *ar, **kwa):
     try:
         return _a_function_thingie(*ar, **kwa)
     except Exception as exc:
+        assert exc is not None
         _, _, sys.last_traceback = sys.exc_info()
         traceback.print_exc()
         ipdb.pm()
@@ -100,6 +101,7 @@ def _ipdbt(_a_function_thingie, *ar, **kwa):
     try:
         return _a_function_thingie(*ar, **kwa)
     except Exception as exc:
+        assert exc is not None
         _, _, sys.last_traceback = sys.exc_info()
         traceback.print_exc()
         ipdb.pm()
@@ -113,6 +115,7 @@ def _pdbg(_a_function_thingie, *ar, **kwa):
     try:
         return _a_function_thingie(*ar, **kwa)
     except Exception as exc:
+        assert exc is not None
         _, _, sys.last_traceback = sys.exc_info()
         traceback.print_exc()
         pdb.pm()
@@ -127,6 +130,7 @@ def _pdbt(_a_function_thingie, *ar, **kwa):
     try:
         return _a_function_thingie(*ar, **kwa)
     except Exception as exc:
+        assert exc is not None
         _, _, sys.last_traceback = sys.exc_info()
         traceback.print_exc()
         pdb.pm()
@@ -141,7 +145,7 @@ def _uprint(obj, ret=False):
     obj_repr = pretty(obj)
     if isinstance(obj_repr, bytes):  # py2
         obj_repr = obj_repr.decode("unicode-escape")
-    print(obj_repr)
+    print(obj_repr)  # noqa: T201 (print)
     if ret:
         return obj
     return None
@@ -153,7 +157,7 @@ def _yprint(obj, ret=False, **kwa):
     kwa.setdefault("default_flow_style", None)
     kwa.setdefault("allow_unsorted_dicts", True)
     res_text = _dumprepr(obj, **kwa)
-    print(res_text)
+    print(res_text)  # noqa: T201 (print)
     if ret:
         return obj
     return None
@@ -192,4 +196,4 @@ def _mrosources(cls, attname, raw=False, colorize=False):
 
 def p_o_repr(o, **kwa):
     kwa = dict(dict(_colors=True, _colors256=True), **kwa)
-    print(o_repr(o, **kwa))
+    print(o_repr(o, **kwa))  # noqa: T201 (print)

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from logging import handlers
 
 from .base import to_bytes
@@ -8,6 +10,38 @@ __all__ = (
 )
 
 
+EXAMPLE_RSYSLOG_CONFIG = r"""
+# WARNING: global settings.
+$MaxMessageSize 2049k
+$EscapeControlCharactersOnReceive off  # In case your logs aren't quite text.
+$RepeatedMsgReduction off
+$SystemLogRateLimitInterval 0
+$SystemLogRateLimitBurst 0
+# File permissions:
+$umask 0000
+$FileOwner syslog
+$DirOwner syslog
+# Makes it possible to set a group on the logging directory to give
+# write access to it.
+$FileCreateMode 0664
+$DirCreateMode 2775
+$CreateDirs on
+
+$template LogFormatPlain,"%msg:2:$%\n"
+# Make it possible to specify the target filename in the syslog tag.
+# NOTE: The root directory creation has to be done outside syslog, as
+# syslog normally doesn't have access to `mkdir /var/log/something`.
+# NOTE: the '.log' is appended automatically.
+
+$template LogDynFileAUTO,"/var/log/%syslogtag:R,ERE,1,DFLT:file__([a-zA-Z0-9_/.-]*)--end%.log"
+:syslogtag, regex, "file__[a-zA-Z0-9_/.-]*" ?LogDynFileAUTO;LogFormatPlain
+
+# NOTE: ampersand-tilde tells rsyslog to drop the lines that passed the
+# last filter line; i.e. kind-of 'propagate=False'
+& ~
+"""
+
+
 class TaggedSysLogHandlerBase(handlers.SysLogHandler):
     """
     A version of SysLogHandler that adds a tag to the logged line
@@ -16,37 +50,8 @@ class TaggedSysLogHandlerBase(handlers.SysLogHandler):
     Generally equivalent to using a formatter but semantically more
     similar to FileHandler's `filename` parameter.
 
-    Example rsyslog config:
-    In `/etc/rsyslog.d/01-dynamic-app-logging.conf`:
-
-        # WARN: global settings.
-        $MaxMessageSize 2049k
-        $EscapeControlCharactersOnReceive off  # In case your logs aren't quite text.
-        $RepeatedMsgReduction off
-        $SystemLogRateLimitInterval 0
-        $SystemLogRateLimitBurst 0
-        # File permissions:
-        $umask 0000
-        $FileOwner syslog
-        $DirOwner syslog
-        # Makes it possible to set a group on the logging directory to give
-        # write access to it.
-        $FileCreateMode 0664
-        $DirCreateMode 2775
-        $CreateDirs on
-
-        $template LogFormatPlain,"%msg:2:$%\n"
-        # Make it possible to specify the target filename in the syslog tag.
-        # NOTE: The root directory creation has to be done outside syslog, as
-        # syslog normally doesn't have access to `mkdir /var/log/something`.
-        # NOTE: the '.log' is appended automatically.
-        $template LogDynFileAUTO,"/var/log/%syslogtag:R,ERE,1,DFLT:file__([a-zA-Z0-9_/.-]*)--end%.log"
-        :syslogtag, regex, "file__[a-zA-Z0-9_/.-]*" ?LogDynFileAUTO;LogFormatPlain
-
-        # NOTE: ampersand-tilde tells rsyslog to drop the lines that passed the
-        # last filter line; i.e. kind-of 'propagate=False'
-        & ~
-
+    See an example rsyslog config in `EXAMPLE_RSYSLOG_CONFIG`.
+    Can be written into e.g. `/etc/rsyslog.d/01-dynamic-app-logging.conf`
     """
 
     def __init__(self, *args, **kwargs):

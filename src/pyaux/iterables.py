@@ -15,7 +15,7 @@ __all__ = (
     "reversed_lines",
     "uniq_g",
     "IterStat",
-    "IterMean",
+    "itermean",
     "chunks_g",
     "next_or_fdefault",
     "iterator_is_over",
@@ -161,7 +161,7 @@ class IterStat:
         return _sqrt(self.variance)
 
 
-def IterMean(iterable, dtype=float):
+def itermean(iterable, dtype=float):
     """Mean of an iterable"""
     res_sum, cnt = dtype(), dtype()
     for val in iterable:
