@@ -42,6 +42,8 @@ known = [
     "pandas",  # here and there
     "Pygments",  # json / yaml coloring
     "pylzma",  # helpers for it
+    "build",
+    "twine",
 ]
 req = [
     "requests[ssl]",

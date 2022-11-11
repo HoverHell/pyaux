@@ -259,7 +259,6 @@ def prepare(params: argparse.Namespace) -> int:
         fo.write(new_history_full)
 
     try:
-        update_version_in_file("setup.py", new_version, current_version=current_version)
         for filename in glob.glob(VERSION_FILES):
             update_version_in_file(filename, new_version, current_version=current_version)
     except ValueError as exc:
@@ -271,8 +270,8 @@ def prepare(params: argparse.Namespace) -> int:
 
 
 def check(params: argparse.Namespace) -> None:
-    run_sh_cmd("python setup.py develop")
-    run_sh_cmd("python setup.py test")
+    run_sh_cmd("pip install -e .")
+    run_sh_cmd("tox -e py310")
     if os.path.exists("test.sh"):
         run_sh("./test.sh")
 
@@ -319,8 +318,7 @@ def finalize(params: argparse.Namespace) -> int:
     run_sh_cmd("git push")
     run_sh_cmd("git push --tags")
 
-    run_sh_cmd("python setup.py sdist")
-    run_sh_cmd("python setup.py bdist_wheel")
+    run_sh_cmd("python -m build")
     run_sh_cmd("twine upload ./dist/*")
 
     LOGGER.debug("Done.")
