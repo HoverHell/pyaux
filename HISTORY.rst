@@ -3,6 +3,22 @@
 Release History
 ---------------
 
+3.0.0 (2022-11-11)
+++++++++++++++++++
+
+ - Update newrelease for pyproject (more)
+ - Update newrelease
+ - Minor rename
+ - Apply more of
+ - Fix some of the linting
+ - Apply `autoflake`
+ - Apply `pyupgrade --py37-plus`
+ - Apply `isort` and `black` after reconfiguration again
+ - Apply `isort` and `black`
+ - Apply src layout
+ - Switch to py3.7+
+
+
 2.11.0 (2021-03-25)
 +++++++++++++++++++
 
