@@ -10,6 +10,8 @@ import re
 import shlex
 import subprocess
 import sys
+from collections.abc import Sequence
+from typing import Any
 
 LOGLEVEL_EVERYTHING = 1
 HISTORY_FILE = os.environ.get("HISTORY_FILE", "HISTORY.rst")
@@ -27,29 +29,28 @@ VERSION_TAG = os.environ.get(
     # ans is to be replaced with the new version; without quotes.
     r"""(\n(?:__)?version(?:__)? = ['"])(?P<version>[0-9a-zA-Z.+-]+)(['"] *(?:#.*)?\n)""",
 )
-SETUP_VERSION_TAG = os.environ.get("SETUP_VERSION_TAG", VERSION_TAG)
-VERSION_FILES = os.environ.get("VERSION_FILES", "*/__init__.py")
+VERSION_FILES = os.environ.get("VERSION_FILES", "src/*/__init__.py")
 VERSION_TAG_TPL = os.environ.get("VERSION_TAG_TPL", "%(version)s")
 
 RELEASE_COMMIT_TPL = os.environ.get("RELEASE_COMMIT_TPL", "Release %(version)s")
 
 
-_log = logging.getLogger("_newrelease.py")
+LOGGER = logging.getLogger("_newrelease.py")
 
 
-def make_parser():
+def make_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Automatically prepare a new pypi release from git"
     )
 
     parser.add_argument(
         "cmd",
-        choices=("prepare", "check", "finalise"),
+        choices=("prepare", "check", "finalize"),
         nargs="?",
         default="prepare",
         help=(
             "Action to perform; usual workflow is 'prepare',"
-            " check `git status`, 'check', then 'finalise'."
+            " check `git status`, 'check', then 'finalize'."
         ),
     )
 
@@ -84,35 +85,39 @@ def make_parser():
         "--no-commit",
         dest="no_commit",
         action="store_true",
-        help="Do not commit changes (in `finalise`)",
+        help="Do not commit changes (in `finalize`)",
     )
 
     return parser
 
 
-def run_sh(*full_command):
-    _log.info("Running command: %r", full_command)
+def run_sh(*full_command: str) -> str:
+    LOGGER.info("Running command: %r", full_command)
     process = subprocess.Popen(
         full_command, stdin=subprocess.PIPE, shell=False, stdout=subprocess.PIPE
     )
     stdout, _ = process.communicate()
-    _log.debug("Return code: %r", process.returncode)
+    LOGGER.debug("Return code: %r", process.returncode)
     assert process.returncode == 0
-    return stdout
+    return stdout.decode()
 
 
-def run_sh_cmd(cmd, **kwa):
+def run_sh_cmd(cmd: str, **kwa: Any) -> str:
     full_command = shlex.split(cmd)
     return run_sh(*full_command, **kwa)
 
 
-def _inc_ver_val(val):
+def _inc_ver_val(val: str) -> str:
     # NOTE: strips non-digit part of the version
-    val_digits = re.search("^([0-9]+)", str(val)).group(1)
+    rex = r"^([0-9]+)"
+    val_digits_match = re.search(rex, str(val))
+    if not val_digits_match:
+        raise ValueError(f"Value {val!r} did not match regex {rex!r}.")
+    val_digits = val_digits_match.group(1)
     return str(int(val_digits) + 1)
 
 
-def _inc_ver(parts, num):
+def _inc_ver(parts: Sequence[str], num: int) -> list[str]:
     """Increment `num`th part of the version.
 
     >>> ver_parts = ['1', '2', '3hotfix1']
@@ -123,10 +128,14 @@ def _inc_ver(parts, num):
     >>> _inc_ver(ver_parts, 2)  # non-digit part is stripped
     ['1', '2', '4']
     """
-    return parts[:num] + [_inc_ver_val(parts[num])] + ["0"] * (len(parts) - 1 - num)
+    return [
+        *parts[:num],
+        _inc_ver_val(parts[num]),
+        *(["0"] * (len(parts) - 1 - num)),
+    ]
 
 
-def update_version_in_text(text, new_version, current_version=None):
+def update_version_in_text(text: str, new_version: str, current_version: str | None = None) -> str:
     match = re.search(VERSION_TAG, text)
     if match is None:
         raise ValueError("Version not found", text)
@@ -134,7 +143,7 @@ def update_version_in_text(text, new_version, current_version=None):
     pre_tag, current_actual_ver, post_tag = match.groups()
     if current_version is not None:
         if current_version != current_actual_ver:
-            _log.error(
+            LOGGER.error(
                 "Found version %r does not match expected %r",
                 current_actual_ver,
                 current_version,
@@ -146,7 +155,7 @@ def update_version_in_text(text, new_version, current_version=None):
     return new_text
 
 
-def update_version_in_file(filename, new_version, **kwa):
+def update_version_in_file(filename: str, new_version: str, **kwa: Any) -> str:
     with open(filename) as fo:
         text = fo.read()
 
@@ -162,39 +171,41 @@ def update_version_in_file(filename, new_version, **kwa):
     return new_text
 
 
-def get_current_version(text=None):
-    """Obtain the current actual version from setup.py.
-
-    Mainly intended for `finalise`.
+def get_current_version(text: str | None = None) -> str:
     """
+    Obtain the current actual version from `pyproject.toml`
+
+    Mainly intended for `finalize`.
+    """
+    filename = next(iter(glob.glob(VERSION_FILES)))
     if text is None:
-        with open("setup.py") as fo:
+        with open(filename) as fo:
             text = fo.read()
 
     match = re.search(VERSION_TAG, text)
     if not match:
-        raise ValueError("Could not find version in setup.py")
+        raise ValueError(f"Could not find version in {filename} with regex {VERSION_TAG!r}.")
 
-    return match.group(2)
+    return match.group("version")
 
 
-def get_git_mods():
+def get_git_mods() -> str:
     return run_sh_cmd("git status --porcelain")
 
 
-def get_git_taint():
+def get_git_taint() -> str:
     return run_sh_cmd("git clean -d -x -n")
 
 
-def prepare(params):
+def prepare(params: argparse.Namespace) -> int:
     if not params.allow_unclean:
         mods = get_git_mods()
         if mods.strip():
-            _log.critical("Cannot proceed as git repo has modifications:\n%r", mods)
+            LOGGER.critical("Cannot proceed as git repo has modifications:\n%r", mods)
             return 14
         taint = get_git_taint()
         if taint.strip():
-            _log.critical("Cannot proceed as git repo is not clean:\n%r", taint)
+            LOGGER.critical("Cannot proceed as git repo is not clean:\n%r", taint)
             return 13
 
     with open(HISTORY_FILE) as fo:
@@ -202,10 +213,12 @@ def prepare(params):
 
     history_tag = HISTORY_TAG
     history_parts = re.split(history_tag, history, flags=re.MULTILINE)
-    _log.debug("History parts: %r", [val[:10] for val in history_parts])
+    LOGGER.debug("History parts: %r", [val[:10] for val in history_parts])
     history_versions = history_parts[-1]
 
     current_version_match = re.search(HISTORY_VERSION_TAG, history_versions, re.MULTILINE)
+    if not current_version_match:
+        raise ValueError(f"History did not have a regex match for {HISTORY_VERSION_TAG!r}")
     current_version = current_version_match.group(1)
     today = datetime.date.today().isoformat()
     version_parts = current_version.split(".")
@@ -221,13 +234,13 @@ def prepare(params):
 
         new_version = ".".join(version_parts)
 
-    _log.debug("New version: %s", new_version)
+    LOGGER.debug("New version: %s", new_version)
 
     version_tag = VERSION_TAG_TPL % dict(version=current_version)
     git_history = run_sh("git", "log", f"{version_tag}..HEAD", "--format=format: - %s")
     if isinstance(git_history, bytes):
         git_history = git_history.decode("utf-8", errors="replace")
-    _log.debug("Git history: %r", git_history)
+    LOGGER.debug("Git history: %r", git_history)
 
     new_history_header = f"{new_version} ({today})"
     new_history_header_full = "{}\n{}".format(
@@ -240,7 +253,7 @@ def prepare(params):
         history_versions,
     )
     new_history_full = "".join(history_parts[:-1] + [new_history_versions])
-    _log.log(LOGLEVEL_EVERYTHING, "New history: \n%s", new_history_full)
+    LOGGER.log(LOGLEVEL_EVERYTHING, "New history: \n%s", new_history_full)
 
     with open(HISTORY_FILE, "w") as fo:
         fo.write(new_history_full)
@@ -250,33 +263,34 @@ def prepare(params):
         for filename in glob.glob(VERSION_FILES):
             update_version_in_file(filename, new_version, current_version=current_version)
     except ValueError as exc:
-        _log.critical("Error updating version: %r", exc)
+        LOGGER.critical("Error updating version: %r", exc)
         return 2
 
-    _log.info("Done")
+    LOGGER.info("Done")
+    return 0
 
 
-def check(params):
+def check(params: argparse.Namespace) -> None:
     run_sh_cmd("python setup.py develop")
     run_sh_cmd("python setup.py test")
     if os.path.exists("test.sh"):
         run_sh("./test.sh")
 
 
-def finalise(params):
+def finalize(params: argparse.Namespace) -> int:
     try:
         version = get_current_version()
     except ValueError as exc:
-        _log.critical("Error getting current version: %r", exc)
+        LOGGER.critical("Error getting current version: %r", exc)
         return 2
 
-    _log.info("Found current version: %r", version)
+    LOGGER.info("Found current version: %r", version)
 
     if not params.no_commit:
         mods = get_git_mods()
         if not mods.strip():
-            _log.critical(
-                "Finalise should be called after `prepare` made the"
+            LOGGER.critical(
+                "Finalize should be called after `prepare` made the"
                 " changes and while they are not committed yet; alas, no"
                 " changes are found by git"
             )
@@ -284,11 +298,11 @@ def finalise(params):
 
     taint = get_git_taint()
     if taint.strip():
-        _log.critical(
+        LOGGER.critical(
             (
                 "There are git-untracked files which should not exist;"
                 " please run `git clean -d -x -f` to remove them before"
-                " using `finalise`:\n%s"
+                " using `finalize`:\n%s"
             ),
             taint,
         )
@@ -309,10 +323,11 @@ def finalise(params):
     run_sh_cmd("python setup.py bdist_wheel")
     run_sh_cmd("twine upload ./dist/*")
 
-    _log.debug("Done.")
+    LOGGER.debug("Done.")
+    return 0
 
 
-def main(args=None):
+def main(args: Sequence[str] | None = None) -> int:
     parser = make_parser()
     params = parser.parse_args(args)
 
@@ -326,8 +341,9 @@ def main(args=None):
 
     if params.cmd == "prepare":
         return prepare(params)
-    elif params.cmd == "finalise":
-        return finalise(params)
+    if params.cmd == "finalize":
+        return finalize(params)
+    return 1
 
 
 if __name__ == "__main__":
