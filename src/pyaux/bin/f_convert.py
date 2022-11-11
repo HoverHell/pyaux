@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-''' Serialization formats converter '''
+""" Serialization formats converter """
 
 from __future__ import annotations
 
@@ -11,11 +11,11 @@ from pyaux.iterables import prefetch_first
 
 
 def _bytes_stdin():
-    return getattr(sys.stdin, 'buffer', sys.stdin)
+    return getattr(sys.stdin, "buffer", sys.stdin)
 
 
 def _bytes_stdout():
-    return getattr(sys.stdout, 'buffer', sys.stdout)
+    return getattr(sys.stdout, "buffer", sys.stdout)
 
 
 # ARG_TRUES = ('yes', 'true', 't', 'y', 1)
@@ -40,50 +40,57 @@ def _bytes_stdout():
 
 
 def cmd_make_parser(**kwa):
-    parser = argparse.ArgumentParser(
-        description='Serialization formats converter')
+    parser = argparse.ArgumentParser(description="Serialization formats converter")
     parser.add_argument(
-        '-i', '--input',
+        "-i",
+        "--input",
         default=_bytes_stdin(),
-        type=argparse.FileType('rb'),
-        help='Source file; empty to use stdin',
+        type=argparse.FileType("rb"),
+        help="Source file; empty to use stdin",
     )
     parser.add_argument(
-        '-f', '--input-format',
-        default='auto',
-        choices=('auto', 'json', 'msgp', 'msgpack', 'yaml'),
-        help='Serialization format of the input',
+        "-f",
+        "--input-format",
+        default="auto",
+        choices=("auto", "json", "msgp", "msgpack", "yaml"),
+        help="Serialization format of the input",
     )
     parser.add_argument(
-        '-cp', '--input-encoding',
-        default='utf-8',
+        "-cp",
+        "--input-encoding",
+        default="utf-8",
         help=(
-            'Character encoding for the input;'
+            "Character encoding for the input;"
             ' use "" to disable when possible;'
-            ' mostly for msgpack'
+            " mostly for msgpack"
         ),
     )
     parser.add_argument(
-        '-t', '--output-format',
-        default='yaml',
-        choices=('json', 'msgp', 'msgpack', 'yaml'),
-        help='Serialization format for the input',
+        "-t",
+        "--output-format",
+        default="yaml",
+        choices=("json", "msgp", "msgpack", "yaml"),
+        help="Serialization format for the input",
     )
     parser.add_argument(
-        '-ocp', '--output-encoding',
-        default='utf-8',
-        help='Character encoding for the output',
+        "-ocp",
+        "--output-encoding",
+        default="utf-8",
+        help="Character encoding for the output",
     )
     parser.add_argument(
-        '-o', '--output',
+        "-o",
+        "--output",
         default=_bytes_stdout(),
-        type=argparse.FileType('wb'),
-        help='Destination file; empty to use stdout',
+        type=argparse.FileType("wb"),
+        help="Destination file; empty to use stdout",
     )
 
     parser.add_argument(
-        '-od', '--original-data-on-failure',
-        dest='original_data_on_failure', action='store_true',
+        "-od",
+        "--original-data-on-failure",
+        dest="original_data_on_failure",
+        action="store_true",
         help=(
             "Dump the input data on (de)serialization failure"
             " (useful when parsing the output with the eyes)"
@@ -91,41 +98,48 @@ def cmd_make_parser(**kwa):
         ),
     )
     parser.add_argument(
-        '-nod', '--no-original-data-on-failure',
-        dest='original_data_on_failure', action='store_false',
-        help="Do not dump the input data on (de)serialization failure")
+        "-nod",
+        "--no-original-data-on-failure",
+        dest="original_data_on_failure",
+        action="store_false",
+        help="Do not dump the input data on (de)serialization failure",
+    )
     parser.set_defaults(original_data_on_failure=True)
 
     # # YAML
     parser.add_argument(
-        '-yf', '--no-default-flow-style',
-        dest='default_flow_style', action='store_false',
+        "-yf",
+        "--no-default-flow-style",
+        dest="default_flow_style",
+        action="store_false",
         help="pyyaml's `default_flow_style=False` (generally larger output) (default is None)",
     )
     parser.add_argument(
-        '-yx', '--default-flow-style',
-        dest='default_flow_style', action='store_true',
+        "-yx",
+        "--default-flow-style",
+        dest="default_flow_style",
+        action="store_true",
         help="pyyaml's `default_flow_style=True` (more json-like) (default is None)",
     )
     parser.set_defaults(default_flow_style=None)
 
     # # YAML/JSON
     parser.add_argument(
-        '-c', '--color',
-        choices=('yes', 'always', 'no', 'never', 'auto'),
-        default='auto',
+        "-c",
+        "--color",
+        choices=("yes", "always", "no", "never", "auto"),
+        default="auto",
         help=(
-            "Colorize the output (requires pygments) (default: 'auto')"
-            " (`ls --color` semantics)"
+            "Colorize the output (requires pygments) (default: 'auto')" " (`ls --color` semantics)"
         ),
     )
     parser.add_argument(
-        '-u', '--allow-unicode', dest='allow_unicode',
-        default='yes', choices=('yes', 'no'),
-        help=(
-            "Allow non-ascii in output"
-            " (yaml's 'allow_unicode', json's 'ensure_ascii')"
-        ),
+        "-u",
+        "--allow-unicode",
+        dest="allow_unicode",
+        default="yes",
+        choices=("yes", "no"),
+        help=("Allow non-ascii in output" " (yaml's 'allow_unicode', json's 'ensure_ascii')"),
     )
     # # TODO:
     # parser.add_argument(
@@ -136,8 +150,9 @@ def cmd_make_parser(**kwa):
     parser.set_defaults(allow_unicode=True)
 
     parser.add_argument(
-        '--indent',
-        type=int, default=2,
+        "--indent",
+        type=int,
+        default=2,
         help=(
             "Formatting indent; use 0 for compact JSON"
             " (Note: pyyaml seems to ignore indent outside [2, 9])"
@@ -146,15 +161,19 @@ def cmd_make_parser(**kwa):
 
     # Currently JSON-only.
     parser.add_argument(
-        '--sk', '--sort-keys', dest='sort_keys',
-        default='auto', choices=('yes', 'no', 'auto'),
-        help="Sort the keys in mappings (default: yes)")
+        "--sk",
+        "--sort-keys",
+        dest="sort_keys",
+        default="auto",
+        choices=("yes", "no", "auto"),
+        help="Sort the keys in mappings (default: yes)",
+    )
 
     return parser
 
 
 class Bailout(Exception):
-    """ Cannot do as requested """
+    """Cannot do as requested"""
 
 
 def main():
@@ -163,24 +182,24 @@ def main():
     # TODO: streamed/chunked/prefetched/whatever.
     data_in = params.input.read()
     if not data_in:
-        sys.stderr.write('Empty input.\n')
+        sys.stderr.write("Empty input.\n")
         return 17
     try:
         return main_i(data_in, params)
     except Bailout as exc:
         msg = exc.args[0]
-        err_msg_pieces = [f'ERROR: f_convert: {msg}']
+        err_msg_pieces = [f"ERROR: f_convert: {msg}"]
         if params.original_data_on_failure:
-            err_msg_pieces.append('; original data as follows (on stdout):')
-        err_msg_pieces.append('\n')
-        sys.stderr.write(''.join(err_msg_pieces))
+            err_msg_pieces.append("; original data as follows (on stdout):")
+        err_msg_pieces.append("\n")
+        sys.stderr.write("".join(err_msg_pieces))
         if params.original_data_on_failure:
             _bytes_stdout().write(data_in)
         return 13
 
 
 def get_json():
-    """ Only two versions support most of the required parameters """
+    """Only two versions support most of the required parameters"""
     try:
         import simplejson as json
     except Exception:
@@ -197,18 +216,21 @@ def parse_json(data_in):
 
 def parse_yaml(data_in):
     import yaml
-    loader = getattr(yaml, 'CSafeLoader', None) or yaml.SafeLoader
+
+    loader = getattr(yaml, "CSafeLoader", None) or yaml.SafeLoader
     # TODO: support multi-document streams
     return yaml.load_all(data_in, Loader=loader)
 
 
-def parse_msgp(data_in, input_encoding='utf-8'):
+def parse_msgp(data_in, input_encoding="utf-8"):
     import msgpack
+
     kwargs = {}
     if input_encoding:
         kwargs.update(encoding=input_encoding)
 
     from io import BytesIO
+
     data_in = BytesIO(data_in)
 
     stream = msgpack.Unpacker(data_in, **kwargs)
@@ -224,7 +246,6 @@ def parse_msgp(data_in, input_encoding='utf-8'):
 
 
 def prefetch_first_wrap(func, count=1, require=True):
-
     @functools.wraps(func)
     def prefetch_first_wrapped(*args, **kwargs):
         result = func(*args, **kwargs)
@@ -265,29 +286,27 @@ def dump_jsons(items, colorize=False, **kwargs):
 
 def dump_yamls(items, colorize=False, **kwargs):
     import yaml
+
     if colorize:
         from pyaux.base import colorize_yaml
-    dumper = getattr(yaml, 'CSafeDumper', None) or yaml.SafeDumper
+    dumper = getattr(yaml, "CSafeDumper", None) or yaml.SafeDumper
     # TODO: streamed
     result = yaml.dump_all(items, Dumper=dumper, **kwargs)
     if colorize:
         if isinstance(result, bytes):
-            result = result.decode('utf-8')
+            result = result.decode("utf-8")
         result = colorize_yaml(result)
     yield result
 
 
 def dump_msgp(items, use_bin_type=True, **kwargs):
     import msgpack
+
     for item in items:
-        yield msgpack.packb(
-            item,
-            use_bin_type=use_bin_type,
-            **kwargs)
+        yield msgpack.packb(item, use_bin_type=use_bin_type, **kwargs)
 
 
 def bailout_wrap(func, err_tpl):
-
     @functools.wraps(func)
     def bailout_wrapped(*args, **kwargs):
         try:
@@ -301,20 +320,18 @@ def bailout_wrap(func, err_tpl):
 def make_parse_func(params):
     input_format = params.input_format
 
-    if input_format == 'auto':
+    if input_format == "auto":
         parse_func = parse_auto
-        err_tpl = 'Error parsing as JSON/YAML/MSGPACK: {exc}'
-    elif input_format == 'json':
+        err_tpl = "Error parsing as JSON/YAML/MSGPACK: {exc}"
+    elif input_format == "json":
         parse_func = parse_json
-        err_tpl = 'Error parsing as JSON: {exc}'
-    elif input_format == 'yaml':
+        err_tpl = "Error parsing as JSON: {exc}"
+    elif input_format == "yaml":
         parse_func = parse_yaml
-        err_tpl = 'Error parsing as YAML: {exc}'
-    elif input_format in ('msgp', 'msgpack'):
-        parse_func = functools.partial(
-            parse_msgp,
-            input_encoding=params.input_encoding)
-        err_tpl = 'Error parsing as MsgPack: {exc}'
+        err_tpl = "Error parsing as YAML: {exc}"
+    elif input_format in ("msgp", "msgpack"):
+        parse_func = functools.partial(parse_msgp, input_encoding=params.input_encoding)
+        err_tpl = "Error parsing as MsgPack: {exc}"
     else:
         raise Exception("Unknown input_format")
 
@@ -328,14 +345,11 @@ def make_outs_func(params):
     isatty = params.output is _bytes_stdout() and sys.stdout.isatty()
 
     output_format = params.output_format
-    colorize = (
-        params.color == 'yes'
-        or (params.color == 'auto' and isatty)
-    )
+    colorize = params.color == "yes" or (params.color == "auto" and isatty)
     # TODO: add the 'auto => unsorted in py3.7+' feature for JSON and YAML
-    sort_keys = params.sort_keys in ('yes', 'auto')
+    sort_keys = params.sort_keys in ("yes", "auto")
 
-    if output_format == 'json':
+    if output_format == "json":
         outs_func = functools.partial(
             dump_jsons,
             ensure_ascii=not params.allow_unicode,
@@ -345,7 +359,7 @@ def make_outs_func(params):
             # separators=(',',':'),
             # default=repr,
         )
-    elif output_format == 'yaml':
+    elif output_format == "yaml":
 
         # TODO: overridable 'width' parameter.
         # Try using the whole terminal width:
@@ -366,12 +380,12 @@ def make_outs_func(params):
             default_flow_style=params.default_flow_style,
             width=width,
         )
-    elif output_format in ('msgp', 'msgpack'):
+    elif output_format in ("msgp", "msgpack"):
         outs_func = dump_msgp
     else:
         raise Exception("Unknown output_format")
 
-    err_tpl = f'Error serializing as {output_format}: {{exc}}'
+    err_tpl = f"Error serializing as {output_format}: {{exc}}"
     outs_func = prefetch_first_wrap(outs_func)
     outs_func = bailout_wrap(outs_func, err_tpl)
 
@@ -394,11 +408,11 @@ def main_i(data_in, params):
             out_item = out_item.encode(params.output_encoding)
         output.write(out_item)
 
-    if out_item is not None and out_item[-1] != b'\n':
-        output.write(b'\n')
+    if out_item is not None and out_item[-1] != b"\n":
+        output.write(b"\n")
 
     return 0
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(main())

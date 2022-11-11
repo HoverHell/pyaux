@@ -8,7 +8,8 @@ import sys
 
 def main():
     import msgpack
-    indent = int(os.environ.get('INDENT') or '2')
+
+    indent = int(os.environ.get("INDENT") or "2")
     try:
         data_in = sys.stdin.buffer
     except AttributeError:
@@ -30,5 +31,5 @@ def main():
         return 13
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(main())
