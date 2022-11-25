@@ -5,6 +5,7 @@ Also, things that are useful in an ipython interactice shell.
 
 from __future__ import annotations
 
+import builtins
 import sys
 
 from .. import aio
@@ -38,7 +39,7 @@ __all__ = (
 def _into_builtin(dct):
     """Helper to put stuff (like the one-liner-helpers) into builtins"""
     for key, val in dct.items():
-        setattr(__builtins__, key, val)
+        setattr(builtins, key, val)
 
 
 # For _into_builtin
