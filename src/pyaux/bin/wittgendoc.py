@@ -7,8 +7,11 @@ from __future__ import annotations
 import os
 import re
 import sys
+from collections.abc import Callable, Sequence
+from typing import Any
 
-import pyaux
+from pyaux.base import split_list
+from pyaux.iterables import window
 
 
 def repl_header(match):
@@ -25,12 +28,9 @@ def repl_header(match):
 
 
 class Worker:
-    result = None
     state = None
-    state_list = None
-    state_location = None
 
-    simple_replacements = (
+    simple_replacements: Sequence[tuple[str, str | Callable]] = (
         # header
         (r"^(=+) (.+) (=+)$", repl_header),
         # trailing whitespaces
@@ -88,13 +88,13 @@ class Worker:
     def process(self, lines):
         self.state = ""
         self.state_list = []
-        self.state_location = []
-        self.result = []
+        self.state_location: list[dict[str, Any]] = []
+        self.result: list[str] = []
 
         # self.result.append(self.header)
 
         lines = (self.handle_simple_replacements(line) for line in lines)
-        line_iter = pyaux.window(lines, fill_left=True, fill=None)
+        line_iter = window(lines, fill_left=True, fill=None)
 
         for prev_line, line in line_iter:
             self.check_state(prev_line, line)
@@ -107,7 +107,7 @@ class Worker:
 
         return self.result
 
-    def handle_simple_replacements(self, line):
+    def handle_simple_replacements(self, line: str) -> str:
         # simple replacements
         for rex, repl in self.simple_replacements:
             line = re.sub(rex, repl, line)
@@ -126,7 +126,7 @@ class Worker:
                 self.unwind_list()
                 self.result.append(prev_line_x)
                 self.state = ""
-                self.state_list = None
+                self.state_list = []
         elif not prev_line and line.startswith(" 1. "):
             # note the very specific list starter
             self.state = "list"
@@ -151,7 +151,7 @@ class Worker:
             self.state_location = [data]
             return
 
-        shallower, same_or_deeper = pyaux.split_list(
+        shallower, same_or_deeper = split_list(
             self.state_location, lambda info: info["depth"] < depth
         )
         self.state_location = shallower + [data]
@@ -159,6 +159,8 @@ class Worker:
     def process_list(self, line):
         # any line should match
         match = re.search(r"^(?P<spaces> *)(?:(?P<num>[0-9a-z.]+)\. )?(?P<text>.*)$", line)
+        if not match:
+            raise ValueError(f"Non-matching {line=!r}")
         data = match.groupdict()
         spaces = data["spaces"]
         indent = len(spaces)
@@ -212,7 +214,7 @@ class Worker:
             self.state_list.append(item_info)
         elif indent - last_info["indent"] < 0:
             # returning
-            state_closing, state_remain = pyaux.split_list(
+            state_closing, state_remain = split_list(
                 self.state_list, lambda info: info["indent"] > indent
             )
             self.unwind_list(state_closing)  # </li></ol>

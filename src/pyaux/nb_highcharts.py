@@ -9,6 +9,7 @@ import json
 import random
 import string
 import time
+from typing import Any
 
 from IPython.display import HTML
 
@@ -276,7 +277,7 @@ def ohlcv_to_cdef(df, name, volume="v", pois=None, poi_to_color="default", **kwa
     """
     candle_serie = ohlc_to_serie(df, name, **kwa)
     series = [candle_serie]
-    extras = {}
+    extras: dict[str, Any] = {}
     if volume and volume in df:
         volume_series = df[volume]
         volume_data = [[dt_to_hc(idx.to_datetime()), val] for idx, val in volume_series.iteritems()]

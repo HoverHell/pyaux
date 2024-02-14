@@ -15,7 +15,8 @@ import urllib.parse
 import requests
 import requests.adapters
 import requests.exceptions
-from requests.packages.urllib3.util import Retry  # pylint: disable=import-error
+from requests import PreparedRequest
+from urllib3.util import Retry
 
 from pyaux.base import LazyRepr, ReprObj, dict_maybe_items, find_caller, split_dict, to_bytes
 
@@ -64,7 +65,7 @@ def configure_session(
         total=retries_total,
         backoff_factor=retries_backoff_factor,
         status_forcelist=retries_status_forcelist,
-        method_whitelist=retries_method_whitelist,
+        allowed_methods=retries_method_whitelist,
         # https://stackoverflow.com/a/43496895
         raise_on_status=raise_on_status,
     )
@@ -100,7 +101,7 @@ SESSION_ZEALOUS = configure_session(requests.Session())
 
 class RequesterBase:
     apply_environment = True
-    length_cut_marker = b"..."
+    length_cut_marker = "..."
     _prepare_request_keys = frozenset(
         (
             "method",
@@ -189,8 +190,8 @@ class RequesterBase:
         if unknown_kwargs:
             raise ValueError("Unknown request arguments", unknown_kwargs)
 
-        request = requests.Request(**prepare_kwargs)
-        request = session.prepare_request(request)
+        request_raw = requests.Request(**prepare_kwargs)
+        request = session.prepare_request(request_raw)
         if self.apply_environment:
             send_kwargs_overrides = send_kwargs
             # http://docs.python-requests.org/en/master/user/advanced/#prepared-requests
@@ -397,8 +398,13 @@ class RequesterContentType(RequesterBase):
     def _serialize_data_ujson(self, data, context=None):  # pylint: disable=unused-argument
         import ujson
 
-        # pylint: disable=c-extension-no-member
-        data = to_bytes(ujson.dumps(data, ensure_ascii=False))
+        data = ujson.dumps(data, ensure_ascii=False).encode()
+        return data, self.json_content_type
+
+    def _serialize_data_orjson(self, data, context=None):  # pylint: disable=unused-argument
+        import orjson
+
+        data = orjson.dumps(data)
         return data, self.json_content_type
 
 
@@ -506,9 +512,11 @@ class RequesterLog(RequesterBase):
         self.log_after(request, response, **kwargs)
         return response
 
-    def request_for_logging(self, request):
+    def request_for_logging(self, request: PreparedRequest) -> str:
         """Make a log string out of a request"""
-        url = request.url
+        url = request.url or ""
+        method = request.method or ""
+
         url_cap = self.logging_url_cap
         if url_cap and len(url) > url_cap:
             url = f"{url[:url_cap]}{self.length_cut_marker}"
@@ -517,10 +525,9 @@ class RequesterLog(RequesterBase):
         if request.body:
             data_info = f"  data_len={len(request.body)}"
 
-        return f"{request.method.upper()} {url}{data_info}"
+        return f"{method.upper()} {url}{data_info}"
 
     def request_for_logging_lazy(self, request):
-        """... exactly what it says"""
         return LazyRepr(functools.partial(self.request_for_logging, request))
 
     def response_for_logging(self, response):

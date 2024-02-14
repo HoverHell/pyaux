@@ -20,5 +20,5 @@ __all__ = (
     *madness.__all__,
     *ranges.__all__,
     *runlib.__all__,
-    urlhelpers.__all__,
+    *urlhelpers.__all__,
 )

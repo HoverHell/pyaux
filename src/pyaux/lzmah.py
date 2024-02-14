@@ -7,11 +7,17 @@ from __future__ import annotations
 
 import sys
 
-import pylzma
+try:
+    import pylzma
+except Exception:
+    pylzma = None
 
 
 def lzma_compress(fi, fo, fi_close=True, fo_close=True, bufs=65535):
     """Compress `fi` into `fo` (`file` or filename)"""
+    if pylzma is None:
+        raise ValueError("`pylzma` is not available")
+
     if isinstance(fi, str):
         fi = open(fi, "rb")
         fi_close = True
@@ -51,13 +57,19 @@ def unjsllzma(fi, fi_close=True, parse_fn=None, handle_fail=None, bufs=655350):
     exception, otherwise its return value is yielded.  default: skip all
     failures.
     """
+    if pylzma is None:
+        raise ValueError("`pylzma` is not available")
+
     if parse_fn is None:
         try:
-            import orjson as json
+            import orjson
+
+            parse_fn = orjson.loads
         except ImportError:
             sys.stderr.write("Error importing (preferred) `orjson`\n")
             import json
-        parse_fn = json.loads
+
+            parse_fn = json.loads
 
     if handle_fail is None:
         handle_fail = _handle_fail_default

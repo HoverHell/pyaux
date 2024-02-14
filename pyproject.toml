@@ -137,16 +137,33 @@ require_code = "true"
 
 [tool.mypy]
 warn_unused_configs = true
-disallow_untyped_defs = true
+disallow_untyped_defs = false
 check_untyped_defs = true
 strict_optional = true
 
 [[tool.mypy.overrides]]
 module = [
-    "aioredis.*",
-    "pytest.*",
+    "coloredlogs.*",
+    "highcharts",
+    "IPython.*",
+    "billiard.*",
+    "celery.*",
+    "line_profiler.*",
+
+    # Optional serializers:
+    "anyjson.*",
+    "ipdb.*",
+    "msgpack.*",
+    "orjson.*",
+    "pylzma.*",
+    "simplejson.*",
+    "ujson.*",
 ]
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["pyaux.dicts", "pyaux.datadeque.*"]
+ignore_errors = true
 
 [[tool.mypy.overrides]]
 module = "tests.*"

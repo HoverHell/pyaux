@@ -87,7 +87,7 @@ from __future__ import annotations
 
 import copy
 import itertools
-from collections.abc import MutableMapping as MutableMapping
+from collections.abc import Callable, MutableMapping as MutableMapping
 from typing import Any
 
 from pyaux.iterables import iterator_is_over, uniq
@@ -740,7 +740,7 @@ def _lists_ungroup(key_to_list_mapping):
 
 
 class MVODCommon(ODReprMixin):
-    _data_internal = ()
+    _data_internal: tuple[Any, ...] = ()
 
     # Conveniences
 
@@ -831,7 +831,8 @@ class MVODCommon(ODReprMixin):
         result._data_checked = copy.deepcopy(self._data, memo)
         return result
 
-    copy = __copy__  # XXX: re-check.
+    def copy(self):
+        return self.__copy__()
 
     # TODO?: __getstate__, __setstate__; probably not useful.
 
@@ -921,14 +922,17 @@ class MVODCommon(ODReprMixin):
             # Quicker pre-check:
             if not dict.__eq__(self, other):
                 return False
+
             # In the end it comes down to items.
-            if self._data == tuple(other.items()):
-                return True
-            return False
-        elif _is_multivaluedict(other):
+            return self._data == tuple(other.items())
+
+        if _is_multivaluedict(other):
             return self._data == tuple(self._lists_ungroup(other.lists()))
-        else:
-            return dict.__eq__(self, other)
+
+        if isinstance(other, dict):
+            return self._data == tuple(other.items())
+
+        return False
 
     def __ne__(self, other):
         return not self == other
@@ -998,7 +1002,8 @@ class MVOD(MVODCommon, dict):
         data_new = [(key, val) for key, val in data_new if key in news]
         self._data_checked = pre_data + tuple(data_new)
 
-    update = update_append
+    def update(self, *args: Any, **kwargs: Any) -> None:
+        return self.update_append(*args, **kwargs)
 
     def __delitem__(self, key):
         self._data_checked = tuple((k, v) for k, v in self._data if k != key)
@@ -1141,7 +1146,8 @@ class MVLOD(MVODCommon, MultiValueDict):
 
     # The defaults (for setitem, instantiation)
 
-    update = update_append
+    def update(self, *args: Any, **kwargs: Any) -> None:
+        return self.update_append(*args, **kwargs)
 
     def __setitem__(self, key, value):
         self.update([(key, value)])
@@ -1164,7 +1170,7 @@ class DefaultDictExt(dict):
     the interface except for the `_default` attribute (with the default_factory)
     """
 
-    _default = None
+    _default: Callable[[], Any] | None = None
 
     def __getitem__(self, name):
         try:

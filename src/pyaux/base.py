@@ -12,8 +12,10 @@ import time
 import traceback
 import unicodedata
 import urllib.parse
+from collections.abc import Callable, Iterable, Iterator
 from decimal import Decimal
-from typing import Literal
+from types import FrameType
+from typing import Any, Literal, TypeVar, cast
 
 __all__ = (
     "repr_call",
@@ -68,6 +70,11 @@ __all__ = (
 )
 
 
+TKey = TypeVar("TKey")
+TVal = TypeVar("TVal")
+TRet = TypeVar("TRet")
+
+
 def repr_call(args, kwargs):
     """A helper function for pretty-printing a function call arguments"""
     res = ", ".join(f"{val!r}" for val in args)
@@ -78,7 +85,7 @@ def repr_call(args, kwargs):
     return res
 
 
-dbgs = {}  # global object for easier later access of dumped `__call__`s
+dbgs: dict[str, Any] = {}  # global object for easier later access of dumped `__call__`s
 
 
 def debug_plug(name, mklogger=None):
@@ -293,7 +300,7 @@ class ThrottledCall:
     """
 
     # _last_call_time = None
-    _call_time_throttle = None
+    _call_time_throttle = 0.0
     _call_cnt = 0  # (kept accurate; but can become ineffectively large)
     _call_cnt_throttle = 0  # next _call_cnt to call at
     _call_val = object()  # (some unique value at start)
@@ -626,15 +633,17 @@ def group(lst, cls=dict):
     return res
 
 
-def group2(lst, key=lambda v: v[0]):
+def group2(
+    lst: Iterable[TVal], key: Callable[[TVal], TKey] = cast(Callable[[Any], Any], lambda v: v[0])
+) -> dict[TKey, list[TVal]]:
     """RTFS.
 
     Not particularly better than `group((key(val), val) for val in lst)`.
     """
-    res = {}
-    for v in lst:
-        res.setdefault(key(v), []).append(v)
-    return res.items()
+    res: dict[TKey, list[TVal]] = {}
+    for item in lst:
+        res.setdefault(key(item), []).append(item)
+    return res
 
 
 def mangle_items(items, include=None, exclude=None, add=None, replace=None, replace_inplace=None):
@@ -794,27 +803,27 @@ def configurable_wrapper(wrapper_func):
     return configurable_wrapper_func
 
 
-def simple_memoize_argless(func):
+def simple_memoize_argless(func: Callable[..., TRet]) -> Callable[..., TRet]:
     """
     A very simple memoizer that saves the first call result permanently
     (ignoring the argument values).
     """
 
-    _cache = {}
+    _cache: dict[None, TRet] = {}
     _sentinel = object()
 
     @functools.wraps(func)
-    def simple_cached_wrapped(*args, **kwargs):
+    def simple_cached_wrapped(*args: Any, **kwargs: Any) -> TRet:
         result = _cache.get(None, _sentinel)
         if result is not _sentinel:
-            return result
+            return cast(TRet, result)
 
         result = func(*args, **kwargs)
         _cache[None] = result
         return result
 
     # Make the cache more easily accessible
-    simple_cached_wrapped._cache = _cache
+    setattr(simple_cached_wrapped, "_cache", _cache)
     return simple_cached_wrapped
 
 
@@ -1093,38 +1102,45 @@ def find_files(
     *filenames* match the `fname_re` regexp (if not None).
     """
     now = time.time()
+    TWalkItem = tuple[str, list[str], list[str]]
+    TPathPair = tuple[str, str]
+    walk: Iterator[TWalkItem] | list[TWalkItem]
     walk = os.walk(in_dir)
     if _prewalk:
         walk = list(walk)
+    file_list: list[str] | Iterator[str]
     for dir_name, _, file_list in walk:
         if fname_re is not None:
             file_list = (val for val in file_list if re.match(fname_re, val))
 
         # Annotate with full path:
-        file_list = ((os.path.join(dir_name, file_name), file_name) for file_name in file_list)
+        filedir_list: list[TPathPair] | Iterator[TPathPair]
+        filedir_list = ((os.path.join(dir_name, file_name), file_name) for file_name in file_list)
 
         if strip_dir:
             # Strip the top dir from it
-            file_list = (
-                (slstrip(fpath, dir_name).lstrip("/"), fname) for fpath, fname in file_list
+            filedir_list = (
+                (slstrip(fpath, dir_name).lstrip("/"), fname) for fpath, fname in filedir_list
             )
 
         if older_than is not None:
-            file_list = (
+            filedir_list = (
                 (fpath, fname)
-                for fpath, fname in file_list
+                for fpath, fname in filedir_list
                 if now - os.path.getmtime(fpath) >= older_than
             )
 
         # Convenience shortcut
         if skip_last:
-            file_list = sorted(list(file_list), key=lambda val: val[1])
-            file_list = file_list[: -int(skip_last)]
+            filedir_list_l = sorted(list(filedir_list), key=lambda val: val[1])
+            filedir_list = filedir_list_l[: -int(skip_last)]
 
         if not include_base:
-            file_list = (fpath for fpath, fname in file_list)
-
-        yield from file_list
+            for fpath, fname in filedir_list:
+                yield fname
+        else:
+            for item in filedir_list:
+                yield item
 
 
 @Memoize
@@ -1194,7 +1210,7 @@ def request(
             _cfile, _cline, _cfunc = _callinfo
         else:
             # TODO: custom function, extra_depth param.
-            _cfile, _cline, _cfunc = logging.Logger("").findCaller()
+            _cfile, _cline, _cfunc, _ = logging.root.findCaller()
         _prev_ua = headers.get("User-Agent") or requests.utils.default_user_agent()
         headers.setdefault(
             "User-Agent",
@@ -1333,9 +1349,13 @@ def current_frame(depth=1):
     try:
         raise Exception
     except Exception:  # pylint: disable=broad-except
-        frame = sys.exc_info()[2].tb_frame
+        _, _, e_tb = sys.exc_info()
+        assert e_tb is not None
+        frame: FrameType = e_tb.tb_frame
         for _ in range(depth):
-            frame = frame.f_back
+            if frame.f_back is not None:
+                frame = frame.f_back
+        return frame
 
 
 def find_caller(extra_depth=1, skip_packages=()):

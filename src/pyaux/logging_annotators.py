@@ -38,6 +38,7 @@ class Annotator(logging.Filter):
         raise NotImplementedError
 
     def _get_value_cached(self, record, *args, **kwargs):
+        assert self.attribute_name
         value = getattr(record, self.attribute_name, _not_available)
         if value is not _not_available:
             return value
@@ -45,6 +46,7 @@ class Annotator(logging.Filter):
 
     def filter(self, record):
         """“annotate”, actually"""
+        assert self.attribute_name
         if self.use_cached_value:
             value = self._get_value_cached(record)
         else:

@@ -90,7 +90,7 @@ def reversed_blocks(fileobj, blocksize=4096):
 
 def reversed_lines(fileobj, sep=b""):
     """Read the lines of file in reverse order"""
-    tail = []  # Tail of the line whose head is not yet read.
+    tail: list[bytes] = []  # Tail of the line whose head is not yet read.
     for block in reversed_blocks(fileobj):
         # A line is a list of strings to avoid quadratic concatenation.
         # (And trying to avoid 1-element lists would complicate the code.)

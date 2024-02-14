@@ -5,13 +5,20 @@ from __future__ import annotations
 
 import sys
 
-import pylzma
+try:
+    import pylzma
+except Exception:
+    pylzma = None
+
 
 from pyaux.lzmah import get_stdin, get_stdout
 
 
 def unlzma(fi, fo, fi_close=True, fo_close=True, bufs=6553500):
     """Decompress `fi` into `fo` (`file` or filename)"""
+    if pylzma is None:
+        raise ValueError("`pylzma` is not available")
+
     if isinstance(fi, str):
         fi = open(fi, "rb")
         fi_close = True

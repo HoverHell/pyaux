@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import builtins
 import sys
+from typing import Any
 
 from .. import aio
 from ..aio import *
@@ -36,7 +37,7 @@ __all__ = (
 # # Builtin-madness # #
 
 
-def _into_builtin(dct):
+def _into_builtin(dct: dict[str, Any]) -> None:
     """Helper to put stuff (like the one-liner-helpers) into builtins"""
     for key, val in dct.items():
         setattr(builtins, key, val)
@@ -58,8 +59,8 @@ except ImportError as __e:
 
 
 # For explicit call:
-def _olt_into_builtin():
-    return _into_builtin(__all_stuff_e)
+def _olt_into_builtin() -> None:
+    _into_builtin(__all_stuff_e)
 
 
 # For use as execfile()

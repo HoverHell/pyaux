@@ -6,6 +6,8 @@ from __future__ import annotations
 import argparse
 import functools
 import sys
+from collections.abc import Callable
+from typing import Any
 
 from pyaux.iterables import prefetch_first
 
@@ -222,18 +224,18 @@ def parse_yaml(data_in):
     return yaml.load_all(data_in, Loader=loader)
 
 
-def parse_msgp(data_in, input_encoding="utf-8"):
+def parse_msgp(data_in: bytes, input_encoding: str | None = "utf-8"):
     import msgpack
 
-    kwargs = {}
+    kwargs: dict[str, Any] = {}
     if input_encoding:
         kwargs.update(encoding=input_encoding)
 
     from io import BytesIO
 
-    data_in = BytesIO(data_in)
+    data_in_fobj = BytesIO(data_in)
 
-    stream = msgpack.Unpacker(data_in, **kwargs)
+    stream = msgpack.Unpacker(data_in_fobj, **kwargs)
     try:
         item = next(stream)
     except StopIteration:
@@ -255,7 +257,7 @@ def prefetch_first_wrap(func, count=1, require=True):
 
 
 def parse_auto(data_in):
-    errors = {}
+    errors: dict[str, Exception] = {}
     # TODO: streaming support which would require pre-peeking into data_in.
     try:
         return prefetch_first(parse_json(data_in), require=True)
@@ -349,6 +351,7 @@ def make_outs_func(params):
     # TODO: add the 'auto => unsorted in py3.7+' feature for JSON and YAML
     sort_keys = params.sort_keys in ("yes", "auto")
 
+    outs_func: Callable[[Any], bytes | str]
     if output_format == "json":
         outs_func = functools.partial(
             dump_jsons,

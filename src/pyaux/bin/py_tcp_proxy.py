@@ -16,31 +16,29 @@ import ssl
 import sys
 import time
 import unicodedata
+from typing import Any
 
-_datefmt = "%Y-%m-%d %H:%M:%S.%f"
-_logfmt = "[%(asctime)s] %(message)s"
-_msgfmt = "%(meta)15s %(dir)s %(data)s"
-_log = logging.getLogger(__name__)
-_splitlines = False
-_maxlength = 16384
+DATEFMT = "%Y-%m-%d %H:%M:%S.%f"
+LOGFMT = "[%(asctime)s] %(message)s"
+MSGFMT = "{meta:15s} {dir} {data}"  # noqa: FS003
+LOGGER = logging.getLogger(__name__)
+SPLITLINES = False
+MAXLENGTH = 16384
+TAddress = Any
 
 
-def _out(s):
-    _log.info(s)
+def _out(message: str) -> None:
+    LOGGER.info(message)
     sys.stderr.flush()
 
 
-def _aout(msg):
-    _out(msg)
-
-
-def _addr_repr(meta):
+def _addr_repr(meta: TAddress) -> str:
     if isinstance(meta, (list, tuple)):
-        return ":".join(str(v) for v in meta)
+        return ":".join(str(item) for item in meta)
     return repr(meta)
 
 
-def need_repr(string):
+def need_repr(string: Any) -> bool:
     """Figure out whether the `string` is safe to print or needs some
     repr()ing"""
     if isinstance(string, bytes):
@@ -59,10 +57,12 @@ def need_repr(string):
 
 
 class Forward:
-    def __init__(self):
-        self.forwardsck = None
+    def __init__(self) -> None:
+        self.forwardsck: socket.socket | None = None
 
-    def start(self, host, port, ip6=False, ssl_connect=False):
+    def start(
+        self, host: str, port: int, ip6: bool = False, ssl_connect: bool = False
+    ) -> socket.socket | None:
         self.forwardsck = socket.socket(
             socket.AF_INET6 if ip6 else socket.AF_INET, socket.SOCK_STREAM
         )
@@ -74,30 +74,28 @@ class Forward:
         except Exception as exc:
             _out(repr(exc))
             logging.exception("Forward error: %r", exc)
-            return False
+            return None
 
 
 class TheServer:
-
     _last_data = None
 
     def __init__(
         self,
-        host,
-        port,
-        fwdhost,
-        fwdport,
-        buffer_size=4096,
-        delay=0.0001,
-        ip6_listen=False,
-        ip6_connect=False,
-        ssl_connect=False,
-    ):
-
-        self.input_list = []
-        self.channel = {}
-        self.meta = {}
-        self.forwardscks = set()
+        host: str,
+        port: int,
+        fwdhost: str,
+        fwdport: int,
+        buffer_size: int = 4096,
+        delay: float = 0.0001,
+        ip6_listen: bool = False,
+        ip6_connect: bool = False,
+        ssl_connect: bool = False,
+    ) -> None:
+        self.input_list: list[socket.socket] = []  # selectables
+        self.channel: dict[socket.socket, socket.socket] = {}
+        self.meta: dict[socket.socket, TAddress] = {}
+        self.forwardscks: set[socket.socket] = set()
 
         self.fwdparams = (fwdhost, fwdport, ip6_connect, ssl_connect)
         self.buffer_size = buffer_size
@@ -110,13 +108,12 @@ class TheServer:
         self.server.bind((host, port))
         self.server.listen(200)
 
-    def main_loop(self):
+    def main_loop(self) -> None:
         self.input_list.append(self.server)
-        _log.debug("Starting the eventloop")
+        LOGGER.debug("Starting the eventloop")
         while 1:
             time.sleep(self.delay)  # XXXXX: should not be needed, really.
-            ss = select.select
-            inputready, outputready, exceptready = ss(self.input_list, [], [])
+            inputready, outputready, exceptready = select.select(self.input_list, [], [])
             for sck in inputready:
                 if sck == self.server:
                     self.on_accept()
@@ -125,7 +122,7 @@ class TheServer:
                 try:
                     data = sck.recv(self.buffer_size)
                 except Exception:
-                    _log.exception("...")
+                    LOGGER.exception("...")
                     continue
 
                 self._last_data = data
@@ -134,10 +131,10 @@ class TheServer:
                 else:
                     self.on_recv(sck, data)
 
-    def on_accept(self):
+    def on_accept(self) -> None:
         forward = Forward().start(*self.fwdparams)
         clientsock, clientaddr = self.server.accept()
-        if forward:
+        if forward is not None:
             _out(f"{_addr_repr(clientaddr)} has connected")
             self.input_list.append(clientsock)
             self.input_list.append(forward)
@@ -156,7 +153,7 @@ class TheServer:
             )
             clientsock.close()
 
-    def on_close(self, sck):
+    def on_close(self, sck: socket.socket) -> None:
         meta = self.meta.pop(sck, None)
         _out(f"{_addr_repr(meta)} has disconnected")
         # remove objects from input_list
@@ -171,35 +168,34 @@ class TheServer:
         del self.channel[out]
         del self.channel[sck]
 
-    def on_recv(self, sck, data):
+    def on_recv(self, sck: socket.socket, data: bytes) -> None:
         # here we can parse and/or modify the data before send forward
         _dir = " <<" if sck in self.forwardscks else ">> "
         meta = self.meta.get(sck, "?")
         if meta != "?":
             meta = _addr_repr(meta)
 
-        if _splitlines:
+        if SPLITLINES:
             # per-line annotation of msg
-            lines_are_unfinished = not data or data[-1] != "\n"
+            lines_are_unfinished = not data or data[-1:] != "\n"
             # lines = data.splitlines()
-            lines = data.split("\n")
-            if lines_are_unfinished and lines[-1] == "":
+            lines = data.split(b"\n")
+            if lines_are_unfinished and lines[-1] == b"":
                 lines = lines[:-1]
             for idx, line in enumerate(lines):
-
                 # NOTE: length is limited by the bytes length, not the unicode or repr length
                 too_long = False
-                if len(line) > _maxlength:
+                if len(line) > MAXLENGTH:
                     too_long = True
-                    line = line[:_maxlength]
+                    line = line[:MAXLENGTH]
 
                 if need_repr(line):
                     if too_long:
                         msg_data = repr(line) + "…"
                     else:
-                        msg_data = repr(line + "\n")  # ... after putting the newline back
+                        msg_data = repr(line + b"\n")  # ... after putting the newline back
                 else:
-                    msg_data = " " + line  # Unambiguate with the space
+                    msg_data = " " + line.decode("utf-8")  # Unambiguate with the space
 
                 if idx == len(lines) - 1:
                     if lines_are_unfinished:
@@ -209,24 +205,33 @@ class TheServer:
                         # #   at the end" is unambiguously printed anyway
                         pass
 
-                msg = _msgfmt % dict(dir=_dir, meta=meta, data=msg_data)
-                _out(msg)
-
         else:
-
             # NOTE: length is limited by the base bytes length, not the repr length
-            if len(data) > _maxlength:
-                msg_data = repr(data[:_maxlength]) + "…"
+            if len(data) > MAXLENGTH:
+                msg_data = repr(data[:MAXLENGTH]) + "…"
             else:
                 msg_data = repr(data)
 
-            msg = _msgfmt % dict(dir=_dir, meta=meta, data=msg_data)
-            _out(msg)
+        msg = MSGFMT.format(dir=_dir, meta=meta, data=msg_data)
+        _out(msg)
 
         self.channel[sck].send(data)
 
 
-def main():
+class DTSFormatter(logging.Formatter):
+    def formatTime(
+        self,
+        record: logging.LogRecord,
+        datefmt: str | None = DATEFMT,
+    ) -> str:
+        dt_val = datetime.datetime.fromtimestamp(record.created)
+        if datefmt:
+            return dt_val.strftime(datefmt)
+        dt_s = dt_val.strftime("%Y-%m-%dT%H:%M:%S")
+        return f"{dt_s}.{record.msecs:03d}"
+
+
+def main() -> None:
     # TODO: argparse
     bind_addr, bind_port, fwd_addr, fwd_port = (
         sys.argv[1],
@@ -250,22 +255,8 @@ def main():
 
     # Make a nicer datetime:
 
-    class DTSFormatter(logging.Formatter):
-
-        converter = datetime.datetime.fromtimestamp
-
-        def formatTime(self, record, datefmt=None):  # noqa: N802 lowercase name
-            def _proc(ct):
-                if _datefmt:
-                    return ct.strftime(_datefmt)
-                ct_s = ct.strftime("%Y-%m-%dT%H:%M:%S")
-                return f"{ct_s}.{record.msecs:03d}"
-
-            res = _proc(self.converter(record.created))
-            return res
-
     logging.basicConfig(level=1)
-    logging.root.handlers[0].setFormatter(DTSFormatter(_logfmt))
+    logging.root.handlers[0].setFormatter(DTSFormatter(LOGFMT))
     server = TheServer(
         bind_addr,
         bind_port,

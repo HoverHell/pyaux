@@ -5,12 +5,26 @@ from __future__ import annotations
 
 import asyncio
 import types
+from collections.abc import Awaitable, Callable
 from concurrent.futures import Future
+from typing import Any, TypeVar, overload
 
 __all__ = ("_await",)
 
+TRet = TypeVar("TRet")
 
-def _await(*args, **kwargs):
+
+@overload
+def _await(coro: types.CoroutineType[TRet, None, None]) -> TRet:
+    ...
+
+
+@overload
+def _await(awaitable: Callable[..., Awaitable[TRet]], *args: Any, **kwargs: Any) -> TRet:
+    ...
+
+
+def _await(*args: Any, **kwargs: Any) -> Any:
     """
     Run an function from a synchronous code, in a new event loop, and await its
     result.
@@ -34,7 +48,7 @@ def _await(*args, **kwargs):
     """
     awaitable, args = args[0], args[1:]
 
-    call_result = Future()
+    call_result: Future[Any] = Future()
     if isinstance(awaitable, types.CoroutineType):
         assert not args
         assert not kwargs
@@ -42,7 +56,7 @@ def _await(*args, **kwargs):
     else:
         cor = awaitable(*args, **kwargs)
 
-    async def wrap():
+    async def wrap() -> None:
         try:
             result = await cor
         except Exception as exc:

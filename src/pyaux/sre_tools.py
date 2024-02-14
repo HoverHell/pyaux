@@ -73,7 +73,7 @@ def _ensure_grouped(pattern, source=None):
 
 
 def _flags_to_list(flags):
-    result = []
+    result: list[str] = []
     if not flags:
         return result
     for key, value in sre_parse.FLAGS.items():
@@ -127,7 +127,7 @@ def rast_to_pattern(rast, _parent_type=None, **kwargs):
         if len(rast.data) == 1:
             kwargs["_parent_type"] = _parent_type
 
-        return "".join(rast_to_pattern(child, **kwargs) for child in rast)
+        return "".join(rast_to_pattern(child, **kwargs) for child in rast.data)
 
     # # Reference glue:
     # while True:
@@ -622,7 +622,7 @@ def rast_to_pattern(rast, _parent_type=None, **kwargs):
             if group is None:
                 flags.append(":")
             else:
-                group_to_name = kwargs.get("group_to_name")
+                group_to_name = kwargs.get("group_to_name") or {}
                 name = group_to_name.get(group)
                 if name:
                     # NOTE: making a named group with changed flags is syntaxically impossible.

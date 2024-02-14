@@ -6,8 +6,6 @@ import json
 import os
 import sys
 
-from pyaux.base import to_bytes
-
 
 def main():
     indent = int(os.environ.get("INDENT") or "2")
@@ -17,14 +15,11 @@ def main():
     else:
         data_in = sys.stdin.read()
 
-    try:
-        outbuf = sys.stdout.buffer
-    except AttributeError:
-        outbuf = sys.stdout
+    outbuf = sys.stdout
 
     def bailout(msg):
         sys.stderr.write(f"ERROR: fjson.py: {msg}; original data as follows (on stdout)\n")
-        outbuf.write(to_bytes(data_in))
+        outbuf.write(data_in)
         return 13
 
     try:
@@ -37,8 +32,7 @@ def main():
     except Exception as exc:
         return bailout(f"Error dumping as json: {exc}")
 
-    outbuf.write(to_bytes(data_out))
-    outbuf.write(b"\n")
+    outbuf.write(data_out)
     outbuf.flush()
 
 

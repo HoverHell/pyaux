@@ -10,10 +10,7 @@ def main():
     import msgpack
 
     indent = int(os.environ.get("INDENT") or "2")
-    try:
-        data_in = sys.stdin.buffer
-    except AttributeError:
-        data_in = sys.stdin
+    data_in = sys.stdin.buffer
 
     try:
         stream = msgpack.Unpacker(data_in)  # , encoding="utf-8")

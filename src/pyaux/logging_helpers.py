@@ -58,10 +58,10 @@ class TaggedSysLogHandlerBase(handlers.SysLogHandler):
         syslog_tag = kwargs.pop("syslog_tag")
         syslog_tag = to_bytes(syslog_tag)
         self.syslog_tag = syslog_tag
-        super(TaggedSysLogHandler, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def format(self, *args, **kwargs):
-        res = super(TaggedSysLogHandler, self).format(*args, **kwargs)
+        res = super().format(*args, **kwargs)
         assert isinstance(res, bytes)
         return self.syslog_tag + " " + res
 
@@ -77,7 +77,9 @@ class TaggedSysLogHandler(TaggedSysLogHandlerBase):
     def __init__(self, *args, **kwargs):
         self._sbdbuf_size = kwargs.pop("sbdbuf_size", self._sndbuf_size)
         super().__init__(*args, **kwargs)
-        self.configure_socket(self.socket)
+        socket = getattr(self, "socket", None)
+        if socket is not None:
+            self.configure_socket(socket)
 
     def configure_socket(self, sock):
         import socket

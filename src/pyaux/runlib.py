@@ -7,6 +7,7 @@ import logging
 import signal
 import sys
 import traceback
+from typing import Any
 
 __all__ = [
     "init_logging",
@@ -57,7 +58,7 @@ def init_logging(*args, **kwargs):
 
     colored = kwargs.pop("colored", True)
     if colored and not _try_coloredlogs:
-        from . import use_colorer
+        from .monkeys import use_colorer
 
         use_colorer()
 
@@ -82,9 +83,9 @@ def init_logging(*args, **kwargs):
 
     if _td:
         # XX: do the same for all `logging.Logger.manager.loggerDict.values()`?
-        from .logging_annotators import time_diff_annotator
+        from .logging_annotators import TimeDiffAnnotator
 
-        flt = time_diff_annotator()
+        flt = TimeDiffAnnotator()
         logging.root.addFilter(flt)
         for logger in logging.Logger.manager.loggerDict.values():
             if hasattr(logger, "addFilter"):
@@ -92,8 +93,7 @@ def init_logging(*args, **kwargs):
 
 
 def argless_wrap(fn):
-    """Wrap function to re-try calling it if calling it with arguments
-    failed"""
+    """Wrap function to re-try calling it if calling it with arguments failed"""
 
     def argless_internal(*ar, **kwa):
         try:
@@ -102,19 +102,19 @@ def argless_wrap(fn):
             try:
                 return fn()
             except TypeError:
-                # raise e  # - traceback-inconvenient
+                # raise exc  # - traceback-inconvenient
                 raise  # - error-inconvenient
 
     return argless_internal
 
 
 # convenience wrappers:
-def _sysexit_wrap(n=None, f=None):
-    return sys.exit()
+def _sysexit_wrap(sig_num: Any = None, stack_frame: Any = None) -> None:
+    sys.exit()
 
 
-def _atexit_wrap(n=None, f=None):
-    return atexit._run_exitfuncs()
+def _atexit_wrap(sig_num: Any = None, stack_frame: Any = None) -> None:
+    atexit._run_exitfuncs()
 
 
 class ListSigHandler(list):
@@ -123,14 +123,14 @@ class ListSigHandler(list):
         self.ignore_exc = ignore_exc
         self.verbose = verbose
 
-    def __call__(self, n, f):
+    def __call__(self, sig_num, stack_frame):
         for func in reversed(self):
             try:
                 if self.verbose:
                     sys.stderr.write(f"ListSigHandler: running {func!r}\n")
                 if self.try_argless:
                     func = argless_wrap(func)
-                func(n, f)
+                func(sig_num, stack_frame)
             except Exception as exc:
                 if self.ignore_exc:
                     if self.verbose:
@@ -143,13 +143,13 @@ class ListSigHandler(list):
 
 
 def sigeventer(
-    add_defaults=True,
-    add_previous=True,
-    do_sysexit=True,
-    try_argless=True,
-    ignore_exc=True,
-    verbose=False,
-):
+    add_defaults: bool = True,
+    add_previous: bool = True,
+    do_sysexit: bool = True,
+    try_argless: bool = True,
+    ignore_exc: bool = True,
+    verbose: bool = False,
+) -> ListSigHandler:
     """
     Puts one list-based handler for SIGINT and SIGTERM that can be `append`ed to.
 
@@ -172,7 +172,7 @@ def sigeventer(
     curhandler_int = signal.getsignal(signal.SIGINT)
     curhandler_term = signal.getsignal(signal.SIGTERM)
 
-    if isinstance(curhandler_int, list) and isinstance(curhandler_term, list):
+    if isinstance(curhandler_int, ListSigHandler) and isinstance(curhandler_term, ListSigHandler):
         # probaby us already; just return
         assert (
             curhandler_int is curhandler_term

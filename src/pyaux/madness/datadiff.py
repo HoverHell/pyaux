@@ -7,8 +7,6 @@ import itertools
 import re
 import sys
 
-import yaml
-
 from ..base import colorize_diff, colorize_yaml
 
 __all__ = (
@@ -29,47 +27,15 @@ def _dumprepr(
     **kwa,
 ):
     """Advanced-ish representation of an object (using YAML)"""
-    dumper = yaml.SafeDumper
+    import yaml
+
+    dumper: type[yaml.emitter.Emitter] = yaml.SafeDumper
 
     # NOTE: this means it'll except on infinitely-recursive data.
     if no_anchors:
-
-        class NoAliasesSafeDumper(dumper):
-            def ignore_aliases(self, *args, **kwargs):  # pylint: disable=arguments-differ
-                return True
-
-        dumper = NoAliasesSafeDumper
-
-    if allow_unsorted_dicts and sys.version_info >= (3, 7):
-        from yaml.nodes import MappingNode, ScalarNode
-
-        class UnsortingDumper(dumper):
-            """..."""
-
-            def represent_mapping(self, tag, mapping, flow_style=None):
-                value = []
-                node = MappingNode(tag, value, flow_style=flow_style)
-                if self.alias_key is not None:
-                    self.represented_objects[self.alias_key] = node
-                best_style = True
-                if hasattr(mapping, "items"):
-                    mapping = list(mapping.items())
-                for item_key, item_value in mapping:
-                    node_key = self.represent_data(item_key)
-                    node_value = self.represent_data(item_value)
-                    if not (isinstance(node_key, ScalarNode) and not node_key.style):
-                        best_style = False
-                    if not (isinstance(node_value, ScalarNode) and not node_value.style):
-                        best_style = False
-                    value.append((node_key, node_value))
-                if flow_style is None:
-                    if self.default_flow_style is not None:
-                        node.flow_style = self.default_flow_style
-                    else:
-                        node.flow_style = best_style
-                return node
-
-        dumper = UnsortingDumper
+        dumper = type(
+            "NoAliasesDumper", (dumper,), dict(ignore_aliases=lambda *args, **kwargs: True)
+        )
 
     params = dict(
         # Convenient upper-level kwarg for the most often overridden thing:
@@ -77,6 +43,7 @@ def _dumprepr(
         allow_unicode=True,
         encoding=None,  # return text
         Dumper=dumper,
+        sort_keys=not allow_unsorted_dicts,
     )
     params.update(kwa.get("yaml_kwa", {}))
 
@@ -116,7 +83,7 @@ def word_diff_color(val1, val2, add="\x1b[32m", rem="\x1b[31;01m", clear="\x1b[3
     def _preprocess(val):
         return re.split(r"(?u)(\w+)", val)
 
-    diffs = difflib.unified_diff(_preprocess(val1), _preprocess(val2), n=n)
+    diffs = list(difflib.unified_diff(_preprocess(val1), _preprocess(val2), n=n))
 
     def _postprocess(line):
         if line in ("--- \n", "+++ \n"):
@@ -129,7 +96,6 @@ def word_diff_color(val1, val2, add="\x1b[32m", rem="\x1b[31;01m", clear="\x1b[3
             color = ""
         return f"{color}{line[1:]}{clear}"
 
-    diffs = list(diffs)
     diffs_colored = (_postprocess(line) for line in diffs)
     # return diffs_colored
     sys.stdout.write("".join(diffs_colored))

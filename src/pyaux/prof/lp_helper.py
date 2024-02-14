@@ -22,8 +22,11 @@ instead of `get_prof` and this whole module.
 from __future__ import annotations
 
 import inspect
+import signal
 import sys
 import traceback
+from collections.abc import Collection
+from typing import Any
 
 __all__ = (
     "get_prof",
@@ -71,7 +74,7 @@ def get_prof(proftype="lp", add_builtin=True):
     else:
         raise Exception("Unknown `proftype`.")
     if add_builtin:  # add/replace/whatever
-        __builtins__.profile = profile
+        setattr(__builtins__, "profile", profile)
     return profile
 
 
@@ -152,34 +155,43 @@ def wrap_packages(packages, wrapf=None, verbose=True):
                 try:
                     _wrap_module_stuff(pkg, wrapf)
                 except Exception as exc:
-                    sys.stderr.write(" ... Failed.\n", exc)
+                    sys.stderr.write(f" ... Failed: {exc!r}.\n")
                 break  # make sure not to wrap it many times.
     if verbose:
         sys.stderr.write("Wrapping done.\n")
 
 
-# TODO?: put into the main prof module
-def stgrab(sig, frame):
-    """
-    function that is supposed to be added as a signal handler (e.g. on USR2),
-    prints the stack trace when called.
-    """
-    ofra = inspect.getouterframes(frame)
-    d = dict(_frame=frame)
-    d.update(frame.f_globals)
-    d.update(frame.f_locals)
-    trace_data = [(v[1], v[2], v[3], "".join(v[4] or [])) for v in reversed(ofra)]
-    trace_formatted = "".join(traceback.format_list(trace_data))
-    trace_last_src = "".join(ofra[0][4] or [])
-    if stgrab.check_polling and any((v in trace_last_src) for v in stgrab.poll_codes):
-        sys.stderr.write(" ... Polling ...\n")  # don't spam that specific traceback
-        return
-    sys.stderr.write(f" ------- {stgrab.header_str}\n" "Traceback:\n" f"{trace_formatted}\n")
+class StackGrab:
+    header: str = "Stack trace in process:"
+    check_polling: bool = True
+    # Source code pieces of the known lines that do polling.
+    # Add other known polling lines as needed.
+    poll_codes: Collection[str] = ("   l = self._poller.poll(timeout",)
+
+    def install(self, sig: int = signal.SIGUSR2) -> None:
+        signal.signal(sig, self)
+
+    def __call__(self, sig: Any, frame: Any) -> None:
+        """
+        function that is supposed to be added as a signal handler (e.g. on USR2),
+        prints the stack trace when called.
+        """
+        outer_frames = inspect.getouterframes(frame)
+        data = dict(_frame=frame)
+        data.update(frame.f_globals)
+        data.update(frame.f_locals)
+        trace_data = [
+            traceback.FrameSummary(frame[1], frame[2], frame[3], line="".join(frame[4] or []))
+            for frame in reversed(outer_frames)
+        ]
+        trace_formatted = "".join(traceback.format_list(trace_data))
+        trace_last_code = "".join(outer_frames[0][4] or [])
+        if self.check_polling and any(
+            (code_text in trace_last_code) for code_text in self.poll_codes
+        ):
+            sys.stderr.write(" ... Polling ...\n")  # don't spam that specific traceback
+            return
+        sys.stderr.write(f" ------- {self.header}\nTraceback:\n{trace_formatted}\n")
 
 
-# Funny place to put that:
-stgrab.header_str = "Stack trace in process:"
-stgrab.check_polling = True
-# Source code pieces of the known lines that do polling.
-# MAYBEDO: add other known polling lines
-stgrab.poll_codes = ["   l = self._poller.poll(timeout"]
+stgrab = StackGrab  # compat alias
