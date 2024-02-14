@@ -15,9 +15,9 @@ def repl_header(match):
     """Replace '=' header with '#' header"""
     lh, text, rh = match.groups()
     anchor = text.strip().replace(" ", "_")
-    res = '%(lh)s %(text)s <a name="%(anchor)s" href="#%(anchor)s">§</a> %(rh)s' % dict(
-        lh="#" * len(lh), text=text, anchor=anchor, rh="#" * len(rh)
-    )
+    lh_h = "#" * len(lh)
+    rh_h = "#" * len(rh)
+    res = f'{lh_h} {text} <a name="{anchor}" href="#{anchor}">§</a> {rh_h}'
     # # Add an anchor
     # res = '<a href="%s">\n%s\
     # res += '\n<a name="%s"></a>' % (text.strip(),)
@@ -27,8 +27,8 @@ def repl_header(match):
 class Worker:
     result = None
     state = None
-    state__list = None
-    state__location = None
+    state_list = None
+    state_location = None
 
     simple_replacements = (
         # header
@@ -87,8 +87,8 @@ class Worker:
 
     def process(self, lines):
         self.state = ""
-        self.state__list = []
-        self.state__location = []
+        self.state_list = []
+        self.state_location = []
         self.result = []
 
         # self.result.append(self.header)
@@ -126,7 +126,7 @@ class Worker:
                 self.unwind_list()
                 self.result.append(prev_line_x)
                 self.state = ""
-                self.state__list = None
+                self.state_list = None
         elif not prev_line and line.startswith(" 1. "):
             # note the very specific list starter
             self.state = "list"
@@ -137,7 +137,7 @@ class Worker:
             self.check_state_header(line)
 
     def check_state_header(self, line):
-        """Keep the state__location current"""
+        """Keep the state_location current"""
         heading_match = re.search(r'^(?P<tag>#+).*name="(?P<name>[^"]+)".*', line)
         if not heading_match:
             return
@@ -147,14 +147,14 @@ class Worker:
         # Should almost always exist because of repl_header.
         name = data.get("name") or ""
         data.update(depth=depth, name=name)
-        if not self.state__location:
-            self.state__location = [data]
+        if not self.state_location:
+            self.state_location = [data]
             return
 
         shallower, same_or_deeper = pyaux.split_list(
-            self.state__location, lambda info: info["depth"] < depth
+            self.state_location, lambda info: info["depth"] < depth
         )
-        self.state__location = shallower + [data]
+        self.state_location = shallower + [data]
 
     def process_list(self, line):
         # any line should match
@@ -180,23 +180,23 @@ class Worker:
 
         item_header = f'<li value="{num}">'
 
-        anchor_name = "".join("{}__".format(info["name"]) for info in self.state__location)
+        anchor_name = "".join(f"{info['name']}__" for info in self.state_location)
         anchor_name = anchor_name + num.rstrip(".").replace(".", "_")
         item_header = item_header + f'<a name="{anchor_name}"></a>'
         item_footer = self.item_footer
         item_info = dict(data, indent=indent)
 
         # else:  if num:
-        if not self.state__list:
+        if not self.state_list:
             # starting a list
             self.result.extend(
                 (self.list_header, spaces + item_header, spaces + text)  # <ol>  # <li>
             )
-            self.state__list = [item_info]
+            self.state_list = [item_info]
             return
 
         # else: if within a list already:
-        last_info = self.state__list[-1]
+        last_info = self.state_list[-1]
         if last_info["indent"] == indent:
             # same indent, i.e. continuing the list
             self.result.extend(
@@ -209,14 +209,14 @@ class Worker:
             self.result.extend(
                 (spaces + self.list_header, spaces + item_header, spaces + text)  # <ol>  # <li>
             )
-            self.state__list.append(item_info)
+            self.state_list.append(item_info)
         elif indent - last_info["indent"] < 0:
             # returning
             state_closing, state_remain = pyaux.split_list(
-                self.state__list, lambda info: info["indent"] > indent
+                self.state_list, lambda info: info["indent"] > indent
             )
             self.unwind_list(state_closing)  # </li></ol>
-            self.state__list = state_remain
+            self.state_list = state_remain
             self.result.extend(
                 (spaces + item_footer, spaces + item_header, spaces + text)  # </li>  # <li>
             )
@@ -225,7 +225,7 @@ class Worker:
 
     def unwind_list(self, infos=None):
         if infos is None:
-            infos = self.state__list or []
+            infos = self.state_list or []
         for info in reversed(infos):
             spaces = info["spaces"]
             self.result.extend(

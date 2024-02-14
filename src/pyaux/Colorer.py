@@ -80,7 +80,6 @@ def add_coloring_to_emit_windows(fn):
 
 
 def add_coloring_to_emit_ansi(fn):
-
     # add methods we need to the class
     def new(*args):
         record = args[1]

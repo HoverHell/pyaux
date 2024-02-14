@@ -116,7 +116,6 @@ def rast_to_pattern(rast, _parent_type=None, **kwargs):
     # _ord = ord
 
     if isinstance(rast, sre_parse.SubPattern):
-
         kwargs["flags"] = kwargs.get("flags", 0) | rast.state.flags
 
         if kwargs.get("group_to_name") is None:
@@ -276,8 +275,9 @@ def rast_to_pattern(rast, _parent_type=None, **kwargs):
             #     # global flags still are not known
             #     subpatternappend((IN, set))
         elif item_type is IN:
-            # XXXXX: needs re-checking
-            return "[{}]".format("".join(rast_to_pattern(child, **kwargs) for child in item_value))
+            # TODO: needs re-checking
+            inner = "".join(rast_to_pattern(child, **kwargs) for child in item_value)
+            return f"[{inner}]"
 
         # # Reference:
         # elif this in REPEAT_CHARS:
@@ -350,16 +350,15 @@ def rast_to_pattern(rast, _parent_type=None, **kwargs):
             elif min_repeat == max_repeat:  # `{a}`
                 modifier = f"{{{min_repeat}}}"
             else:  # `{a,b}`
-                modifier = "{{{},{}}}".format(
-                    "" if min_repeat == 0 else min_repeat,
-                    "" if max_repeat is MAXREPEAT else max_repeat,
-                )
-            return "{}{}{}".format(
-                _ensure_grouped(rast_to_pattern(child, **kwargs), source=child),
-                modifier,
-                # e.g. `.{4,}?` i.e. `(?:|.{4,})`
-                "?" if item_type is MIN_REPEAT else "",
-            )
+                min_repeat_s = "" if min_repeat == 0 else min_repeat
+                max_repeat_s = "" if max_repeat is MAXREPEAT else max_repeat
+                modifier = f"{{{min_repeat_s},{max_repeat_s}}}"
+
+            child_s = _ensure_grouped(rast_to_pattern(child, **kwargs), source=child)
+            # e.g. `.{4,}?` i.e. `(?:|.{4,})`
+            opt_s = "?" if item_type is MIN_REPEAT else ""
+
+            return f"{child_s}{modifier}{opt_s}"
 
         # # Reference:
         # elif this == ".":
@@ -630,10 +629,9 @@ def rast_to_pattern(rast, _parent_type=None, **kwargs):
                     assert not flags
                     flags = [f"P<{name}>"] + flags
 
-            return "({}{})".format(
-                "?{}".format("".join(flags)) if flags else "",
-                rast_to_pattern(child, **kwargs),
-            )
+            flags_s = ("?" + "".join(flags)) if flags else ""
+            child_s = rast_to_pattern(child, **kwargs)
+            return f"({flags_s}{child_s})"
 
         # # Reference:
         # elif this == "^":

@@ -173,17 +173,17 @@ def render_exc_repr(exc_type, exc_value):
     """A still paranoid but more detailed exception representator"""
     res = ""
     try:
-        res += "Error:  %s" % _exc_safe_repr(exc_type, exc_value)
+        res += f"Error:  {_exc_safe_repr(exc_type, exc_value)}"
         try:
             res += f"  (repr: '''{exc_value!r}''')\n"
-        except Exception as e:
+        except Exception as exc:
             try:
-                res += f"  (Failure to repr: {e!r})\n"
-            except Exception as e2:
-                res += "  (Failure to repr totally: ({}) ({})\n".format(
-                    _exc_safe_repr(type(e), e).strip(),
-                    _exc_safe_repr(type(e2), e2).strip(),
-                )
+                res += f"  (Failure to repr: {exc!r})\n"
+            except Exception as exc_repr_exc:
+                exc_s = _exc_safe_repr(type(exc), exc).strip()
+                exc_repr_exc_s = _exc_safe_repr(type(exc_repr_exc), exc_repr_exc).strip()
+                res += f"  (Failure to repr totally: ({exc_s}) ({exc_repr_exc_s})\n"
+
     except Exception as e3:
         try:
             res += ("Error: Some faulty exception of type %r, failing " "on repr with %s") % (

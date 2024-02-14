@@ -243,15 +243,16 @@ def prepare(params: argparse.Namespace) -> int:
     LOGGER.debug("Git history: %r", git_history)
 
     new_history_header = f"{new_version} ({today})"
-    new_history_header_full = "{}\n{}".format(
+    new_history_versions_parts = [
+        "",
         new_history_header,
         "+" * len(new_history_header),
-    )
-    new_history_versions = "\n{}\n\n{}\n\n{}".format(
-        new_history_header_full,
+        "",
         git_history,
+        "",
         history_versions,
-    )
+    ]
+    new_history_versions = "\n".join(new_history_versions_parts)
     new_history_full = "".join(history_parts[:-1] + [new_history_versions])
     LOGGER.log(LOGLEVEL_EVERYTHING, "New history: \n%s", new_history_full)
 

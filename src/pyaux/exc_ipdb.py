@@ -19,7 +19,7 @@ def info(type, value, tb):
     else:
         import traceback
 
-        import ipdb
+        import ipdb  # noqa: T100
 
         # we are NOT in interactive mode, print the exception...
         traceback.print_exception(type, value, tb)

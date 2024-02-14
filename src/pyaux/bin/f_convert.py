@@ -322,16 +322,16 @@ def make_parse_func(params):
 
     if input_format == "auto":
         parse_func = parse_auto
-        err_tpl = "Error parsing as JSON/YAML/MSGPACK: {exc}"
+        err_tpl = "Error parsing as JSON/YAML/MSGPACK: {exc}"  # noqa: FS003
     elif input_format == "json":
         parse_func = parse_json
-        err_tpl = "Error parsing as JSON: {exc}"
+        err_tpl = "Error parsing as JSON: {exc}"  # noqa: FS003
     elif input_format == "yaml":
         parse_func = parse_yaml
-        err_tpl = "Error parsing as YAML: {exc}"
+        err_tpl = "Error parsing as YAML: {exc}"  # noqa: FS003
     elif input_format in ("msgp", "msgpack"):
         parse_func = functools.partial(parse_msgp, input_encoding=params.input_encoding)
-        err_tpl = "Error parsing as MsgPack: {exc}"
+        err_tpl = "Error parsing as MsgPack: {exc}"  # noqa: FS003
     else:
         raise Exception("Unknown input_format")
 

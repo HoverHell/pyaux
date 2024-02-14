@@ -33,7 +33,6 @@ def url_replace(url, **params):
     name_to_num = {field: idx for idx, field in enumerate(url_fields)}
     url_parts = list(urllib.parse.urlparse(url))  # Need a copy anyway
     for key, val in params.items():
-
         # Allow supplying various stuff as a query
         if key == "query" and not isinstance(val, (bytes, str)):
             if isinstance(val, dict):

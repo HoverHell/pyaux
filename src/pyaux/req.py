@@ -99,7 +99,6 @@ SESSION_ZEALOUS = configure_session(requests.Session())
 
 
 class RequesterBase:
-
     apply_environment = True
     length_cut_marker = b"..."
     _prepare_request_keys = frozenset(
@@ -270,7 +269,6 @@ class RequesterVerbMethods(RequesterBase):
 
 
 class RequesterDefaults(RequesterBase):
-
     # Warning: argument defaults are also duplicated in `Requester.__init__`.
     def __init__(
         self,
@@ -405,7 +403,6 @@ class RequesterContentType(RequesterBase):
 
 
 class RequesterMeta(RequesterBase):
-
     # Warning: argument defaults are also duplicated in `Requester.__init__`.
     def __init__(self, collect_call_info=True, call_info_in_ua=True, **kwargs):
         self.collect_call_info = collect_call_info
@@ -417,9 +414,9 @@ class RequesterMeta(RequesterBase):
         call_info = kwargs.pop("call_info", None)
         if call_info and self.call_info_in_ua:
             # `call_info`: `(cfile, cline, cfunc)`.
-            kwargs["headers"]["user-agent"] = "{}, {}:{}: {}".format(
-                kwargs["headers"].get("user-agent") or "", *call_info
-            )
+            prev_ua = kwargs["headers"].get("user-agent") or ""
+            cfile, cline, cfunc = call_info
+            kwargs["headers"]["user-agent"] = f"{prev_ua}, {cfile}:{cline}: {cfunc}"
         return super()._prepare_parameters(kwargs)
 
     def request(self, url, **kwargs):
@@ -438,7 +435,6 @@ class RequesterMeta(RequesterBase):
 
 
 class RequesterAutoRaiseForStatus(RequesterBase):
-
     raise_with_content = True
     raise_content_cap = 1800  # in bytes.
     response_exception_cls = requests.exceptions.HTTPError
@@ -496,7 +492,6 @@ class RequesterAutoRaiseForStatus(RequesterBase):
 
 
 class RequesterLog(RequesterBase):
-
     log_response_headers = True
     logging_url_cap = 1800
 
@@ -522,9 +517,7 @@ class RequesterLog(RequesterBase):
         if request.body:
             data_info = f"  data_len={len(request.body)}"
 
-        return "{method} {url}{data_info}".format(
-            method=request.method.upper(), url=url, data_info=data_info
-        )
+        return f"{request.method.upper()} {url}{data_info}"
 
     def request_for_logging_lazy(self, request):
         """... exactly what it says"""
@@ -532,11 +525,12 @@ class RequesterLog(RequesterBase):
 
     def response_for_logging(self, response):
         """Make a log string out of a response"""
+        content_len = len(response.content or "")
         pieces = [
             response.status_code,
             response.request.method,
             response.url,
-            "    {}b".format(len(response.content or "")),
+            f"    {content_len}b",
         ]
         try:
             elapsed = f"in {response.elapsed.total_seconds():.3f}s"

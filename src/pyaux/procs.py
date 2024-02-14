@@ -114,7 +114,6 @@ def poll_fds(
 
 
 def run_cmd(*args, **kwargs):
-
     timeout = kwargs.pop("timeout", 600)
     stdout_cb = kwargs.pop("stdout_cb", stdout_cb_default)
     stderr_cb = kwargs.pop("stderr_cb", stderr_cb_default)

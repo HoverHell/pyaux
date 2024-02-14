@@ -158,7 +158,7 @@ class TheServer:
 
     def on_close(self, sck):
         meta = self.meta.pop(sck, None)
-        _out("%s has disconnected" % _addr_repr(meta))
+        _out(f"{_addr_repr(meta)} has disconnected")
         # remove objects from input_list
         self.input_list.remove(sck)
         self.input_list.remove(self.channel[sck])
@@ -258,7 +258,8 @@ def main():
             def _proc(ct):
                 if _datefmt:
                     return ct.strftime(_datefmt)
-                return "%s.%03d" % (ct.strftime("%Y-%m-%dT%H:%M:%S"), record.msecs)
+                ct_s = ct.strftime("%Y-%m-%dT%H:%M:%S")
+                return f"{ct_s}.{record.msecs:03d}"
 
             res = _proc(self.converter(record.created))
             return res

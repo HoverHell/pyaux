@@ -81,12 +81,12 @@ def _print(something):
 
 def _ipdbg(_a_function_thingie, *ar, **kwa):
     """Run with ipdb post-mortem on exception"""
-    import ipdb
+    import ipdb  # noqa: T100
 
     try:
         return _a_function_thingie(*ar, **kwa)
     except Exception as exc:
-        assert exc is not None
+        assert exc is not None  # noqa: PT017
         _, _, sys.last_traceback = sys.exc_info()
         traceback.print_exc()
         ipdb.pm()
@@ -95,13 +95,13 @@ def _ipdbg(_a_function_thingie, *ar, **kwa):
 
 def _ipdbt(_a_function_thingie, *ar, **kwa):
     """Run with ipdb trace and post-mortem on exception"""
-    import ipdb
+    import ipdb  # noqa: T100
 
-    ipdb.set_trace()
+    ipdb.set_trace()  # noqa: T100
     try:
         return _a_function_thingie(*ar, **kwa)
     except Exception as exc:
-        assert exc is not None
+        assert exc is not None  # noqa: PT017
         _, _, sys.last_traceback = sys.exc_info()
         traceback.print_exc()
         ipdb.pm()
@@ -110,12 +110,12 @@ def _ipdbt(_a_function_thingie, *ar, **kwa):
 
 def _pdbg(_a_function_thingie, *ar, **kwa):
     """Run with pdb post-mortem on exception"""
-    import pdb
+    import pdb  # noqa: T100
 
     try:
         return _a_function_thingie(*ar, **kwa)
     except Exception as exc:
-        assert exc is not None
+        assert exc is not None  # noqa: PT017
         _, _, sys.last_traceback = sys.exc_info()
         traceback.print_exc()
         pdb.pm()
@@ -124,13 +124,13 @@ def _pdbg(_a_function_thingie, *ar, **kwa):
 
 def _pdbt(_a_function_thingie, *ar, **kwa):
     """Run with pdb trace and post-mortem on exception"""
-    import pdb
+    import pdb  # noqa: T100
 
-    pdb.set_trace()
+    pdb.set_trace()  # noqa: T100
     try:
         return _a_function_thingie(*ar, **kwa)
     except Exception as exc:
-        assert exc is not None
+        assert exc is not None  # noqa: PT017
         _, _, sys.last_traceback = sys.exc_info()
         traceback.print_exc()
         pdb.pm()

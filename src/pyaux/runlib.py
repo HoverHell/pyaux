@@ -18,19 +18,19 @@ def _make_short_levelnames(shortnum=True):
     """Return a dict (levelnum -> levelname) with short names for logging.
     `shortnum`: also shorten all 'Level #' names to 'L##'.
     """
-    _names = dict(
+    names = dict(
         [
             (logging.DEBUG, "DBG"),
-            (logging.INFO, "INFO"),  # d'uh
-            (logging.WARN, "WARN"),
+            (logging.INFO, "INFO"),
+            (logging.WARNING, "WARN"),
             (logging.ERROR, "ERR"),
             (logging.CRITICAL, "CRIT"),
         ]
     )
     if shortnum:
-        for i in range(1, 100):
-            _names.setdefault(i, "L%02d" % (i,))
-    return _names
+        for idx in range(1, 100):
+            names.setdefault(idx, f"L{idx:02d}")
+    return names
 
 
 # Current attempt: use bytes in py2, unicode in py3 (i.e. subvert unicode_literals just for these).

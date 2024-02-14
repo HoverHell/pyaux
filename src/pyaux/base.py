@@ -90,6 +90,7 @@ def debug_plug(name, mklogger=None):
     :param mklogger: a function of `name` (str) that returns a new callable(msg:
       str) used for logging.  See code for an example.
     """
+
     # The construction with mkClass is for removing the need of
     #   `__getattr__`ing the name and logger.
     def mklogger_default(name):
@@ -486,7 +487,6 @@ def o_repr_g(
     first = True
 
     for n in sorted(dir(o)):
-
         # skip 'private' stuff
         if n.startswith("_") and not _private:
             continue
@@ -1177,7 +1177,7 @@ def request(
         if _default_host is None:
             raise Exception("Must specify _default_host for host-relative URLs")
         if "://" not in _default_host:
-            _default_host = "http://%s" % _default_host
+            _default_host = f"http://{_default_host}"
         url = urllib.parse.urljoin(_default_host, url)
 
     params = kwa.get("params") or {}

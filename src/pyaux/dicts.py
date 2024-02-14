@@ -346,10 +346,8 @@ class ODReprMixin:
         """A slightly more visual-oriented representation of an ordereddict"""
         if not self:
             return f"{self.__class__.__name__}()"
-        return "{}({})".format(
-            self.__class__.__name__,
-            ", ".join(f"{key!r}: {val!r}" for key, val in self.items()),
-        )
+        items_s = ", ".join(f"{key!r}: {val!r}" for key, val in self.items())
+        return f"{self.__class__.__name__}({items_s})"
 
     def __repr__(self, _repr_running={}, fn=__drepr__):
         """Wrapped around __drepr__ that makes it possible to
@@ -376,13 +374,12 @@ class ODReprMixin:
 # or /usr/lib/python2.7/collections.py
 # with modifications
 class OrderedDict(ODReprMixin, dict, MutableMapping):
-
     __end = None
     __map = None
 
     def __init__(self, *args, **kwds):
         if len(args) > 1:
-            raise TypeError("expected at most 1 arguments, got %d" % len(args))
+            raise TypeError(f"expected at most 1 arguments, got {len(args)}")
         # try:
         #     self.__end
         # except AttributeError:
@@ -530,10 +527,8 @@ class MultiValueDict(dict):
         return cls(key_to_list_mapping)
 
     def __repr__(self):
-        return "<{}: {}>".format(
-            self.__class__.__name__,
-            super().__repr__(),
-        )
+        sup = super().__repr__()
+        return f"<{self.__class__.__name__}: {sup}>"
 
     def __getitem__(self, key):
         """
@@ -661,7 +656,7 @@ class MultiValueDict(dict):
         Also accepts keyword args.
         """
         if len(args) > 1:
-            raise TypeError("update expected at most 1 arguments, got %d" % len(args))
+            raise TypeError(f"`update` expected at most 1 arguments, got {len(args)}")
         if args:
             other_dict = args[0]
             if isinstance(other_dict, MultiValueDict):
@@ -745,7 +740,6 @@ def _lists_ungroup(key_to_list_mapping):
 
 
 class MVODCommon(ODReprMixin):
-
     _data_internal = ()
 
     # Conveniences
@@ -778,7 +772,7 @@ class MVODCommon(ODReprMixin):
         pair-tuples.
         """
         if len(args) > 1:
-            raise TypeError("expected at most 1 arguments, got %d" % len(args))
+            raise TypeError(f"Expected at most 1 arguments, got {len(args)}")
         arg = args[0] if args else []
         if isinstance(arg, MVOD):  # support init / update from antother MVOD
             arg = arg._data

@@ -122,7 +122,6 @@ def gai_verbose_parse(responses, family_set=None, flags=None):
         flag_names = {item["name"] for num, item in SOCKET_AI.items() if flags & item["value"]}
 
     for family, socktype, proto, canonname, sockaddr in responses:
-
         if family_set is not None and family not in family_set:
             continue
         # TODO: same for the rest.
