@@ -3,6 +3,13 @@
 Release History
 ---------------
 
+3.2.0 (2024-02-14)
+++++++++++++++++++
+
+ - Update and fix typing annotations
+ - Upgrade linting style
+
+
 3.1.0 (2022-11-25)
 ++++++++++++++++++
 
