@@ -48,7 +48,7 @@ class DummyProfiler:
     __exit__ = enable = disable = dump_stats = print_stats = lambda self, *ar, **kwa: None
 
 
-profile = None
+profile: Any = None
 profile_type = None
 
 

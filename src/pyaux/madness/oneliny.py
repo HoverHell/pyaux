@@ -5,6 +5,8 @@ from __future__ import annotations
 import inspect
 import sys
 import traceback
+from collections.abc import Callable
+from typing import Any
 
 from pyaux.dicts import DotDict
 
@@ -141,6 +143,7 @@ def _pdbt(_a_function_thingie, *ar, **kwa):
 
 
 def _uprint(obj, ret=False):
+    pretty: Callable[[Any], str]
     try:
         from IPython.lib.pretty import pretty
     except Exception:

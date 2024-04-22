@@ -63,7 +63,7 @@ def highcharts_old(
         % context
     )
     res = HTML(html)
-    res.context = context
+    setattr(res, "context", context)
     return res
 
 

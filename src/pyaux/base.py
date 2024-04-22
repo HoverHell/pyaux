@@ -12,7 +12,7 @@ import time
 import traceback
 import unicodedata
 import urllib.parse
-from collections.abc import Callable, Iterable, Iterator, Hashable
+from collections.abc import Callable, Hashable, Iterable, Iterator
 from decimal import Decimal
 from types import FrameType
 from typing import Any, Literal, TypeVar, cast
