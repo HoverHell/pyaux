@@ -12,7 +12,7 @@ import time
 import traceback
 import unicodedata
 import urllib.parse
-from collections.abc import Callable, Iterable, Iterator
+from collections.abc import Callable, Iterable, Iterator, Hashable
 from decimal import Decimal
 from types import FrameType
 from typing import Any, Literal, TypeVar, cast
@@ -70,7 +70,7 @@ __all__ = (
 )
 
 
-TKey = TypeVar("TKey")
+TKey = TypeVar("TKey", bound=Hashable)
 TVal = TypeVar("TVal")
 TRet = TypeVar("TRet")
 
