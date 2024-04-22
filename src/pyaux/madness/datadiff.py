@@ -29,7 +29,7 @@ def _dumprepr(
     """Advanced-ish representation of an object (using YAML)"""
     import yaml
 
-    dumper: type[yaml.emitter.Emitter] = yaml.SafeDumper
+    dumper: type[yaml.emitter.Emitter] = yaml.Dumper
 
     # NOTE: this means it'll except on infinitely-recursive data.
     if no_anchors:
