@@ -3,6 +3,14 @@
 Release History
 ---------------
 
+3.3.0 (2024-04-22)
+++++++++++++++++++
+
+ - Fix typing
+ - Use yaml unsafe dumper for readable representations
+ - Improve typing
+
+
 3.2.0 (2024-02-14)
 ++++++++++++++++++
 
