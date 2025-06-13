@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 Additional utils for working with subprocesses.
 
@@ -17,7 +18,7 @@ import time
 def _out_cb_default_common(tag, line, timestamp=None, encoding="utf-8", errors="replace"):
     # timestamp_dt = datetime.datetime.fromtimestamp(timestamp)
     # # Less precise, more convenient.
-    timestamp_dt = datetime.datetime.now()
+    timestamp_dt = datetime.datetime.now(datetime.UTC)
     line = line.decode(encoding, errors=errors)
     if line.endswith("\n"):
         line = line[:-1]
@@ -53,6 +54,7 @@ def set_fd_nonblocking(fdesc):
 
 def poll_fds(
     fdmapping,
+    *,
     log=lambda msg, *args: None,
     nonblocking=False,
     inner_timeout=1.0,

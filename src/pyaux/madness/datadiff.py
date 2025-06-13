@@ -1,4 +1,4 @@
-""" madstuff: datadiff stuff """
+"""madstuff: datadiff stuff"""
 
 from __future__ import annotations
 
@@ -10,9 +10,9 @@ import sys
 from ..base import colorize_diff, colorize_yaml
 
 __all__ = (
-    "_dumprepr",
-    "_diff_pre_diff",
     "_diff_datadiff_data",
+    "_diff_pre_diff",
+    "_dumprepr",
     "datadiff",
     "p_datadiff",
 )
@@ -20,6 +20,7 @@ __all__ = (
 
 def _dumprepr(
     val,
+    *,
     no_anchors=True,
     colorize=False,
     try_ujson=True,
@@ -33,9 +34,7 @@ def _dumprepr(
 
     # NOTE: this means it'll except on infinitely-recursive data.
     if no_anchors:
-        dumper = type(
-            "NoAliasesDumper", (dumper,), dict(ignore_aliases=lambda *args, **kwargs: True)
-        )
+        dumper = type("NoAliasesDumper", (dumper,), dict(ignore_aliases=lambda *args, **kwargs: True))
 
     params = dict(
         # Convenient upper-level kwarg for the most often overridden thing:
@@ -73,8 +72,7 @@ def _diff_pre_diff(val, **kwa):
     """Prepare a value for diff-ing"""
     _repr = kwa.get("_repr", _dumprepr)
     res = _repr(val, **kwa)
-    res = res.splitlines()
-    return res
+    return res.splitlines()
 
 
 def word_diff_color(val1, val2, add="\x1b[32m", rem="\x1b[31;01m", clear="\x1b[39;49;00m", n=3):
@@ -106,11 +104,10 @@ def _diff_datadiff_data(val1, val2, n=3, **kwa):
     """Do the diff and return the data"""
     val1_p = _diff_pre_diff(val1, **kwa)
     val2_p = _diff_pre_diff(val2, **kwa)
-    res = difflib.unified_diff(val1_p, val2_p, n=n)
-    return res
+    return difflib.unified_diff(val1_p, val2_p, n=n)
 
 
-def datadiff(val1, val2, colorize=False, colorize_as_yaml=False, **kwargs):
+def datadiff(val1, val2, *, colorize=False, colorize_as_yaml=False, **kwargs):
     """Return a values diff string"""
     kwargs["colorize"] = colorize_as_yaml  # NOTE: controversial
     data = _diff_datadiff_data(val1, val2, **kwargs)

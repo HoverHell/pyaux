@@ -1,4 +1,5 @@
-""" Set the exception handler to additionaly log the exception before
+"""
+Set the exception handler to additionaly log the exception before
 processing it further (e.g. to e-mail it to admins).
 
 Logs local variables at each traceback level when possible
@@ -6,6 +7,7 @@ Logs local variables at each traceback level when possible
 Replaces sys.excepthook on `init()`.
 Can be included in 'sitecustomize.py'
 """
+
 # # Extracts from django.views.debug
 # # (should not require django)
 # from django.template.filters import force_escape
@@ -16,6 +18,7 @@ import re
 import reprlib
 import sys
 import traceback
+from pathlib import Path
 
 from pyaux.base import to_text
 
@@ -57,19 +60,19 @@ def info(exc_type, exc_value, tb):
     sys.__excepthook__(exc_type, exc_value, tb)
 
 
-def _var_repr(v, ll=356):
+def _var_repr(val, ll=356):
     try:
         # # not exactly optimized in case of huge datalists
         # r = pformat(v)
         # # not exactly... pretty
-        r = lrepr_call(v)
-        # # XXX: combine those two somehow?
+        res = lrepr_call(val)
+        # # combine those two somehow?
         # # (also, make it print last value of `list`/`deque`/... always, too)
     except Exception as exc:
         return f"<un`repr()`able variable: {exc!r}>"
     # if len(r) > ll:  # handled by the lrepr, somewhat; `ll` is ignored
     #     return r[:ll-4] + '... '
-    return r
+    return res
 
 
 def _get_lines_from_file(filename, lineno, context_lines, loader=None, module_name=None):
@@ -84,17 +87,14 @@ def _get_lines_from_file(filename, lineno, context_lines, loader=None, module_na
             source = source.splitlines()
     if source is None:
         try:
-            f = open(filename)
-            try:
-                source = f.readlines()
-            finally:
-                f.close()
+            with Path(filename).open() as fobj:
+                source = fobj.readlines()
         except OSError:
             pass
     if source is None:
         return None, [], None, []
 
-    encoding = "ascii"
+    encoding = "utf-8"
     for line in source[:2]:
         # File coding may be specified. Match pattern from PEP-263
         # (http://www.python.org/dev/peps/pep-0263/)
@@ -186,7 +186,7 @@ def render_exc_repr(exc_type, exc_value):
 
     except Exception as e3:
         try:
-            res += ("Error: Some faulty exception of type %r, failing " "on repr with %s") % (
+            res += ("Error: Some faulty exception of type %r, failing on repr with %s") % (
                 exc_type,
                 _exc_safe_repr(type(e3), e3),
             )
@@ -246,18 +246,19 @@ def advanced_info(exc_type, exc_value, tb):
 
 
 def advanced_info_safe(exc_type, exc_value, tb):
-    """A paranoid wrapper around handlers; not normally necessary as Python
+    """
+    A paranoid wrapper around handlers; not normally necessary as Python
     handles unhandled exceptions in unhandled exception handlers properly
     """
     try:
         advanced_info(exc_type, exc_value, tb)
-    except Exception as e:
+    except Exception:
         try:
             info(exc_type, exc_value, tb)
         except Exception:
             sys.stderr.write("Everything is failing! Running the default excepthook.\n")
             sys.__excepthook__(exc_type, exc_value, tb)
-        raise e
+        raise
 
 
 def init():

@@ -1,6 +1,5 @@
-"""
-Helpers for using Highcharts / Highstock in an IPython notebook.
-"""
+"""Helpers for using Highcharts / Highstock in an IPython notebook."""
+
 from __future__ import annotations
 
 import copy
@@ -26,8 +25,10 @@ def highcharts_old(
     chart_def_json=None,
     height=400,
     min_width=400,
+    *,
     uid=None,
     highstock=True,
+    ctx_attr: str = "context",
 ):
     assert chart_def or chart_def_json
     unique_id = mk_uid() if uid is None else uid
@@ -63,7 +64,7 @@ def highcharts_old(
         % context
     )
     res = HTML(html)
-    setattr(res, "context", context)
+    setattr(res, ctx_attr, context)
     return res
 
 
@@ -93,7 +94,7 @@ def run_js(js, delayed=50):
     return HTML(html)
 
 
-def display_highcharts(chart_def=None, width=1800, height=800, highstock=True, **kwargs):
+def display_highcharts(chart_def=None, width=1800, height=800, *, highstock=True, **kwargs):
     if highstock:
         from highcharts import Highstock
 
@@ -121,6 +122,7 @@ def mk_chart_def(
     df=None,
     kwa=None,
     series=None,
+    *,
     chart_type="line",
     timestamp_in_idx="auto",
     margin_right=130,
@@ -191,19 +193,13 @@ def mk_chart_def(
         if timestamp_in_idx:
             res["xAxis"]["type"] = "datetime"
 
-        df = df.applymap(
-            lambda val: dt_to_hc(val)
-            if isinstance(val, (datetime.date, datetime.datetime))
-            else val
-        )
+        df = df.applymap(lambda val: dt_to_hc(val) if isinstance(val, (datetime.date, datetime.datetime)) else val)
         if timestamp_in_idx:
             idx = [dt_to_hc(val) for val in idx]
             zip_idx = True
 
         if zip_idx:
-            series.extend(
-                dict(name=column, data=zip(idx, list(df[column]))) for column in df.columns
-            )
+            series.extend(dict(name=column, data=zip(idx, list(df[column]))) for column in df.columns)
         else:
             series.extend(dict(name=column, data=list(df[column])) for column in df.columns)
 
@@ -218,12 +214,9 @@ def dt_to_hc(dt):
     return int(time.mktime(dt.timetuple()) * 1e3 + dt.microsecond / 1e3)
 
 
-def ohlc_to_data(df, cols="o h l c".split(), **kwa):
+def ohlc_to_data(df, cols=("o", "h", "l", "c"), **kwa):
     """OHLC dataframe -> data"""
-    res = [
-        ([dt_to_hc(idx.to_datetime())] + [row[col] for col in cols]) for idx, row in df.iterrows()
-    ]
-    return res
+    return [([dt_to_hc(idx.to_datetime())] + [row[col] for col in cols]) for idx, row in df.iterrows()]
 
 
 def ohlc_to_serie(df, name=None, extra=None, grouping_units=None, **kwa):
@@ -264,7 +257,8 @@ def interleave(joiner, iterable):
 
 
 def ohlcv_to_cdef(df, name, volume="v", pois=None, poi_to_color="default", **kwa):
-    """Helper to convert OHLCV data to a chart def.
+    """
+    Helper to convert OHLCV data to a chart def.
 
     `pois`: [
         # poi

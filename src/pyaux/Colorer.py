@@ -5,6 +5,7 @@ src: http://stackoverflow.com/questions/384076/how-can-i-color-python-logging-ou
 
 TODO: make a handler/formatter with this instead.
 """
+
 from __future__ import annotations
 
 import logging
@@ -45,21 +46,16 @@ def add_coloring_to_emit_windows(fn):
 
         # Constants from the Windows API
         self.STD_OUTPUT_HANDLE = -11
-        windll = getattr(ctypes, "windll")
+        windll = ctypes.windll  # type: ignore[attr-defined]
         hdl = windll.kernel32.GetStdHandle(self.STD_OUTPUT_HANDLE)
         windll.kernel32.SetConsoleTextAttribute(hdl, code)
 
-    setattr(logging.StreamHandler, "_set_color", _set_color)
+    logging.StreamHandler._set_color = _set_color  # type: ignore[attr-defined]
 
     def new(*args):
         levelno = args[1].levelno
         if levelno >= 50:
-            color = (
-                MS_BACKGROUND_YELLOW
-                | MS_FOREGROUND_RED
-                | MS_FOREGROUND_INTENSITY
-                | MS_BACKGROUND_INTENSITY
-            )
+            color = MS_BACKGROUND_YELLOW | MS_FOREGROUND_RED | MS_FOREGROUND_INTENSITY | MS_BACKGROUND_INTENSITY
         elif levelno >= 40:
             color = MS_FOREGROUND_RED | MS_FOREGROUND_INTENSITY
         elif levelno >= 30:
@@ -86,9 +82,7 @@ def add_coloring_to_emit_ansi(fn):
         record = args[1]
         levelno = record.levelno
         nocolor = "\x1b[0m"
-        if levelno >= 50:
-            color = "\x1b[31m"  # red
-        elif levelno >= 40:
+        if levelno >= 40:
             color = "\x1b[31m"  # red
         elif levelno >= 30:
             color = "\x1b[33m"  # yellow
@@ -115,13 +109,13 @@ def init():
     if platform.system() == "Windows":
         # Windows does not support ANSI escapes and we are using API calls
         # to set the console color
-        setattr(
-            logging.StreamHandler, "emit", add_coloring_to_emit_windows(logging.StreamHandler.emit)
+        logging.StreamHandler.emit = add_coloring_to_emit_windows(  # type: ignore[method-assign]
+            logging.StreamHandler.emit
         )
     else:
         # all non-Windows platforms are supporting ANSI escapes so we use them
-        setattr(
-            logging.StreamHandler, "emit", add_coloring_to_emit_ansi(logging.StreamHandler.emit)
+        logging.StreamHandler.emit = add_coloring_to_emit_ansi(  # type: ignore[method-assign]
+            logging.StreamHandler.emit
         )
         # log = logging.getLogger()
         # log.addFilter(log_filter())
@@ -131,11 +125,12 @@ def init():
 
 def test():
     """Provide a simple test-demonstration"""
+    logger = logging.getLogger("test")
     logging.basicConfig(level=logging.DEBUG)
-    logging.debug("debug")
-    logging.warning("a warning")
-    logging.error("some error")
-    logging.info("some info")
+    logger.debug("debug")
+    logger.warning("a warning")
+    logger.error("some error")
+    logger.info("some info")
 
 
 if __name__ == "__main__":

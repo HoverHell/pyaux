@@ -14,13 +14,10 @@ classifiers = [
     "Operating System :: OS Independent",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.7",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
-requires-python = ">=3.7"
+requires-python = ">=3.11"
 dynamic = ["version", "description"]
 dependencies = []
 
@@ -103,7 +100,6 @@ exclude = [
 
 [tool.isort]
 profile = "black"
-line_length = 100
 combine_as_imports = true
 use_parentheses = true
 balanced_wrapping = true
@@ -115,23 +111,18 @@ include_trailing_comma = true
 # reverse_relative = true
 
 
-[tool.black]
-line-length = 100
-target-version = ["py37"]
-
-
 [tool.flake8]
 ignore = [
     "E203",  # for whatever reason `black` does `var[val: ]`
     "FI58",  # requiring `from __future__ import annotations` (FI18)
     "W503",  # preferring line breaks *before* the operator (W504)
     "N818",  # `N818 exception name ... should be named with an Error suffix`
+    "E704",
 ]
 per-file-ignores = [
     "__init__.py:F401,F403",  # “imported but unused”, “'import *' used”
 ]
-max_line_length = 100
-min_version = "3.7"
+min_version = "3.11"
 require_code = "true"
 
 

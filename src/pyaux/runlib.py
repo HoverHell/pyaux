@@ -1,4 +1,4 @@
-""" Various (un)necessary stuff for runscripts """
+"""Various (un)necessary stuff for runscripts"""
 
 from __future__ import annotations
 
@@ -15,30 +15,26 @@ __all__ = [
 ]
 
 
-def _make_short_levelnames(shortnum=True):
-    """Return a dict (levelnum -> levelname) with short names for logging.
+def _make_short_levelnames(*, shortnum=True) -> dict[int, str]:
+    """
+    Return a dict (levelnum -> levelname) with short names for logging.
     `shortnum`: also shorten all 'Level #' names to 'L##'.
     """
-    names = dict(
-        [
-            (logging.DEBUG, "DBG"),
-            (logging.INFO, "INFO"),
-            (logging.WARNING, "WARN"),
-            (logging.ERROR, "ERR"),
-            (logging.CRITICAL, "CRIT"),
-        ]
-    )
+    names = {
+        logging.DEBUG: "DBG",
+        logging.INFO: "INFO",
+        logging.WARNING: "WARN",
+        logging.ERROR: "ERR",
+        logging.CRITICAL: "CRIT",
+    }
     if shortnum:
         for idx in range(1, 100):
             names.setdefault(idx, f"L{idx:02d}")
     return names
 
 
-# Current attempt: use bytes in py2, unicode in py3 (i.e. subvert unicode_literals just for these).
 BASIC_LOG_FORMAT = "%(asctime)s: %(levelname)-13s: %(name)s: %(message)s"
-BASIC_LOG_FORMAT_TD = str(
-    "%(asctime)s(+%(time_diff)5.3fs): %(levelname)-13s: %(name)s: %(message)s"
-)
+BASIC_LOG_FORMAT_TD = "%(asctime)s(+%(time_diff)5.3fs): %(levelname)-13s: %(name)s: %(message)s"
 
 
 def init_logging(*args, **kwargs):
@@ -124,7 +120,8 @@ class ListSigHandler(list):
         self.verbose = verbose
 
     def __call__(self, sig_num, stack_frame):
-        for func in reversed(self):
+        for func_raw in reversed(self):
+            func = func_raw
             try:
                 if self.verbose:
                     sys.stderr.write(f"ListSigHandler: running {func!r}\n")
@@ -143,6 +140,7 @@ class ListSigHandler(list):
 
 
 def sigeventer(
+    *,
     add_defaults: bool = True,
     add_previous: bool = True,
     do_sysexit: bool = True,
@@ -174,9 +172,7 @@ def sigeventer(
 
     if isinstance(curhandler_int, ListSigHandler) and isinstance(curhandler_term, ListSigHandler):
         # probaby us already; just return
-        assert (
-            curhandler_int is curhandler_term
-        ), "unexpected: different list-based term/int handlers"
+        assert curhandler_int is curhandler_term, "unexpected: different list-based term/int handlers"
         return curhandler_term
 
     the_handler = ListSigHandler(try_argless=try_argless, ignore_exc=ignore_exc, verbose=verbose)

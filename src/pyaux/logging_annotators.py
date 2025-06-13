@@ -3,6 +3,7 @@ Logging: annotating filters
 
 https://docs.python.org/2/howto/logging-cookbook.html#adding-contextual-information-to-your-logging-output
 """
+
 from __future__ import annotations
 
 import logging
@@ -13,8 +14,8 @@ from .base import simple_memoize_argless
 
 __all__ = (
     "TimeDiffAnnotator",
-    "short_hostname_annotator",
     "full_hostname_annotator",
+    "short_hostname_annotator",
 )
 
 
@@ -47,18 +48,17 @@ class Annotator(logging.Filter):
     def filter(self, record):
         """“annotate”, actually"""
         assert self.attribute_name
-        if self.use_cached_value:
-            value = self._get_value_cached(record)
-        else:
-            value = self.get_value(record)
+        value = self._get_value_cached(record) if self.use_cached_value else self.get_value(record)
         setattr(record, self.attribute_name, value)
         return True
 
 
 class TimeDiffAnnotator(Annotator):
-    """A simple filter that adds `time_diff` to the record, which
+    """
+    A simple filter that adds `time_diff` to the record, which
     shows the time from the last log line of the same process. Mostly
-    useful in development."""
+    useful in development.
+    """
 
     attribute_name = "time_diff"
 
@@ -77,10 +77,7 @@ def make_simple_annotating_filter(name, func):
     def get_value(self, *args, **kwargs):
         return func()
 
-    filter_class = type(
-        "_%s_annotator", (Annotator,), dict(attribute_name=name, get_value=get_value)
-    )
-    return filter_class
+    return type("_%s_annotator", (Annotator,), dict(attribute_name=name, get_value=get_value))
 
 
 # getfqdn occasionally might use network, which is why it is better to
@@ -96,9 +93,9 @@ def get_celery_task_attributes():
     result = dict(task_name=None, task_id=None, meta=None, meta_meta=None)
     try:
         # See celery.app.log.TaskFormatter
-        from celery._state import get_current_task
+        import celery
 
-        task = get_current_task()
+        task = celery.current_task
         if not task:
             return dict(result, meta="no_task")
         if not task.request:
@@ -124,11 +121,11 @@ class CeleryProcessNameAnnotator(Annotator):
     def get_value(self, *args, **kwargs):
         # see celery.utils.log
         try:
-            from billiard import current_process
+            from billiard import current_process  # type: ignore[attr-defined]
 
             result = current_process()._name
             if self.skip_main_process and result == "MainProcess":
-                return
+                return None
             return result
         except Exception:
-            return
+            return None

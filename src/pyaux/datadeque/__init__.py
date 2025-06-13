@@ -3,10 +3,11 @@ Entry-module for the pyx-compiled `_datadeque` module.
 
 WARNING: this module will be moved to `pyauxm`.
 """
+
 from __future__ import annotations
 
 try:
-    from . import _datadeque
+    from . import _datadeque  # noqa: F401 imported but unused
 except ImportError:
     import pyximport
 
@@ -15,8 +16,7 @@ except ImportError:
     # 2. try to compile the module on import,
     #    which can take a while and fail with an error too.
     pyximport.install()
-    from . import _datadeque
 
-from ._datadeque import *
+from ._datadeque import datadeque
 
-__all__ = (*_datadeque.__all__,)
+__all__ = ("datadeque",)

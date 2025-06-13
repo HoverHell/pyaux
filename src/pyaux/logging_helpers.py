@@ -5,8 +5,8 @@ from logging import handlers
 from .base import to_bytes
 
 __all__ = (
-    "TaggedSysLogHandlerBase",
     "TaggedSysLogHandler",
+    "TaggedSysLogHandlerBase",
 )
 
 

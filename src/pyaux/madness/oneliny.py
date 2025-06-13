@@ -1,12 +1,11 @@
-""" madstuff: oneliners and debug-useful stuff """
+"""madstuff: oneliners and debug-useful stuff"""
 
 from __future__ import annotations
 
 import inspect
 import sys
 import traceback
-from collections.abc import Callable
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from pyaux.dicts import DotDict
 
@@ -14,18 +13,21 @@ from ..base import o_repr
 from .datadiff import _dumprepr
 from .reprstuff import genreprwrap
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
 __all__ = (
-    "_try",
-    "_try2",
-    "_iter_ar",
     "_filter",
     "_filter_n",
     "_ipdbg",
     "_ipdbt",
+    "_iter_ar",
+    "_mrosources",
     "_print",
+    "_try",
+    "_try2",
     "_uprint",
     "_yprint",
-    "_mrosources",
     "p_o_repr",
 )
 
@@ -61,8 +63,10 @@ def _iter_ar(*args):
 
 @genreprwrap
 def _filter(*ar):
-    """Mostly the same as `filter(None, …)` but as a generator with
-    conveniences."""
+    """
+    Mostly the same as `filter(None, …)` but as a generator with
+    conveniences.
+    """
     it = _iter_ar(*ar)
     for i in it:
         if i:
@@ -142,22 +146,20 @@ def _pdbt(_a_function_thingie, *ar, **kwa):
         return None
 
 
-def _uprint(obj, ret=False):
+def _uprint(obj, *, ret=False):
     pretty: Callable[[Any], str]
     try:
         from IPython.lib.pretty import pretty
     except Exception:
         from pprint import pformat as pretty
     obj_repr = pretty(obj)
-    if isinstance(obj_repr, bytes):  # py2
-        obj_repr = obj_repr.decode("unicode-escape")
     print(obj_repr)  # noqa: T201 (print)
     if ret:
         return obj
     return None
 
 
-def _yprint(obj, ret=False, **kwa):
+def _yprint(obj, *, ret=False, **kwa):
     kwa.setdefault("colorize", True)
     kwa.setdefault("no_anchors", False)
     kwa.setdefault("default_flow_style", None)
@@ -169,10 +171,11 @@ def _yprint(obj, ret=False, **kwa):
     return None
 
 
-def _mrosources(cls, attname, raw=False, colorize=False):
-    """Return a (prettified) source code of a class method in its
-    MRO. For figuring out where does the super() actually go."""
-
+def _mrosources(cls, attname, *, raw=False, colorize=False):
+    """
+    Return a (prettified) source code of a class method in its
+    MRO. For figuring out where does the super() actually go.
+    """
     meths = [DotDict(cls=mrocls, meth=getattr(mrocls, attname, None)) for mrocls in cls.__mro__]
     meths = [val for val in meths if val.meth]
 
@@ -193,8 +196,7 @@ def _mrosources(cls, attname, raw=False, colorize=False):
         meths = [DotDict(val, src=colorfunc(val.src, **colorfunc_kwa)) for val in meths]
     if raw:
         return meths
-    res = "\n\n".join(f" ======= {val.cls.__name__} =======\n{val.src}" for val in meths)
-    return res
+    return "\n\n".join(f" ======= {val.cls.__name__} =======\n{val.src}" for val in meths)
 
 
 def p_o_repr(o, **kwa):

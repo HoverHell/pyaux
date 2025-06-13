@@ -1,4 +1,5 @@
-""" madstuff: repr stuff """
+"""madstuff: repr stuff"""
+
 from __future__ import annotations
 
 __all__ = (

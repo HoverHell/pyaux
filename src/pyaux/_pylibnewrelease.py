@@ -3,15 +3,17 @@ from __future__ import annotations
 
 import argparse
 import datetime
-import glob
 import logging
 import os
 import re
 import shlex
 import subprocess
 import sys
-from collections.abc import Sequence
-from typing import Any
+from pathlib import Path
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 LOGLEVEL_EVERYTHING = 1
 HISTORY_FILE = os.environ.get("HISTORY_FILE", "HISTORY.rst")
@@ -39,19 +41,14 @@ LOGGER = logging.getLogger("_newrelease.py")
 
 
 def make_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
-        description="Automatically prepare a new pypi release from git"
-    )
+    parser = argparse.ArgumentParser(description="Automatically prepare a new pypi release from git")
 
     parser.add_argument(
         "cmd",
         choices=("prepare", "check", "finalize"),
         nargs="?",
         default="prepare",
-        help=(
-            "Action to perform; usual workflow is 'prepare',"
-            " check `git status`, 'check', then 'finalize'."
-        ),
+        help=("Action to perform; usual workflow is 'prepare', check `git status`, 'check', then 'finalize'."),
     )
 
     parser.add_argument(
@@ -93,9 +90,7 @@ def make_parser() -> argparse.ArgumentParser:
 
 def run_sh(*full_command: str) -> str:
     LOGGER.info("Running command: %r", full_command)
-    process = subprocess.Popen(
-        full_command, stdin=subprocess.PIPE, shell=False, stdout=subprocess.PIPE
-    )
+    process = subprocess.Popen(full_command, stdin=subprocess.PIPE, shell=False, stdout=subprocess.PIPE)
     stdout, _ = process.communicate()
     LOGGER.debug("Return code: %r", process.returncode)
     assert process.returncode == 0
@@ -118,9 +113,10 @@ def _inc_ver_val(val: str) -> str:
 
 
 def _inc_ver(parts: Sequence[str], num: int) -> list[str]:
-    """Increment `num`th part of the version.
+    """
+    Increment `num`th part of the version.
 
-    >>> ver_parts = ['1', '2', '3hotfix1']
+    >>> ver_parts = ["1", "2", "3hotfix1"]
     >>> _inc_ver(ver_parts, 0)
     ['2', '0', '0']
     >>> _inc_ver(ver_parts, 1)
@@ -141,32 +137,28 @@ def update_version_in_text(text: str, new_version: str, current_version: str | N
         raise ValueError("Version not found", text)
 
     pre_tag, current_actual_ver, post_tag = match.groups()
-    if current_version is not None:
-        if current_version != current_actual_ver:
-            LOGGER.error(
-                "Found version %r does not match expected %r",
-                current_actual_ver,
-                current_version,
-            )
+    if current_version is not None and current_version != current_actual_ver:
+        LOGGER.error(
+            "Found version %r does not match expected %r",
+            current_actual_ver,
+            current_version,
+        )
 
     # pre and post tag parts are supposed to contain the quotes
     new_tag = f"{pre_tag}{new_version}{post_tag}"
-    new_text = f"{text[: match.start()]}{new_tag}{text[match.end() :]}"
-    return new_text
+    return f"{text[: match.start()]}{new_tag}{text[match.end() :]}"
 
 
 def update_version_in_file(filename: str, new_version: str, **kwa: Any) -> str:
-    with open(filename) as fo:
-        text = fo.read()
+    text = Path(filename).read_text()
 
     try:
         new_text = update_version_in_text(text, new_version, **kwa)
-    except ValueError:
+    except ValueError as exc:
         # Re-raise with filename instead of the text
-        raise ValueError(f"Version not found in file {filename!r}")
+        raise ValueError(f"Version not found in file {filename!r}") from exc
 
-    with open(filename, "w") as fo:
-        fo.write(new_text)
+    Path(filename).write_text(new_text)
 
     return new_text
 
@@ -177,10 +169,9 @@ def get_current_version(text: str | None = None) -> str:
 
     Mainly intended for `finalize`.
     """
-    filename = next(iter(glob.glob(VERSION_FILES)))
+    filename = next(iter(Path.cwd().glob(VERSION_FILES)))
     if text is None:
-        with open(filename) as fo:
-            text = fo.read()
+        text = Path(filename).read_text()
 
     match = re.search(VERSION_TAG, text)
     if not match:
@@ -208,9 +199,7 @@ def prepare(params: argparse.Namespace) -> int:
             LOGGER.critical("Cannot proceed as git repo is not clean:\n%r", taint)
             return 13
 
-    with open(HISTORY_FILE) as fo:
-        history = fo.read()
-
+    history = Path(HISTORY_FILE).read_text()
     history_tag = HISTORY_TAG
     history_parts = re.split(history_tag, history, flags=re.MULTILINE)
     LOGGER.debug("History parts: %r", [val[:10] for val in history_parts])
@@ -220,7 +209,7 @@ def prepare(params: argparse.Namespace) -> int:
     if not current_version_match:
         raise ValueError(f"History did not have a regex match for {HISTORY_VERSION_TAG!r}")
     current_version = current_version_match.group(1)
-    today = datetime.date.today().isoformat()
+    today = datetime.datetime.now(datetime.UTC).date().isoformat()
     version_parts = current_version.split(".")
 
     new_version = os.environ.get("NEW_VERSION")
@@ -256,12 +245,11 @@ def prepare(params: argparse.Namespace) -> int:
     new_history_full = "".join(history_parts[:-1] + [new_history_versions])
     LOGGER.log(LOGLEVEL_EVERYTHING, "New history: \n%s", new_history_full)
 
-    with open(HISTORY_FILE, "w") as fo:
-        fo.write(new_history_full)
+    Path(HISTORY_FILE).write_text(new_history_full)
 
     try:
-        for filename in glob.glob(VERSION_FILES):
-            update_version_in_file(filename, new_version, current_version=current_version)
+        for filepath in Path.cwd().glob(VERSION_FILES):
+            update_version_in_file(str(filepath), new_version, current_version=current_version)
     except ValueError as exc:
         LOGGER.critical("Error updating version: %r", exc)
         return 2
@@ -272,8 +260,8 @@ def prepare(params: argparse.Namespace) -> int:
 
 def check(params: argparse.Namespace) -> None:
     run_sh_cmd("pip install -e .")
-    run_sh_cmd("tox -e py310")
-    if os.path.exists("test.sh"):
+    run_sh_cmd("tox -e py311")
+    if Path("test.sh").exists():
         run_sh("./test.sh")
 
 

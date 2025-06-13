@@ -1,11 +1,15 @@
 #!/usr/bin/env python
-""" lzma (pylzma) helpers.
+"""
+lzma (pylzma) helpers.
 Also can be used as a script for compressing a file.
 """
 
 from __future__ import annotations
 
+import contextlib
 import sys
+from pathlib import Path
+from typing import BinaryIO
 
 try:
     import pylzma
@@ -13,17 +17,14 @@ except Exception:
     pylzma = None
 
 
-def lzma_compress(fi, fo, fi_close=True, fo_close=True, bufs=65535):
-    """Compress `fi` into `fo` (`file` or filename)"""
+def lzma_compress_i(fi, fo, cm: contextlib.ExitStack, bufs=65535):
     if pylzma is None:
         raise ValueError("`pylzma` is not available")
 
     if isinstance(fi, str):
-        fi = open(fi, "rb")
-        fi_close = True
+        fi = cm.enter_context(Path(fi).open("rb"))  # noqa: SIM115
     if isinstance(fo, str):
-        fo = open(fo, "wb")
-        fo_close = True
+        fo = cm.enter_context(Path(fo).open("wb"))  # noqa: SIM115
     # fi.seek(0)
     s = pylzma.compressfile(fi)
     while True:
@@ -31,11 +32,13 @@ def lzma_compress(fi, fo, fi_close=True, fo_close=True, bufs=65535):
         if not tmp:
             break
         fo.write(tmp)
-    if fo_close:
-        fo.close()
-    if fi_close:
-        fi.close()
     return fi, fo
+
+
+def lzma_compress(fi, fo, bufs=65535):
+    """Compress `fi` into `fo` (fileobj or filename)"""
+    with contextlib.ExitStack() as cm:
+        return lzma_compress_i(fi=fi, fo=fo, bufs=bufs, cm=cm)
 
 
 class _IgnoreTheError(Exception):
@@ -47,16 +50,7 @@ def _handle_fail_default(v, e):
     # supposedly can do simple `raise` to re-raise the original (parse) exception
 
 
-def unjsllzma(fi, fi_close=True, parse_fn=None, handle_fail=None, bufs=655350):
-    """Make a generator for reading an lzma-compressed file with
-    json(or something else) in lines.
-    `parse_fn` is th function(v) to process lines with (defaults to
-      `json.loads`)
-    `handle_fail` if a fuction(value, exception) for handling a failure to
-    parse the value; value is skipped if it raises _IgnoreTheError
-    exception, otherwise its return value is yielded.  default: skip all
-    failures.
-    """
+def unjsllzma_i(fi, cm: contextlib.ExitStack, parse_fn=None, handle_fail=None, bufs=655350):
     if pylzma is None:
         raise ValueError("`pylzma` is not available")
 
@@ -81,60 +75,51 @@ def unjsllzma(fi, fi_close=True, parse_fn=None, handle_fail=None, bufs=655350):
             return handle_fail(v, e)
 
     if isinstance(fi, str):
-        fi = open(fi, "rb")
+        fi = cm.enter_context(Path(fi).open("rb"))  # noqa: SIM115
 
     tmp2 = ""  # buffer for unfunushed lines
-    in_bufs = int(bufs / 100)  # XXX: see lzcat.py note around in_bufs
-    s = pylzma.decompressobj()
+    in_bufs = int(bufs / 100)  # see lzcat.py note around in_bufs
+    decomp = pylzma.decompressobj()
     cont = True
     while cont:
         tmp = fi.read(in_bufs)
         if not tmp:  # nothing more can be read
-            tmp2 += s.flush()
+            tmp2 += decomp.flush()
             cont = False
         else:
-            # XXX: TODO: use bytearray.extend (likely).
-            tmp2 = tmp2 + s.decompress(tmp, bufs)
+            # TODO: use bytearray.extend (likely).
+            tmp2 = tmp2 + decomp.decompress(tmp, bufs)
         tmp3 = tmp2.split("\n")  # finished and unfinished lines
-        for v in tmp3[:-1]:
+        for val in tmp3[:-1]:
             try:
-                r = try_loads(v)
+                res = try_loads(val)
             except _IgnoreTheError:
                 continue  # no more handling requested, just skip it
-            yield r
+            yield res
         tmp2 = tmp3[-1]
-    if fi_close:
-        fi.close()
 
 
-def get_stdin():
+def unjsllzma(fi, parse_fn=None, handle_fail=None, bufs=655350):
     """
-    Get a stdin fileobject that can (possibly) read bytes.
+    Make a generator for reading an lzma-compressed file with
+    json(or something else) in lines.
+    `parse_fn` is th function(v) to process lines with (defaults to
+      `json.loads`)
+    `handle_fail` if a fuction(value, exception) for handling a failure to
+    parse the value; value is skipped if it raises _IgnoreTheError
+    exception, otherwise its return value is yielded.  default: skip all
+    failures.
     """
-    try:
-        return sys.stdin.buffer  # py3
-    except AttributeError:
-        return sys.stdin  # py2
-
-
-def get_stdout():
-    """
-    Get stdout fileobject that can possibly read bytes.
-    """
-    try:
-        return sys.stdout.buffer  # py3
-    except AttributeError:
-        return sys.stdout  # py2
+    with contextlib.ExitStack() as cm:
+        return unjsllzma_i(fi=fi, parse_fn=parse_fn, handle_fail=handle_fail, bufs=bufs, cm=cm)
 
 
 def _lzma_main():
-    fi_a = sys.argv[1]
-    fo_a = sys.argv[2]
+    fi_a_raw = sys.argv[1]
+    fo_a_raw = sys.argv[2]
 
-    if fi_a == "-":
-        fi_a = get_stdin()
-    if fo_a == "-":
-        fo_a = get_stdout()
+    fi_a: BinaryIO | str = sys.stdin.buffer if fi_a_raw == "-" else fi_a_raw
+    fo_a: BinaryIO | str = sys.stdout.buffer if fo_a_raw == "-" else fo_a_raw
     lzma_compress(fi_a, fo_a)
 
 

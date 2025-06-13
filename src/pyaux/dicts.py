@@ -4,10 +4,10 @@ Various dict-related special classes.
 >>> mod = REMVDODD([(1, 1), (2, 1.4), (1, 2)])
 >>> mod
 REMVDODD(1: 1, 2: 1.4, 1: 2)
->>> mod['mod'] = mod
+>>> mod["mod"] = mod
 >>> mod
 REMVDODD(1: 1, 2: 1.4, 1: 2, 'mod': ...)
->>> mod.modmod = mod['mod']
+>>> mod.modmod = mod["mod"]
 >>> mod
 REMVDODD(1: 1, 2: 1.4, 1: 2, 'mod': ..., 'modmod': ...)
 >>> import copy
@@ -24,7 +24,7 @@ REMVDODD()
 REMVDODD(1: 1, 2: 1.4, 1: 2, 'mod': ..., 'modmod': ...)
 >>> mod.mod is mod
 True
->>> mod.update(u1='y')
+>>> mod.update(u1="y")
 >>> mod
 REMVDODD(1: 1, 2: 1.4, 1: 2, 'mod': ..., 'modmod': ..., 'u1': 'y')
 >>> mod.update_inplace([(2, 2.6), (3, 3.6)])
@@ -35,7 +35,7 @@ REMVDODD(1: 1, 2: 2.6, 1: 2, 'mod': ..., 'modmod': ..., 'u1': 'y', 3: 3.6)
 >>> mod.update_replace([(1, -1)])
 >>> mod
 REMVDODD(2: 2.6, 'mod': ..., 'modmod': ..., 'u1': 'y', 1: -1)
->>> del mod['modmod']
+>>> del mod["modmod"]
 >>> mod
 REMVDODD(2: 2.6, 'mod': ..., 'u1': 'y', 1: -1)
 >>> mod._data
@@ -45,7 +45,7 @@ REMVDODD(2: 2.6, 'mod': ..., 'u1': 'y', 1: -1)
 >>> mod[1] = 3
 >>> mod
 REMVDODD(2: 2.6, 'mod': ..., 'u1': 'y', 1: -1, 1: 3)
->>> mod.update(u1='n')
+>>> mod.update(u1="n")
 >>> mod
 REMVDODD(2: 2.6, 'mod': ..., 'u1': 'y', 1: -1, 1: 3, 'u1': 'n')
 >>> mod
@@ -63,10 +63,10 @@ REMVDODD('mod': ..., 'u1': 'y', 1: -1, 1: 3)
 >>> mod.deduplicate()
 >>> mod
 REMVDODD('mod': ..., 'u1': 'y', 1: 3)
->>> mod.u1 = 'yy'
+>>> mod.u1 = "yy"
 >>> mod
 REMVDODD('mod': ..., 'u1': 'y', 1: 3, 'u1': 'yy')
->>> mod.deduplicate(how='first')
+>>> mod.deduplicate(how="first")
 >>> mod
 REMVDODD('mod': ..., 'u1': 'y', 1: 3)
 >>> list(reversed(mod))
@@ -87,29 +87,29 @@ from __future__ import annotations
 
 import copy
 import itertools
-from collections.abc import Callable, MutableMapping as MutableMapping
+from collections.abc import Callable, MutableMapping
 from typing import Any
 
 from pyaux.iterables import iterator_is_over, uniq
 
 __all__ = (
-    "dict_fget",
-    "dict_fsetdefault",
-    "DotDict",
-    "Dotdictify",
-    "dict_is_subset",
-    "dict_merge",
-    "ODReprMixin",
-    "OrderedDict",
-    "MVOD",
-    "hasattr_x",
-    "DotDictExt",
-    "DefaultDictExt",
-    "DefaultDotDictMixin",
     "DODD",
     "MVDODD",
-    "REMVDODD",
+    "MVOD",
     "REDODD",
+    "REMVDODD",
+    "DefaultDictExt",
+    "DefaultDotDictMixin",
+    "DotDict",
+    "DotDictExt",
+    "Dotdictify",
+    "ODReprMixin",
+    "OrderedDict",
+    "dict_fget",
+    "dict_fsetdefault",
+    "dict_is_subset",
+    "dict_merge",
+    "hasattr_x",
 )
 
 
@@ -147,8 +147,9 @@ def dict_fsetdefault(dictobj, key, default):
         return value
 
 
-def dict_is_subset(smaller_obj, larger_obj, recurse_iterables=False, require_structure_match=True):
-    """Recursive check "smaller_dict's keys are subset of
+def dict_is_subset(smaller_obj, larger_obj, *, recurse_iterables=False, require_structure_match=True):
+    """
+    Recursive check "smaller_dict's keys are subset of
     larger_dict's keys.
 
     NOTE: in practice, supports non-dict values at top.
@@ -181,7 +182,7 @@ def dict_is_subset(smaller_obj, larger_obj, recurse_iterables=False, require_str
     )
     if isinstance(smaller_obj, dict):
         if not isinstance(larger_obj, dict):
-            return False if require_structure_match else True
+            return not require_structure_match
 
         # Both are dicts.
         for key, val in smaller_obj.items():
@@ -198,18 +199,17 @@ def dict_is_subset(smaller_obj, larger_obj, recurse_iterables=False, require_str
     # else:
     if recurse_iterables and hasattr(smaller_obj, "__iter__"):
         if not hasattr(larger_obj, "__iter__"):
-            return False if require_structure_match else True
+            return not require_structure_match
         # smaller_value_iter, larger_value_iter
         svi = iter(smaller_obj)
         lvi = iter(larger_obj)
         for sval, lval in zip(svi, lvi):
             if not dict_is_subset(sval, lval, **kwa):
                 return False
-        if require_structure_match:
-            if not iterator_is_over(svi) or not iterator_is_over(lvi):
-                # One of the iterables was longer and thus was not
-                # consumed entirely by the izip
-                return False
+        if require_structure_match and (not iterator_is_over(svi) or not iterator_is_over(lvi)):  # noqa: SIM103
+            # One of the iterables was longer and thus was not
+            # consumed entirely by the izip
+            return False
         return True
 
     # else:
@@ -220,26 +220,28 @@ def dict_is_subset(smaller_obj, larger_obj, recurse_iterables=False, require_str
 def dict_merge(
     target,
     source,
+    *,
     instancecheck=None,
     dictclass=dict,
     del_obj=object(),
     _copy=True,
     inplace=False,
 ):
-    """do update() on 'dict of dicts of di...' structure recursively.
+    """
+    do update() on 'dict of dicts of di...' structure recursively.
     Also, see sources for details.
     NOTE: does not keep target's specific tree structure (forces source's)
     :param del_obj: allows for deletion of keys if the key in the `source` is set to this.
 
     >>> data = {}
-    >>> data = dict_merge(data, {'open_folders': {'my_folder_a': False}})
+    >>> data = dict_merge(data, {"open_folders": {"my_folder_a": False}})
     >>> data
     {'open_folders': {'my_folder_a': False}}
-    >>> data = dict_merge(data, {'open_folders': {'my_folder_b': True}})
-    >>> assert data == {'open_folders': {'my_folder_a': False, 'my_folder_b': True}}
+    >>> data = dict_merge(data, {"open_folders": {"my_folder_b": True}})
+    >>> assert data == {"open_folders": {"my_folder_a": False, "my_folder_b": True}}
     >>> _del = object()
-    >>> data = dict_merge(data, {'open_folders': {'my_folder_b': _del}}, del_obj=_del)
-    >>> assert data == {'open_folders': {'my_folder_a': False}}
+    >>> data = dict_merge(data, {"open_folders": {"my_folder_b": _del}}, del_obj=_del)
+    >>> assert data == {"open_folders": {"my_folder_a": False}}
     """
     if instancecheck is None:  # funhorrible ducktypings
 
@@ -299,6 +301,7 @@ class DotDictExt(dict):
         if name.startswith("_"):
             return super().__setattr__(name, value)
         self[name] = value
+        return None
 
 
 _dotdictify_marker = object()
@@ -332,9 +335,14 @@ class Dotdictify(dict):
     __getattr__ = __getitem__
 
 
+_repr_running = {}
+
+
 class ODReprMixin:
-    """A mixin for ordered dicts that provides two different representations
-    and a wrapper for handling self-referencing structures."""
+    """
+    A mixin for ordered dicts that provides two different representations
+    and a wrapper for handling self-referencing structures.
+    """
 
     def __irepr__(self):
         """The usual (default) representation of an ordereddict"""
@@ -349,9 +357,11 @@ class ODReprMixin:
         items_s = ", ".join(f"{key!r}: {val!r}" for key, val in self.items())
         return f"{self.__class__.__name__}({items_s})"
 
-    def __repr__(self, _repr_running={}, fn=__drepr__):
-        """Wrapped around __drepr__ that makes it possible to
-        represent infinitely-recursive dictionaries of this type."""
+    def __repr__(self, fn=__drepr__):
+        """
+        Wrapped around __drepr__ that makes it possible to
+        represent infinitely-recursive dictionaries of this type.
+        """
         # NOTE: version variety; might be a _get_ident or something else.
         try:
             from thread import get_ident as _get_ident
@@ -426,13 +436,10 @@ class OrderedDict(ODReprMixin, dict, MutableMapping):
             yield curr[0]
             curr = curr[1]
 
-    def popitem(self, last=True):
+    def popitem(self, *, last=True):
         if not self:
             raise KeyError("dictionary is empty")
-        if last:
-            key = next(reversed(self))
-        else:
-            key = iter(self).next()
+        key = next(reversed(self)) if last else iter(self).next()
         value = self.pop(key)
         return key, value
 
@@ -456,9 +463,9 @@ class OrderedDict(ODReprMixin, dict, MutableMapping):
     items = MutableMapping.items
 
     # Will be provided in any version from whichever is available.
-    iterkeys = getattr(MutableMapping, "iterkeys", None) or getattr(MutableMapping, "keys")
-    itervalues = getattr(MutableMapping, "itervalues", None) or getattr(MutableMapping, "values")
-    iteritems = getattr(MutableMapping, "iteritems", None) or getattr(MutableMapping, "items")
+    iterkeys = getattr(MutableMapping, "iterkeys", None) or MutableMapping.keys
+    itervalues = getattr(MutableMapping, "itervalues", None) or MutableMapping.values
+    iteritems = getattr(MutableMapping, "iteritems", None) or MutableMapping.items
 
     def copy(self):
         return self.__class__(self)
@@ -474,10 +481,7 @@ class OrderedDict(ODReprMixin, dict, MutableMapping):
         if isinstance(other, OrderedDict):
             if len(self) != len(other):
                 return False
-            for p, q in zip(self.items(), other.items()):
-                if p != q:
-                    return False
-            return True
+            return all(p == q for p, q in zip(self.items(), other.items()))
         return dict.__eq__(self, other)
 
     def __ne__(self, other):
@@ -498,18 +502,18 @@ class MultiValueDict(dict):
     A subclass of dictionary customized to handle multiple values for the
     same key.
 
-    >>> d = MultiValueDict({'name': ['Adrian', 'Simon'], 'position': ['Developer']})
-    >>> d['name']
+    >>> d = MultiValueDict({"name": ["Adrian", "Simon"], "position": ["Developer"]})
+    >>> d["name"]
     'Simon'
-    >>> d.getlist('name')
+    >>> d.getlist("name")
     ['Adrian', 'Simon']
-    >>> d.getlist('doesnotexist')
+    >>> d.getlist("doesnotexist")
     []
-    >>> d.getlist('doesnotexist', ['Adrian', 'Simon'])
+    >>> d.getlist("doesnotexist", ["Adrian", "Simon"])
     ['Adrian', 'Simon']
-    >>> d.get('lastname', 'nonexistent')
+    >>> d.get("lastname", "nonexistent")
     'nonexistent'
-    >>> d.setlist('lastname', ['Holovaty', 'Willison'])
+    >>> d.setlist("lastname", ["Holovaty", "Willison"])
 
     This class exists to solve the irritating problem raised by cgi.parse_qs,
     which returns a list for every key, even though most Web forms submit
@@ -537,8 +541,8 @@ class MultiValueDict(dict):
         """
         try:
             list_ = super().__getitem__(key)
-        except KeyError:
-            raise MultiValueDictKeyError(repr(key))
+        except KeyError as exc:
+            raise MultiValueDictKeyError(repr(key)) from exc
         try:
             return list_[-1]
         except IndexError:
@@ -666,17 +670,13 @@ class MultiValueDict(dict):
                 try:
                     for key, value in other_dict.items():
                         self.setlistdefault(key).append(value)
-                except TypeError:
-                    raise ValueError(
-                        "MultiValueDict.update() takes either a MultiValueDict or dictionary"
-                    )
+                except TypeError as exc:
+                    raise ValueError("MultiValueDict.update() takes either a MultiValueDict or dictionary") from exc
         for key, value in kwargs.items():
             self.setlistdefault(key).append(value)
 
     def dict(self):
-        """
-        Returns current object as a dict with singular values.
-        """
+        """Returns current object as a dict with singular values."""
         return {key: self[key] for key in self}
 
 
@@ -685,7 +685,7 @@ class MultiValueDict(dict):
 # ######
 
 
-def _is_multivaluedict(val, deep=False):
+def _is_multivaluedict(val, *, deep=False):
     """
     Check the object for MultiValueDict face (to support e.g. the
     django's one). Does not include MVODs.
@@ -732,11 +732,10 @@ def _lists_group_ordered(items):
 
 
 def _lists_ungroup(key_to_list_mapping):
-    """ " key_to_list_mapping -> items"""
+    """key_to_list_mapping -> items"""
     if isinstance(key_to_list_mapping, dict):
         key_to_list_mapping = key_to_list_mapping.items()
-    result = [(key, val) for key, vals in key_to_list_mapping for val in vals]
-    return result
+    return [(key, val) for key, vals in key_to_list_mapping for val in vals]
 
 
 class MVODCommon(ODReprMixin):
@@ -757,15 +756,12 @@ class MVODCommon(ODReprMixin):
         for i, item in enumerate(data):
             lv = len(item)  # Paranoidally avoid calling it twice.
             if lv != 2:
-                raise ValueError(
-                    ("dictionary update sequence element #%d has" " length %r; 2 is required")
-                    % (i, lv)
-                )
+                raise ValueError(("dictionary update sequence element #%d has length %r; 2 is required") % (i, lv))
             key, val = item
             res.append((key, val))
         return tuple(res)
 
-    def _process_upddata(self, args, kwds, preprocess=True, strict=False):
+    def _process_upddata(self, args, kwds, *, preprocess=True, strict=False):
         """
         Convert some function call args into list of key-value pairs
         (same as `dict(*args, **kwds)` does).  Returns a tuple with
@@ -846,7 +842,7 @@ class MVODCommon(ODReprMixin):
         for key, _ in reversed(self._data):
             yield key
 
-    def _iterlists(self, ordered=True):
+    def _iterlists(self, *, ordered=True):
         """MultiValueDict-like (django) method. Not very optimal."""
         # See the `_iteritems` dict-changed-while-iterating note.
         pre_func = self._lists_group_ordered if ordered else self._lists_group
@@ -896,7 +892,7 @@ class MVODCommon(ODReprMixin):
             self[key] = failobj
         return self[key]
 
-    def popitem(self, last=True):
+    def popitem(self, *, last=True):
         if not self:
             raise KeyError("dictionary is empty")
         data = self._data
@@ -913,7 +909,8 @@ class MVODCommon(ODReprMixin):
         return cls([(k, value) for k in iterable])
 
     def __eq__(self, other):
-        """...
+        """
+        ...
 
         WARN: `mvod == od` and `od == mvod` might have different
         results (because OD doesn't handle MVODs).
@@ -939,14 +936,16 @@ class MVODCommon(ODReprMixin):
 
     # __nonzero__ does not need overriding as dict handles that.
 
-    # XXX: some other methods?
+    # some other methods?
 
 
 class MVOD(MVODCommon, dict):
-    """MultiValuedOrderedDict: A not-very-optimized (most write operations
+    """
+    MultiValuedOrderedDict: A not-very-optimized (most write operations
     are at least O(N) with the re-hashing cost) somewhat-trivial verison.
     Stores a tuple of pairs as the actual data (in `_data`), uses it for
-    iteration, caches dict(data) as self for optimized key-access."""
+    iteration, caches dict(data) as self for optimized key-access.
+    """
 
     # TODO?: support unhashable keys (by skipping them in the cache)
     # TODO?: make the setitem behaviour configurable per instance
@@ -959,7 +958,8 @@ class MVOD(MVODCommon, dict):
         dict.update(self, self._data)
 
     def update_append(self, *args, **kwds):
-        """...
+        """
+        ...
         (the usual equivalent of dict.update)
 
         WARNING: appends the data; thus, multiple `update`s will cause
@@ -989,9 +989,11 @@ class MVOD(MVODCommon, dict):
         self._data_checked = pre_data + data_new
 
     def update_inplace(self, *args, **kwds):
-        """A closer equivalent of OrderedDict.update that replaces the
+        """
+        A closer equivalent of OrderedDict.update that replaces the
         previous occurrences at the point of first occurrence.  Does not yet
-        support multiple items handling in the updated keys."""
+        support multiple items handling in the updated keys.
+        """
         data_new = self._process_upddata(args, kwds)
         news = dict(*args, **kwds)
         # XXXX/TODO: To update with multiple values will have to do `MVOD(*args,
@@ -1015,8 +1017,10 @@ class MVOD(MVODCommon, dict):
         # self._data_checked = self._data + ((key, value),)
 
     def deduplicate(self, how="last"):
-        """...
-        NOTE: this method is equivalent to deduplicate_last by default."""
+        """
+        ...
+        NOTE: this method is equivalent to deduplicate_last by default.
+        """
         if how == "first":
             pass
         elif how == "last":
@@ -1024,6 +1028,7 @@ class MVOD(MVODCommon, dict):
         else:
             raise ValueError(f"Unknown deduplication `how`: {how!r}")
         self._data_checked = tuple(uniq(self._data, key=lambda item: item[0]))
+        return None
 
     def deduplicate_last(self):
         data_pre = uniq(reversed(self._data), key=lambda item: item[0])
@@ -1077,7 +1082,8 @@ class MVLOD(MVODCommon, MultiValueDict):
         dict.update(self, self._lists_group(self._data))
 
     def update_append(self, *args, **kwds):
-        """...
+        """
+        ...
         (the usual equivalent of dict.update)
 
         WARNING: appends the data; thus, multiple `update`s will cause
@@ -1129,9 +1135,7 @@ class MVLOD(MVODCommon, MultiValueDict):
         self.update_append([(key, value)])
 
     def __delitem__(self, key):
-        data_result = tuple(
-            (item_key, item_val) for item_key, item_val in self._data if item_key != key
-        )
+        data_result = tuple((item_key, item_val) for item_key, item_val in self._data if item_key != key)
         # See if we removed nothing.
         if len(data_result) == len(self._data):
             raise KeyError(key)
@@ -1141,8 +1145,8 @@ class MVLOD(MVODCommon, MultiValueDict):
             self._data_internal = data_result
             try:
                 dict.__delitem__(self, key)
-            except KeyError:
-                raise Exception("The key should've been there", self, key)
+            except KeyError as exc:
+                raise Exception("The key should've been there", self, key) from exc
 
     # The defaults (for setitem, instantiation)
 
@@ -1154,7 +1158,7 @@ class MVLOD(MVODCommon, MultiValueDict):
 
     # Other optimisations
 
-    def _iterlists(self, ordered=False):
+    def _iterlists(self, *, ordered=False):
         if ordered:
             return super()._iterlists(ordered=ordered)
         return dict.items(self)
@@ -1184,8 +1188,10 @@ class DefaultDictExt(dict):
 
 
 def hasattr_x(obj, name):
-    """A safer `hasattr` that only checks for simple attributes
-    rather than properties or __getattr__ results."""
+    """
+    A safer `hasattr` that only checks for simple attributes
+    rather than properties or __getattr__ results.
+    """
     try:
         object.__getattribute__(obj, name)
     except AttributeError:
@@ -1194,9 +1200,11 @@ def hasattr_x(obj, name):
 
 
 class DefaultDotDictMixin(DotDict, DefaultDictExt):
-    """A class that tries to combine DefaultDict and dotdict without causing
+    """
+    A class that tries to combine DefaultDict and dotdict without causing
     too much of a mess. NOTE: skips _attributes on setattr and __attributes on
-    getattr."""
+    getattr.
+    """
 
     def __getattr__(self, name):
         # Mostly necessary to avoid `defaultdict`ing some special

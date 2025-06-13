@@ -7,9 +7,9 @@ from collections import deque
 
 import pandas
 
-__all__ = [
+__all__ = (
   'datadeque',
-]
+)
 
 
 class datadeque(deque):

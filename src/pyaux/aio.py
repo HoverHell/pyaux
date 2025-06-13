@@ -1,13 +1,14 @@
-"""
-...
-"""
+"""..."""
+
 from __future__ import annotations
 
 import asyncio
 import types
-from collections.abc import Awaitable, Callable
 from concurrent.futures import Future
-from typing import Any, TypeVar, overload
+from typing import TYPE_CHECKING, Any, TypeVar, overload
+
+if TYPE_CHECKING:
+    from collections.abc import Awaitable, Callable
 
 __all__ = ("_await",)
 
@@ -15,13 +16,11 @@ TRet = TypeVar("TRet")
 
 
 @overload
-def _await(coro: types.CoroutineType[TRet, None, None]) -> TRet:
-    ...
+def _await(coro: types.CoroutineType[TRet, None, None]) -> TRet: ...
 
 
 @overload
-def _await(awaitable: Callable[..., Awaitable[TRet]], *args: Any, **kwargs: Any) -> TRet:
-    ...
+def _await(awaitable: Callable[..., Awaitable[TRet]], *args: Any, **kwargs: Any) -> TRet: ...
 
 
 def _await(*args: Any, **kwargs: Any) -> Any:
@@ -69,9 +68,7 @@ def _await(*args: Any, **kwargs: Any) -> Any:
     except RuntimeError:
         main_loop = None
     if main_loop and main_loop.is_running():
-        raise RuntimeError(
-            "There's already a running loop, you probably shouldn't use this wrapper"
-        )
+        raise RuntimeError("There's already a running loop, you probably shouldn't use this wrapper")
 
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)

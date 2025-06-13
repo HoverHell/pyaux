@@ -1,8 +1,10 @@
+#!/usr/bin/env python3
 """
 ...
 
 NOTE: python3.5+ only (only tested on python3.7).
 """
+
 # pylint: disable=too-many-branches
 # pylint: disable=too-many-statements
 # pylint: disable=fixme
@@ -33,11 +35,7 @@ from sre_constants import (
 
 UNESCAPE = {val: key for key, val in sre_parse.ESCAPES.items()}
 UNCATEGORIES = {
-    (
-        (val[0], tuple(val[1]))
-        if isinstance(val, tuple) and len(val) == 2 and isinstance(val[1], list)
-        else val
-    ): key
+    ((val[0], tuple(val[1])) if isinstance(val, tuple) and len(val) == 2 and isinstance(val[1], list) else val): key
     for key, val in sre_parse.CATEGORIES.items()
 }
 
@@ -47,22 +45,22 @@ def _ensure_grouped(pattern, source=None):
     ...
 
     >>> _ensure_grouped(
-    ...     pattern='zxcv',
+    ...     pattern="zxcv",
     ...     source=[(LITERAL, 122), (LITERAL, 120), (LITERAL, 99), (LITERAL, 118)],
     ... )
     '(?:zxcv)'
     >>> _ensure_grouped(
-    ...     pattern='(?:zxcv)',
+    ...     pattern="(?:zxcv)",
     ...     source=[(LITERAL, 122), (LITERAL, 120), (LITERAL, 99), (LITERAL, 118)],
     ... )
     '(?:zxcv)'
     >>> _ensure_grouped(
-    ...     pattern='[abc]',
+    ...     pattern="[abc]",
     ...     source=[(IN, [(LITERAL, 97), (LITERAL, 98), (LITERAL, 99)])],
     ... )
     '[abc]'
     """
-    if pattern.startswith("(") or pattern.startswith("["):
+    if pattern.startswith(("(", "[")):
         return pattern
     if len(pattern) == 1:
         return pattern
@@ -90,13 +88,13 @@ def rast_to_pattern(rast, _parent_type=None, **kwargs):
     Partial implementation (to be completed as needed).
 
     >>> rex = (
-    ...     r'[abc]?(?:^|a{4,}?)[^IO](b\ (?P<zxcv>c|d)+)*'
-    ...     r'($|...|[0-9×][^a-z])(?P<qwer>a-imsx:zxcv)(?a-xsmi:zxcv)'
+    ...     r"[abc]?(?:^|a{4,}?)[^IO](b\ (?P<zxcv>c|d)+)*"
+    ...     r"($|...|[0-9…][^a-z])(?P<qwer>a-imsx:zxcv)(?a-xsmi:zxcv)"
     ... )
     >>> rast_to_pattern(sre_parse.parse(rex))[:44]
     '[abc]?(?:^|a{4,}?)[^IO](b\\ (?P<zxcv>[cd])+)*'
     >>> rast_to_pattern(sre_parse.parse(rex))[44:]
-    '($|...|[0-9×][^a-z])(?P<qwer>a\\-imsx:zxcv)(?a-imsx:zxcv)'
+    '($|...|[0-9…][^a-z])(?P<qwer>a\\-imsx:zxcv)(?a-imsx:zxcv)'
     """
     _chr = chr
     # TODO: bytes-regex support:
@@ -151,7 +149,7 @@ def rast_to_pattern(rast, _parent_type=None, **kwargs):
     #                     break
     #             continue
 
-    elif isinstance(rast, tuple) and len(rast) == 2:
+    if isinstance(rast, tuple) and len(rast) == 2:
         item_type, item_value = rast
         # For recursion.
         kwargs["_parent_type"] = item_type
@@ -240,7 +238,7 @@ def rast_to_pattern(rast, _parent_type=None, **kwargs):
         #                 raise source.error(msg, len(this) + 1 + len(that))
         #             setappend((RANGE, (lo, hi)))
 
-        elif item_type is RANGE and isinstance(item_value, tuple) and len(item_value) == 2:
+        if item_type is RANGE and isinstance(item_value, tuple) and len(item_value) == 2:
             assert _parent_type is IN, _parent_type
             lo, hi = item_value
             return f"{re.escape(_chr(lo))}-{re.escape(_chr(hi))}"
@@ -253,12 +251,12 @@ def rast_to_pattern(rast, _parent_type=None, **kwargs):
 
         # # Reference:
         #     set = _uniq(set)
-        #     # XXX: <fl> should move set optimization to compiler!
+        #     # …: <fl> should move set optimization to compiler!
         #     if _len(set) == 1 and set[0][0] is LITERAL:
         #         # optimization
         #         if negate:
         #             subpatternappend((NOT_LITERAL, set[0][1]))
-        elif item_type is NOT_LITERAL:
+        if item_type is NOT_LITERAL:
             raise Exception("TODO", dict(case="NOT_LITERAL", value=rast))
 
             # # Reference:
@@ -267,14 +265,14 @@ def rast_to_pattern(rast, _parent_type=None, **kwargs):
             # else:
             #     if negate:
             #         set.insert(0, (NEGATE, None))
-        elif item_type is NEGATE and item_value is None:
+        if item_type is NEGATE and item_value is None:
             assert _parent_type is IN, _parent_type
             return "^"
             # # Reference:
             #     # charmap optimization can't be added here because
             #     # global flags still are not known
             #     subpatternappend((IN, set))
-        elif item_type is IN:
+        if item_type is IN:
             # TODO: needs re-checking
             inner = "".join(rast_to_pattern(child, **kwargs) for child in item_value)
             return f"[{inner}]"
@@ -339,7 +337,7 @@ def rast_to_pattern(rast, _parent_type=None, **kwargs):
         # # Reference:
         #     else:
         #         subpattern[-1] = (MAX_REPEAT, (min, max, item))
-        elif item_type is MAX_REPEAT or item_type is MIN_REPEAT and len(item_value) == 3:
+        if item_type is MAX_REPEAT or (item_type is MIN_REPEAT and len(item_value) == 3):
             min_repeat, max_repeat, child = item_value
             if min_repeat == 0 and max_repeat == 1:
                 modifier = "?"
@@ -363,7 +361,7 @@ def rast_to_pattern(rast, _parent_type=None, **kwargs):
         # # Reference:
         # elif this == ".":
         #     subpatternappend((ANY, None))
-        elif item_type is ANY and item_value is None:
+        if item_type is ANY and item_value is None:
             return "."
 
         # # Reference:
@@ -591,12 +589,7 @@ def rast_to_pattern(rast, _parent_type=None, **kwargs):
         # subpattern.append((BRANCH, (None, items)))
         # return subpattern
 
-        elif (
-            item_type is BRANCH
-            and isinstance(item_value, tuple)
-            and len(item_value) == 2
-            and item_value[0] is None
-        ):
+        if item_type is BRANCH and isinstance(item_value, tuple) and len(item_value) == 2 and item_value[0] is None:
             _, children = item_value
             # XXXXXXX: needs re-checking:
             result = "|".join(rast_to_pattern(child, **kwargs) for child in children)
@@ -612,7 +605,7 @@ def rast_to_pattern(rast, _parent_type=None, **kwargs):
             # if group is not None:
             #     state.closegroup(group, p)
             # subpatternappend((SUBPATTERN, (group, add_flags, del_flags, p)))
-        elif item_type is SUBPATTERN and isinstance(item_value, tuple) and len(item_value) == 4:
+        if item_type is SUBPATTERN and isinstance(item_value, tuple) and len(item_value) == 4:
             group, add_flags, del_flags, child = item_value
             flags = _flags_to_list(add_flags)
             if del_flags:
@@ -627,7 +620,7 @@ def rast_to_pattern(rast, _parent_type=None, **kwargs):
                 if name:
                     # NOTE: making a named group with changed flags is syntaxically impossible.
                     assert not flags
-                    flags = [f"P<{name}>"] + flags
+                    flags = [f"P<{name}>", *flags]
 
             flags_s = ("?" + "".join(flags)) if flags else ""
             child_s = rast_to_pattern(child, **kwargs)
@@ -636,13 +629,13 @@ def rast_to_pattern(rast, _parent_type=None, **kwargs):
         # # Reference:
         # elif this == "^":
         #     subpatternappend((AT, AT_BEGINNING))
-        elif item_type is AT and item_value is AT_BEGINNING:
+        if item_type is AT and item_value is AT_BEGINNING:
             return "^"
 
         # # Reference:
         # elif this == "$":
         #     subpatternappend((AT, AT_END))
-        elif item_type is AT and item_value is AT_END:
+        if item_type is AT and item_value is AT_END:
             return "$"
 
         # # Reference:
@@ -699,7 +692,7 @@ def cutoff_rast(rast, **kwargs):
                 subsubpattern_params = item_value[:-1]
                 subsubpattern = item_value[-1]
                 for subcutoff in cutoff_rast(subsubpattern, **kwargs):
-                    cutoff_rec = base_rast + [(item_type, subsubpattern_params + (subcutoff,))]
+                    cutoff_rec = [*base_rast, (item_type, (*subsubpattern_params, subcutoff))]
                     yield make_cutoff_obj(cutoff_rec)
 
             # '...(abc|de)' -> ['...(abc|de)', '...(abc|d)', '...(ab|d)', '...(a|d)', '...']
@@ -715,9 +708,7 @@ def cutoff_rast(rast, **kwargs):
                         # Mutating so that when a subsubpattern is exhausted it
                         # remains in the minimal form.
                         subsubpatterns[spidx] = subcutoff
-                        cutoff_rec = base_rast + [
-                            (item_type, subsubpattern_params + (subsubpatterns[:],))
-                        ]
+                        cutoff_rec = [*base_rast, (item_type, (*subsubpattern_params, subsubpatterns[:]))]
                         yield make_cutoff_obj(cutoff_rec)
 
 
@@ -726,7 +717,7 @@ def normalize_pattern(pattern, flags=0):
     return rast_to_pattern(rast)
 
 
-def find_matching_subregexes(pattern, string, flags=0, verbose=False):
+def find_matching_subregexes(pattern, string, *, flags=0, verbose=False):
     rast = sre_parse.parse(pattern, flags=flags)
     for cutoff in cutoff_rast(rast):
         subpattern = sre_compile.compile(cutoff, flags=flags)

@@ -10,22 +10,23 @@ import os
 from itertools import chain, islice, repeat
 
 __all__ = (
-    "window",
+    "IterStat",
+    "chunks_g",
+    "iterator_is_over",
+    "itermean",
+    "next_or_fdefault",
     "reversed_blocks",
     "reversed_lines",
     "uniq_g",
-    "IterStat",
-    "itermean",
-    "chunks_g",
-    "next_or_fdefault",
-    "iterator_is_over",
+    "window",
 )
 
 
 # Iterate over a 'window' of adjacent elements
 # http://stackoverflow.com/questions/6998245/iterate-over-a-window-of-adjacent-elements-in-python
-def window(seq, size=2, fill=0, fill_left=False, fill_right=False):
-    """Returns a sliding window (of width n) over data from the iterable:
+def window(seq, size=2, fill=0, *, fill_left=False, fill_right=False):
+    """
+    Returns a sliding window (of width n) over data from the iterable:
     s -> (s0,s1,...s[n-1]), (s1,s2,...,sn), ...
     """
     ssize = size - 1
@@ -194,26 +195,23 @@ def chunks_g(iterable, size):
         yield chunk
 
 
-def next_or_fdefault(it, default=lambda: None, skip_empty=False):
+def next_or_fdefault(it, default=lambda: None, *, skip_empty=False):
     """
     `next(it, default_value)` with laziness.
 
-    >>> next_or_fdefault([1], lambda: 1/0)
+    >>> next_or_fdefault([1], lambda: 1 / 0)
     1
     >>> next_or_fdefault([], lambda: list(range(2)))
     [0, 1]
     """
-    if skip_empty:
-        it = (val for val in it if val)
-    else:
-        it = iter(it)
+    it = (val for val in it if val) if skip_empty else iter(it)
     try:
         return next(it)
     except StopIteration:
         return default()
 
 
-def iterator_is_over(it, ret_value=False):
+def iterator_is_over(it, *, ret_value=False):
     """
     Try to consume an item from an iterable `it` and return False if it
     succeeded (the item stays consumed).
@@ -259,7 +257,7 @@ class NotEnoughItems(Exception):
     """Pretty much StopIteration but only for handling by user-code"""
 
 
-def prefetch_first(iterable, count=1, require=False):
+def prefetch_first(iterable, count=1, *, require=False):
     """
     Transparent-ish iterable wrapper that obtains the first N items on call.
 
@@ -285,7 +283,6 @@ def prefetch_first(iterable, count=1, require=False):
     ...     for idx in range(num):
     ...         print("verbose_iter", num, idx)
     ...         yield idx
-    ...
     >>> iterable = verbose_iter(2)
     >>> list(iterable)
     verbose_iter 2 0
@@ -295,7 +292,7 @@ def prefetch_first(iterable, count=1, require=False):
     >>> iterable = prefetch_first(iterable, count=2)
     verbose_iter 3 0
     verbose_iter 3 1
-    >>> iterable.gi_frame.f_locals['prefetched']
+    >>> iterable.gi_frame.f_locals["prefetched"]
     [0, 1]
     >>> list(iterable)
     verbose_iter 3 2
@@ -318,12 +315,12 @@ def prefetch_first(iterable, count=1, require=False):
     for _ in range(count):
         try:
             prefetched.append(next(iterable))
-        except StopIteration:
+        except StopIteration as exc:
             if require:
                 raise NotEnoughItems(
                     "Could not prefetch the requested amount of items",
                     dict(requested=count, found=len(prefetched), data=prefetched),
-                )
+                ) from exc
 
     # pylint: disable=dangerous-default-value
     def gen(iterable=iterable, prefetched=prefetched):

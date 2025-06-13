@@ -1,4 +1,5 @@
-""" Things that are not quite okay to use in most cases.
+"""
+Things that are not quite okay to use in most cases.
 
 Also, things that are useful in an ipython interactice shell.
 """
@@ -10,27 +11,76 @@ import sys
 from typing import Any
 
 from .. import aio
-from ..aio import *
+from ..aio import _await
 from . import (
     datadiff as madness_datadiff,
     oneliny as madness_oneliny,
     reprstuff as madness_reprstuff,
     stuffstuff as madness_stuffstuff,
 )
-from .datadiff import *
-from .oneliny import *
-from .reprstuff import *
-from .stuffstuff import *
+from .datadiff import (
+    _diff_datadiff_data,
+    _diff_pre_diff,
+    _dumprepr,
+    datadiff,
+    p_datadiff,
+)
+from .oneliny import (
+    _filter,
+    _filter_n,
+    _ipdbg,
+    _ipdbt,
+    _iter_ar,
+    _mrosources,
+    _print,
+    _try,
+    _try2,
+    _uprint,
+    _yprint,
+    p_o_repr,
+)
+from .reprstuff import GenReprWrapper, genreprwrap
+from .stuffstuff import Url, _cut, _re_largest_matching_start, _url_re, displaydf
 
+# *aio.__all__,
+# *madness_datadiff.__all__,
+# *madness_oneliny.__all__,
+# *madness_reprstuff.__all__,
+# *madness_stuffstuff.__all__,
+# __builtin__ hacks
 __all__ = (
-    # __builtin__ hacks
-    "_olt_into_builtin",
+    "GenReprWrapper",
+    "Url",
+    "_await",
+    "_cut",
+    "_diff_datadiff_data",
+    "_diff_pre_diff",
+    "_dumprepr",
+    "_filter",
+    "_filter_n",
     "_into_builtin",
-    *madness_datadiff.__all__,
-    *madness_oneliny.__all__,
-    *madness_reprstuff.__all__,
-    *madness_stuffstuff.__all__,
-    *aio.__all__,
+    "_ipdbg",
+    "_ipdbt",
+    "_iter_ar",
+    "_mrosources",
+    "_olt_into_builtin",
+    "_print",
+    "_re_largest_matching_start",
+    "_try",
+    "_try2",
+    "_uprint",
+    "_url_re",
+    "_yprint",
+    "aio",
+    "datadiff",
+    "displaydf",
+    "genreprwrap",
+    "madness_datadiff",
+    "madness_oneliny",
+    "madness_reprstuff",
+    "madness_stuffstuff",
+    "p_datadiff",
+    "p_o_repr",
 )
 
 

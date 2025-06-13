@@ -25,13 +25,15 @@ import inspect
 import signal
 import sys
 import traceback
-from collections.abc import Collection
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from collections.abc import Collection
 
 __all__ = (
     "get_prof",
-    "wrap_packages",
     "stgrab",
+    "wrap_packages",
 )
 
 
@@ -52,16 +54,14 @@ profile: Any = None
 profile_type = None
 
 
-def _check_add_builtin(force=True):
-    # Do the scary global-state stuff
-    global profile
+def get_prof(proftype="lp", *, add_builtin_key: str = "profile"):
+    """
+    Initialize the global and buitin profiler *wrapper* (currently,
+    only meant for LineProfiler)
+    """
+    global profile  # noqa: PLW0603
+    global profile_type  # noqa: PLW0603
 
-
-def get_prof(proftype="lp", add_builtin=True):
-    """Initialize the global and buitin profiler *wrapper* (currently,
-    only meant for LineProfiler)"""
-    global profile
-    global profile_type
     if profile is not None and profile_type == proftype:
         pass  # ... nothing to generate.
     # Otherwise - make one.
@@ -73,12 +73,18 @@ def get_prof(proftype="lp", add_builtin=True):
         profile = DummyProfiler()
     else:
         raise Exception("Unknown `proftype`.")
-    if add_builtin:  # add/replace/whatever
-        setattr(__builtins__, "profile", profile)
+
+    if add_builtin_key:  # add/replace/whatever
+        setattr(__builtins__, add_builtin_key, profile)
+
+    profile_type = proftype
     return profile
 
 
-def _wrap_class_stuff(the_class, wrapf):
+MARKER_ATTR = "__prof_wrapped__"
+
+
+def _wrap_class_stuff(the_class, wrapf, marker_attr: str = MARKER_ATTR):
     # for i_name in dir(the_class):
     #     i_val = getattr(the_class, i_name)
     #     if not callable(i_val):
@@ -89,18 +95,20 @@ def _wrap_class_stuff(the_class, wrapf):
         try:
             if getattr(i_val, "__prof_wrapped__", False):
                 continue  # do not wrap wrapped wrapstuff.
-            # XXX: do the sourcefilename check too?
+            # To consider: do the sourcefilename check too?
             sys.stderr.write(f"    Method wrapping: {i_name}\n")
             wrapped_val = wrapf(i_val)
-            setattr(wrapped_val, "__prof_wrapped__", True)
+            setattr(wrapped_val, marker_attr, True)
             setattr(the_class, i_name, wrapped_val)
         except Exception as exc:
             sys.stderr.write(f"     ... Failed ({i_name!r}). {exc!r}\n")
 
 
-def _wrap_module_stuff(module, wrapf):
-    """Wrap each function and method in the module with the specified
-    function (e.g. LineProfiler)"""
+def _wrap_module_stuff(module, wrapf, *, marker_attr: str = MARKER_ATTR):
+    """
+    Wrap each function and method in the module with the specified
+    function (e.g. LineProfiler)
+    """
     # This should not fail:
     # (Note: there's also `inspect.getfile; but it sometimes returns ...py and sometimes ...pyc)
     if not inspect.ismodule(module) and isinstance(module, object):
@@ -121,7 +129,7 @@ def _wrap_module_stuff(module, wrapf):
             if i_filename is not None and i_filename != module_filename:
                 # Skip stuff that we know isn't from that module
                 continue
-            elif i_filename is None:
+            if i_filename is None:
                 # ... and skip, too, all the built-ins, non-(module/class/function/...)
                 continue
             if inspect.isclass(i_val):
@@ -130,16 +138,18 @@ def _wrap_module_stuff(module, wrapf):
             elif callable(i_val):
                 sys.stderr.write(f"  Wrapping: {i_name}\n")
                 wrapped_val = wrapf(i_val)
-                setattr(wrapped_val, "__prof_wrapped__", True)
+                setattr(wrapped_val, marker_attr, True)
                 setattr(module, i_name, wrapped_val)
         except Exception as exc:
             sys.stderr.write(f"  ... Failed ({i_name!r}). {exc!r}\n")
 
 
 # TODO: make it possible to specify down to particular objects to wrap.
-def wrap_packages(packages, wrapf=None, verbose=True):
-    """Wraps all the currently imported modules within any package of
-    the `packages` (e.g. `['module1', 'package2', 'package3.module1']`)"""
+def wrap_packages(packages, wrapf=None, *, verbose=True):
+    """
+    Wraps all the currently imported modules within any package of
+    the `packages` (e.g. `['module1', 'package2', 'package3.module1']`)
+    """
     # Line-profiler: package-wrap.
     # NOTE: this would be more reliable if done on the import hook; but
     #   this is more simple and should be sufficient here.
@@ -186,9 +196,7 @@ class StackGrab:
         ]
         trace_formatted = "".join(traceback.format_list(trace_data))
         trace_last_code = "".join(outer_frames[0][4] or [])
-        if self.check_polling and any(
-            (code_text in trace_last_code) for code_text in self.poll_codes
-        ):
+        if self.check_polling and any((code_text in trace_last_code) for code_text in self.poll_codes):
             sys.stderr.write(" ... Polling ...\n")  # don't spam that specific traceback
             return
         sys.stderr.write(f" ------- {self.header}\nTraceback:\n{trace_formatted}\n")

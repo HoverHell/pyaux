@@ -18,7 +18,14 @@ import requests.exceptions
 from requests import PreparedRequest
 from urllib3.util import Retry
 
-from pyaux.base import LazyRepr, ReprObj, dict_maybe_items, find_caller, split_dict, to_bytes
+from pyaux.base import (
+    LazyRepr,
+    ReprObj,
+    dict_maybe_items,
+    find_caller,
+    split_dict,
+    to_bytes,
+)
 
 # Singleton session for connection pooling.
 # WARNING: this involves caching; do `SESSION.close()` in a `finally:` block to clean it up.
@@ -29,27 +36,22 @@ UNDEF = ReprObj("Unspecified")
 AUTO = ReprObj("Autoselected")
 
 
-def _is_special(value, none=True, undef=True, auto=True):
-    """
-    Check whether `value` is one of the special values used in this module.
-    """
+def _is_special(value, *, none=True, undef=True, auto=True):
+    """Check whether `value` is one of the special values used in this module."""
     if none and value is None:
         return True
     if undef and value is UNDEF:
         return True
-    if auto and value is AUTO:
-        return True
-    return False
+    return bool(auto and value is AUTO)
 
 
 def configure_session(
     session,
+    *,
     retries_total=5,
     retries_backoff_factor=0.5,
     retries_status_forcelist=(500, 502, 503, 504, 521),
-    retries_method_whitelist=frozenset(
-        ("HEAD", "OPTIONS", "TRACE", "GET", "POST", "PUT", "PATCH", "DELETE")
-    ),
+    retries_method_whitelist=frozenset(("HEAD", "OPTIONS", "TRACE", "GET", "POST", "PUT", "PATCH", "DELETE")),
     pool_connections=30,
     pool_maxsize=30,
     raise_on_status=False,
@@ -128,7 +130,7 @@ class RequesterBase:
     )
 
     # Warning: argument defaults are also duplicated in `Requester.__init__`.
-    def __init__(self, session=True):
+    def __init__(self, *, session=True) -> None:
         if session is True:
             session = SESSION
         elif _is_special(session):
@@ -139,18 +141,14 @@ class RequesterBase:
     # Warning: kwargs defaults are also duplicated in `Requester.request`.
     @staticmethod
     def _preprepare_parameters(kwargs):
-        """
-        Separated out for easier overriding of `prepare_parameters` by subclasses.
-        """
+        """Separated out for easier overriding of `prepare_parameters` by subclasses."""
         headers = kwargs.get("headers")
         # For common convenience, commonize the headers:
         if _is_special(headers):
             headers = {}
         else:
             # TODO?: OrderedDict?
-            headers = {
-                key.lower().replace("_", "-"): value for key, value in dict_maybe_items(headers)
-            }
+            headers = {key.lower().replace("_", "-"): value for key, value in dict_maybe_items(headers)}
         kwargs["headers"] = headers
 
         return kwargs
@@ -165,7 +163,7 @@ class RequesterBase:
         return self.send_request(request, **send_kwargs)
 
     # Warning: kwargs defaults are also duplicated in `Requester.request`.
-    def _prepare_request(self, kwargs, run_processing=True):
+    def _prepare_request(self, kwargs, *, run_processing=True):
         """
         ...
 
@@ -222,9 +220,7 @@ class RequesterSessionWrap(RequesterBase):
 
 
 class RequesterVerbMethods(RequesterBase):
-    """
-    Add the http-method-named methods to the class, wrapping `self.request`.
-    """
+    """Add the http-method-named methods to the class, wrapping `self.request`."""
 
     def get(self, *args, **kwargs):
         """See `request` method"""
@@ -347,17 +343,14 @@ class RequesterContentType(RequesterBase):
         json_data = kwargs.pop("json", None)
         if json_data is not None:
             raise Exception(
-                "Please don't use `json=...` keyword here."
-                " Use `content_type='json'` (likely, already the default)."
+                "Please don't use `json=...` keyword here. Use `content_type='json'` (likely, already the default)."
             )
         if data is not None and content_type is not None:
             # # Maybe:
             # if content_type == 'multipart':
             #     kwargs.pop('data', None)
             #     kwargs['files'] = data
-            data, content_type_header = self.serialize_data(
-                data, content_type=content_type, context=kwargs
-            )
+            data, content_type_header = self.serialize_data(data, content_type=content_type, context=kwargs)
             if data is not None:
                 kwargs["data"] = data
                 if content_type_header is not None:
@@ -410,7 +403,7 @@ class RequesterContentType(RequesterBase):
 
 class RequesterMeta(RequesterBase):
     # Warning: argument defaults are also duplicated in `Requester.__init__`.
-    def __init__(self, collect_call_info=True, call_info_in_ua=True, **kwargs):
+    def __init__(self, *, collect_call_info=True, call_info_in_ua=True, **kwargs):
         self.collect_call_info = collect_call_info
         self.call_info_in_ua = call_info_in_ua
         super().__init__(**kwargs)
@@ -474,8 +467,7 @@ class RequesterAutoRaiseForStatus(RequesterBase):
         # TODO?: support streaming?
         # Note: cutting the bytestream.
         content = response.content
-        content = _cut(content, length=self.raise_content_cap, marker=self.length_cut_marker)
-        return content
+        return _cut(content, length=self.raise_content_cap, marker=self.length_cut_marker)
 
     def raise_for_status_forced(self, response):
         """
@@ -490,7 +482,7 @@ class RequesterAutoRaiseForStatus(RequesterBase):
             raise self.response_exception_cls(
                 f"Status Error: {response.status_code} {response.reason}",
                 response=response,
-            )
+            ) from exc
         raise self.response_exception_cls(
             f"Status Error: {response.status_code} {response.reason}: {content}",
             response=response,
@@ -601,6 +593,7 @@ class Requester(
 ):
     def __init__(
         self,
+        *,
         session=True,
         default_timeout=5.0,
         default_write_method="post",
@@ -660,7 +653,7 @@ class Requester(
         url,
         params=None,
         data=None,
-        # *,  # someday, someday.
+        *,
         method=None,
         headers=None,
         auth=None,
@@ -775,7 +768,7 @@ class APIRequester(Requester):
     headers on it, specify `session=None`.
     """
 
-    def __init__(self, session=True, **kwargs):
+    def __init__(self, *, session=True, **kwargs):
         if session is True:
             session = SESSION_ZEALOUS
         elif _is_special(session):

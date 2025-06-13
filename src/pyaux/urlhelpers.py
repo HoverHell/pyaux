@@ -1,4 +1,4 @@
-""" Various functions for easier working with URLs """
+"""Various functions for easier working with URLs"""
 
 from __future__ import annotations
 
@@ -7,17 +7,19 @@ import urllib.parse
 from .base import mangle_dict, to_bytes
 
 __all__ = (
-    "url_to_querydict",
-    "url_replace",
     "mangle_url",
-    "mangle_url_m",
     "mangle_url_l",
+    "mangle_url_m",
+    "url_replace",
+    "url_to_querydict",
 )
 
 
 def dict_to_bytes(d):
-    """Encode the strings in keys and values of a dict 'd' into
-    bytestrings; useful for e.g. urlencoding the result"""
+    """
+    Encode the strings in keys and values of a dict 'd' into
+    bytestrings; useful for e.g. urlencoding the result
+    """
     return {to_bytes(k): to_bytes(v) for k, v in d.items()}
 
 
@@ -32,7 +34,8 @@ def url_replace(url, **params):
     url_fields = urllib.parse.ParseResult._fields
     name_to_num = {field: idx for idx, field in enumerate(url_fields)}
     url_parts = list(urllib.parse.urlparse(url))  # Need a copy anyway
-    for key, val in params.items():
+    for key, val_raw in params.items():
+        val = val_raw
         # Allow supplying various stuff as a query
         if key == "query" and not isinstance(val, (bytes, str)):
             if isinstance(val, dict):
@@ -53,8 +56,10 @@ def mangle_url(url, include=None, exclude=None, add=None):
 
 
 def mangle_url_m(url, include=None, exclude=None, add=None):
-    """Multivalue-version of the `mangle_url`; works with dict of lists only
-    (`param -> [value1, …]`); sorts the resulting query"""
+    """
+    Multivalue-version of the `mangle_url`; works with dict of lists only
+    (`param -> [value1, …]`); sorts the resulting query
+    """
     url = to_bytes(url)
     url_parts = urllib.parse.urlparse(url)
     # NOTE: the order of the fields is still lost.
@@ -67,12 +72,13 @@ def mangle_url_m(url, include=None, exclude=None, add=None):
 
 
 def mangle_url_l(url, include=None, exclude=None, add=None, **kwargs):
-    """mangle_url with preserving as much as possible (order, multiple values, empty values).
+    """
+    mangle_url with preserving as much as possible (order, multiple values, empty values).
 
     Additional keyword parameters are passed to url_replace.
 
     >>> from pyaux.dicts import MVOD
-    >>> query = r'a=&a=1&a=true&b=null&b=undefined&b=&b=5'
+    >>> query = r"a=&a=1&a=true&b=null&b=undefined&b=&b=5"
     >>> urllib.parse.urlencode(MVOD(urllib.parse.parse_qsl(query, keep_blank_values=1))) == query
     True
     """

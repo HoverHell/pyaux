@@ -1,9 +1,12 @@
 #!/usr/bin/env python
-""" lzcat """
+"""lzcat"""
 
 from __future__ import annotations
 
+import contextlib
 import sys
+from pathlib import Path
+from typing import BinaryIO
 
 try:
     import pylzma
@@ -11,20 +14,15 @@ except Exception:
     pylzma = None
 
 
-from pyaux.lzmah import get_stdin, get_stdout
-
-
-def unlzma(fi, fo, fi_close=True, fo_close=True, bufs=6553500):
+def unlzma_i(fi, fo, cm: contextlib.ExitStack, bufs=6553500):
     """Decompress `fi` into `fo` (`file` or filename)"""
     if pylzma is None:
         raise ValueError("`pylzma` is not available")
 
     if isinstance(fi, str):
-        fi = open(fi, "rb")
-        fi_close = True
+        fi = cm.enter_context(Path(fi).open("rb"))  # noqa: SIM115
     if isinstance(fo, str):
-        fo = open(fo, "wb")
-        fo_close = True
+        fo = cm.enter_context(Path(fo).open("wb"))  # noqa: SIM115
     # i.seek(0)
 
     # XXXX: better way?
@@ -47,30 +45,23 @@ def unlzma(fi, fo, fi_close=True, fo_close=True, bufs=6553500):
             break
         fo.write(s.decompress(tmp, bufs))
     fo.write(s.flush())
-    if fo_close:
-        fo.close()
-    if fi_close:
-        fi.close()
-    return fi, fo
+
+
+def unlzma(fi, fo, bufs=6553500):
+    """Decompress `fi` into `fo` (`file` or filename)"""
+    with contextlib.ExitStack() as cm:
+        unlzma_i(fi=fi, fo=fo, bufs=bufs, cm=cm)
 
 
 def _lzcat_main():
-    if len(sys.argv) > 1:
-        fi_a = sys.argv[1]
-    else:
-        fi_a = "-"
-    if len(sys.argv) == 3:
-        fo_a = sys.argv[2]
-    else:
-        fo_a = "-"
+    fi_a_raw = sys.argv[1] if len(sys.argv) > 1 else "-"
+    fo_a_raw = sys.argv[2] if len(sys.argv) == 3 else "-"
     if len(sys.argv) > 3:
         sys.stderr.write(f"Basic usage: {sys.argv[0]} [<from_file> [<to_file>]]\n")
         sys.exit()
 
-    if fi_a == "-":
-        fi_a = get_stdin()
-    if fo_a == "-":
-        fo_a = get_stdout()
+    fi_a: BinaryIO | str = sys.stdin.buffer if fi_a_raw == "-" else fi_a_raw
+    fo_a: BinaryIO | str = sys.stdout.buffer if fo_a_raw == "-" else fo_a_raw
     unlzma(fi_a, fo_a)
 
 

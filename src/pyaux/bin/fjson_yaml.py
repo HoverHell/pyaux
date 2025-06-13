@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import json
 import os
 import sys
 
@@ -29,6 +28,14 @@ def cmd_make_parser(**kwa):
         action="store_true",
         default=None,
         help="pyyaml's `default_flow_style=True` (more json-like)",
+    )
+    parser.add_argument(
+        "-s",
+        "--sort-keys",
+        dest="sort_keys",
+        action="store_true",
+        default=False,
+        help="sort dict keys",
     )
     parser.add_argument(
         "-c",
@@ -69,13 +76,14 @@ def main():
         return 13
 
     try:
-        data_data = json.loads(data_in)
+        data_data = yaml.safe_load(data_in)
     except Exception as exc:
-        return bailout(f"Error parsing as json: {exc}")
+        return bailout(f"Error parsing as json/yaml: {exc}")
 
     kwa = dict(
         default_flow_style=params.default_flow_style,
         allow_unicode=params.allow_unicode,
+        sort_keys=params.sort_keys,
     )
     try:
         kwa["width"] = int(os.environ["WIDTH"])

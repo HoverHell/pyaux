@@ -1,6 +1,4 @@
-"""
-...
-"""
+"""..."""
 
 from __future__ import annotations
 
@@ -11,6 +9,7 @@ import sys
 def get_constants(
     module,
     prefix,
+    *,
     named=True,
     unprefixed=True,
     valued=True,
@@ -24,10 +23,7 @@ def get_constants(
             continue
         shortname = name[len(prefix) :]
         value = getattr(module, name)
-        if value_only:
-            item = value
-        else:
-            item = dict(value=value, name=name, shortname=shortname)
+        item = value if value_only else dict(value=value, name=name, shortname=shortname)
         if named:
             result[name] = item
             if lowercase:
@@ -52,8 +48,9 @@ def gai_verbose(
     host,
     port=0,
     family=0,
-    type="stream",
+    socktype="stream",
     proto="tcp",
+    *,
     canonname=False,
     addrconfig=False,
     v4mapped=False,
@@ -108,7 +105,7 @@ def gai_verbose(
         host,
         port or 0,
         SOCKET_FAMILIES[family or 0]["value"],
-        SOCKET_TYPES[type or 0]["value"],
+        SOCKET_TYPES[socktype or 0]["value"],
         SOCKET_PROTOS[proto or 0]["value"],
         flags,
     )
@@ -158,7 +155,7 @@ def gai_verbose_parse(responses, family_set=None, flags=None):
 
 def _gai_example():
     hostname = "ipv6-test.com"
-    res = gai_verbose(
+    return gai_verbose(
         hostname,
         family=("inet", "inet6"),
         # canonname=True,
@@ -166,7 +163,6 @@ def _gai_example():
         # v4mapped=True,
     )
     # res = pd.DataFrame(res, columns=res[0].keys() if res else None)
-    return res
 
 
 if __name__ == "__main__":

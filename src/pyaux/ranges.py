@@ -1,19 +1,17 @@
-"""
-Various range-generating funcs.
-"""
+"""Various range-generating funcs."""
 
 from __future__ import annotations
 
 __all__ = (
-    "fxrange",
-    "frange",
-    "dxrange",
-    "drange",
-    "date_xrange",
-    "date_range",
     "date_add_months",
-    "date_months_xrange",
     "date_months_range",
+    "date_months_xrange",
+    "date_range",
+    "date_xrange",
+    "drange",
+    "dxrange",
+    "frange",
+    "fxrange",
 )
 
 
@@ -28,7 +26,7 @@ def fxrange(start, end=None, inc=None):
     i = 0  # to prevent error accumulation
     while True:
         nextv = start + i * inc
-        if inc > 0 and nextv >= end or inc < 0 and nextv <= end:
+        if (inc > 0 and nextv >= end) or (inc < 0 and nextv <= end):
             break
         yield nextv
         i += 1
@@ -39,7 +37,7 @@ def frange(start, end=None, inc=None):
     return list(fxrange(start, end, inc))
 
 
-def dxrange(start, end=None, inc=None, include_end=False):
+def dxrange(start, end=None, inc=None, *, include_end=False):
     """The xrange function for Decimal"""
     # Imported here mostly because of use_cdecimal in this module
     from decimal import Decimal
@@ -55,11 +53,8 @@ def dxrange(start, end=None, inc=None, include_end=False):
     end = Decimal(end)
     nextv = start
     while True:
-        if (
-            (inc > 0)
-            and (not include_end and nextv == end or nextv > end)
-            or (inc < 0)
-            and (not include_end and nextv == end or nextv < end)
+        if ((inc > 0) and ((not include_end and nextv == end) or nextv > end)) or (
+            (inc < 0) and ((not include_end and nextv == end) or nextv < end)
         ):
             break
         yield nextv
@@ -71,8 +66,9 @@ def drange(*ar, **kwa):
     return list(dxrange(*ar, **kwa))
 
 
-def date_xrange(start, end, inc=None, include_end=False, precise=False):
-    """The xrange function for datetime.
+def date_xrange(start, end, inc=None, *, include_end=False, precise=False):
+    """
+    The xrange function for datetime.
 
     NOTE: the semantics of 'start' and 'end' are different here: with
     end=None an infinite generator is returned.
@@ -84,7 +80,7 @@ def date_xrange(start, end, inc=None, include_end=False, precise=False):
     >>> dt = datetime.datetime
     >>> dta = dt(2011, 11, 11)
     >>> dtb = dt(2011, 11, 14)
-    >>> dsl = lambda dtl: [dt.strftime('%Y-%m-%d') for dt in dtl]
+    >>> dsl = lambda dtl: [dt.strftime("%Y-%m-%d") for dt in dtl]
     >>> dtsl = lambda dtl: [dt.isoformat() for dt in dtl]
     >>> dsl(date_xrange(dta, dt(2011, 11, 13)))
     ['2011-11-11', '2011-11-12']
@@ -137,8 +133,10 @@ def date_range(*ar, **kwa):
 
 
 def date_add_months(sourcedate, months=1):
-    """Add months to date; can cap the day to the maximal value for
-    the month"""
+    """
+    Add months to date; can cap the day to the maximal value for
+    the month
+    """
     import calendar
 
     month = sourcedate.month - 1 + months
@@ -150,15 +148,16 @@ def date_add_months(sourcedate, months=1):
     return sourcedate.replace(year=year, month=month, day=day)
 
 
-def date_months_xrange(start, end, inc=1, include_end=False):
-    """date_range with delta measured in months.
+def date_months_xrange(start, end, inc=1, *, include_end=False):
+    """
+    date_range with delta measured in months.
 
     Similar semantics to date_xrange.
     Only accepts integer `inc` values.
 
     >>> import datetime
     >>> dt = datetime.datetime
-    >>> dsl = lambda dtl: [dt.strftime('%Y-%m-%d') for dt in dtl]
+    >>> dsl = lambda dtl: [dt.strftime("%Y-%m-%d") for dt in dtl]
     >>> dsl(date_months_xrange(dt(2011, 10, 31), dt(2012, 1, 1)))
     ['2011-10-31', '2011-11-30', '2011-12-31']
     """
