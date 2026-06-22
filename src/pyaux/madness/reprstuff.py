@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import functools
+
 __all__ = (
     "GenReprWrapper",
     "genreprwrap",
@@ -55,8 +57,6 @@ class GenReprWrapper:
 
 
 def genreprwrap(fn=None, **wrap_kwa):
-    import functools
-
     def _wrap(w_fn):
         @functools.wraps(w_fn)
         def _wrapped(*ar, **kwa):

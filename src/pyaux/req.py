@@ -3,7 +3,6 @@ Requests for humans that have to deal with lots of stuff.
 
 TODO: `aiohttp`-based version.
 """
-# pylint: disable=arguments-differ,too-many-arguments
 
 from __future__ import annotations
 
@@ -154,7 +153,7 @@ class RequesterBase:
         return kwargs
 
     # Warning: kwargs defaults are also duplicated in `Requester.request`.
-    def _prepare_parameters(self, kwargs):  # pylint: disable=no-self-use
+    def _prepare_parameters(self, kwargs):
         return kwargs
 
     def request(self, url, **kwargs):
@@ -381,21 +380,21 @@ class RequesterContentType(RequesterBase):
             return self._serialize_data_ujson(data, context=context)
         raise Exception("Unknown data serialization content_type", content_type)
 
-    def _serialize_data_json(self, data, context=None):  # pylint: disable=unused-argument
+    def _serialize_data_json(self, data, context=None):
         """Overridable point for json-serialization customization."""
-        from .anyjson import json_dumps
+        from .anyjson import json_dumps  # noqa: PLC0415
 
         data = to_bytes(json_dumps(data))
         return data, self.json_content_type
 
-    def _serialize_data_ujson(self, data, context=None):  # pylint: disable=unused-argument
-        import ujson
+    def _serialize_data_ujson(self, data, context=None):
+        import ujson  # noqa: PLC0415
 
         data = ujson.dumps(data, ensure_ascii=False).encode()
         return data, self.json_content_type
 
-    def _serialize_data_orjson(self, data, context=None):  # pylint: disable=unused-argument
-        import orjson
+    def _serialize_data_orjson(self, data, context=None):
+        import orjson  # noqa: PLC0415
 
         data = orjson.dumps(data)
         return data, self.json_content_type
@@ -515,7 +514,7 @@ class RequesterLog(RequesterBase):
 
         data_info = ""
         if request.body:
-            data_info = f"  data_len={len(request.body)}"
+            data_info = f"  data_len={len(request.body or b'')}"  # type: ignore[arg-type]
 
         return f"{method.upper()} {url}{data_info}"
 
@@ -533,21 +532,19 @@ class RequesterLog(RequesterBase):
         ]
         try:
             elapsed = f"in {response.elapsed.total_seconds():.3f}s"
-        except Exception:  # pylint: disable=broad-except
+        except Exception:
             elapsed = "in ???s"
         pieces.append(elapsed)
         if self.log_response_headers:
             pieces.append(f"    response.headers={response.headers!r}")
         return " ".join(str(piece) if not isinstance(piece, str) else piece for piece in pieces)
 
-    # pylint: disable=unused-argument
     def log_before(self, request, level=logging.DEBUG, **kwargs):
         """Hook for logging before a request is sent"""
         if not self.logger.isEnabledFor(level):
             return
         self.logger.debug("Sending request: %s", self.request_for_logging_lazy(request))
 
-    # pylint: disable=unused-argument
     def log_after(self, request, response, level=logging.INFO, **kwargs):
         """Hook for logging after a response is received"""
         if not self.logger.isEnabledFor(level):
@@ -559,7 +556,6 @@ class RequesterLog(RequesterBase):
             self.response_for_logging(response),
         )
 
-    # pylint: disable=unused-argument
     def log_exc(self, request, exc, exc_info=None, level=logging.ERROR, **kwargs):
         """Log an exception that occured when getting a response"""
         if not self.logger.isEnabledFor(level):
@@ -647,7 +643,7 @@ class Requester(
         )
 
     # TODO: make it possible to supply defaults for everything in `__init__`.
-    # pylint: disable=unused-argument,too-many-locals
+
     def request(
         self,
         url,
@@ -786,7 +782,7 @@ class APIRequester(Requester):
 
 
 def test():
-    from pyaux.runlib import init_logging
+    from pyaux.runlib import init_logging  # noqa: PLC0415
 
     init_logging(level=1)
     reqr = Requester()

@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import datetime
+from decimal import Decimal
+
 __all__ = (
     "date_add_months",
     "date_months_range",
@@ -39,9 +42,6 @@ def frange(start, end=None, inc=None):
 
 def dxrange(start, end=None, inc=None, *, include_end=False):
     """The xrange function for Decimal"""
-    # Imported here mostly because of use_cdecimal in this module
-    from decimal import Decimal
-
     assert inc != 0, "inc should not be zero"
     if end is None:
         end = start
@@ -93,8 +93,6 @@ def date_xrange(start, end, inc=None, *, include_end=False, precise=False):
     >>> dtsl(date_xrange(dta, dtb, inc=1111.11111111111 / 86400))[-1]
     '2011-11-13T23:54:48.888863'
     """
-    import datetime
-
     if inc is None:
         inc = 1  # default: 1 day
 
@@ -137,7 +135,7 @@ def date_add_months(sourcedate, months=1):
     Add months to date; can cap the day to the maximal value for
     the month
     """
-    import calendar
+    import calendar  # noqa: PLC0415
 
     month = sourcedate.month - 1 + months
     year = sourcedate.year + month // 12

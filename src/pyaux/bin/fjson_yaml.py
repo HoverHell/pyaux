@@ -8,7 +8,8 @@ import sys
 
 import yaml
 
-from pyaux.base import colorize_yaml as colorize, to_text
+from pyaux.base import colorize_yaml as colorize
+from pyaux.base import to_text
 
 
 def cmd_make_parser(**kwa):

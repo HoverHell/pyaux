@@ -66,7 +66,7 @@ def get_prof(proftype="lp", *, add_builtin_key: str = "profile"):
         pass  # ... nothing to generate.
     # Otherwise - make one.
     elif proftype == "lp":
-        import line_profiler
+        import line_profiler  # noqa: PLC0415
 
         profile = line_profiler.LineProfiler()
     elif proftype == "dummy":

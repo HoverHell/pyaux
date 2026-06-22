@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# pylint: disable=broad-except
+
 """ yaml -> json for pretty-writing. """
 from __future__ import annotations
 

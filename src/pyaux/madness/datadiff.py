@@ -28,7 +28,7 @@ def _dumprepr(
     **kwa,
 ):
     """Advanced-ish representation of an object (using YAML)"""
-    import yaml
+    import yaml  # noqa: PLC0415
 
     dumper: type[yaml.emitter.Emitter] = yaml.Dumper
 
@@ -59,10 +59,10 @@ def _dumprepr(
             raise
         # ujson can handle many objects somewhat-successfully. But can
         # segfault while doing that.
-        import ujson
+        import ujson  # noqa: PLC0415
 
         res += f"# Unable to serialize directly! ({exc!r})\n"
-        prepared_value = ujson.loads(ujson.dumps(val))  # pylint: disable=c-extension-no-member
+        prepared_value = ujson.loads(ujson.dumps(val))
         res += maybe_colorize(yaml.dump(prepared_value, **params))
 
     return res

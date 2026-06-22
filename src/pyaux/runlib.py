@@ -47,14 +47,14 @@ def init_logging(*args, **kwargs):
 
     if _try_coloredlogs:
         try:
-            import coloredlogs
+            import coloredlogs  # noqa: PLC0415
         except Exception:
             coloredlogs = None
             _try_coloredlogs = False
 
     colored = kwargs.pop("colored", True)
     if colored and not _try_coloredlogs:
-        from .monkeys import use_colorer
+        from .monkeys import use_colorer  # noqa: PLC0415
 
         use_colorer()
 
@@ -79,7 +79,7 @@ def init_logging(*args, **kwargs):
 
     if _td:
         # XX: do the same for all `logging.Logger.manager.loggerDict.values()`?
-        from .logging_annotators import TimeDiffAnnotator
+        from .logging_annotators import TimeDiffAnnotator  # noqa: PLC0415
 
         flt = TimeDiffAnnotator()
         logging.root.addFilter(flt)

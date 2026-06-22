@@ -707,7 +707,7 @@ def mangle_dict(input_dict, *, include=None, exclude=None, add=None, _return_lis
 
 def colorize(text, fmt, outfmt="term", *, lexer_kwa=None, formatter_kwa=None, **kwa):
     """Convenience method for running pygments"""
-    from pygments import formatters, highlight, lexers
+    from pygments import formatters, highlight, lexers  # noqa: PLC0415
 
     _colorize_lexers = dict(
         yaml="YamlLexer",
@@ -1151,7 +1151,7 @@ def get_requests_session():
 
     WARNING: Effectively deprecated; see `pyaux.req`.
     """
-    import requests
+    import requests  # noqa: PLC0415
 
     return requests.session()
 
@@ -1184,7 +1184,7 @@ def request(
 
     WARNING: Effectively deprecated; see `pyaux.req`.
     """
-    import requests
+    import requests  # noqa: PLC0415
 
     log = logging.getLogger("request")
 
@@ -1342,7 +1342,7 @@ def current_frame(depth=1):
     # fallback; probably not relevant anymore.
     try:
         raise Exception
-    except Exception:  # pylint: disable=broad-except
+    except Exception:
         _, _, e_tb = sys.exc_info()
         assert e_tb is not None
         frame: FrameType = e_tb.tb_frame
@@ -1401,9 +1401,3 @@ def sh_quote_prettier(value):
     _overedge = "''"
     result = result.removeprefix(_overedge)
     return result.removesuffix(_overedge)
-
-
-if __name__ == "__main__":
-    import doctest
-
-    doctest.testmod()

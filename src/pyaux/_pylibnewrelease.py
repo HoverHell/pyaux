@@ -242,7 +242,7 @@ def prepare(params: argparse.Namespace) -> int:
         history_versions,
     ]
     new_history_versions = "\n".join(new_history_versions_parts)
-    new_history_full = "".join(history_parts[:-1] + [new_history_versions])
+    new_history_full = "".join([*history_parts[:-1], new_history_versions])
     LOGGER.log(LOGLEVEL_EVERYTHING, "New history: \n%s", new_history_full)
 
     Path(HISTORY_FILE).write_text(new_history_full)

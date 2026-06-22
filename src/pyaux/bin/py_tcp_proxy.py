@@ -67,7 +67,7 @@ class Forward:
             socket.AF_INET6 if ip6 else socket.AF_INET, socket.SOCK_STREAM
         )
         if ssl_connect:
-            self.forwardsck = ssl.wrap_socket(self.forwardsck)
+            self.forwardsck = ssl.SSLContext().wrap_socket(self.forwardsck)
         try:
             self.forwardsck.connect((host, port))
             return self.forwardsck

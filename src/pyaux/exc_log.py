@@ -186,9 +186,9 @@ def render_exc_repr(exc_type, exc_value):
 
     except Exception as e3:
         try:
-            res += ("Error: Some faulty exception of type %r, failing on repr with %s") % (
-                exc_type,
-                _exc_safe_repr(type(e3), e3),
+            res += (
+                f"Error: Some faulty exception of type {exc_type!r}, "
+                f"failing on repr with {_exc_safe_repr(type(e3), e3)}"
             )
         except Exception:
             res += "Error: Some very faulty exception"

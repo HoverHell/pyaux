@@ -10,8 +10,6 @@ import string
 import time
 from typing import Any
 
-from IPython.display import HTML
-
 from pyaux.base import group
 from pyaux.dicts import dict_merge
 
@@ -30,13 +28,17 @@ def highcharts_old(
     highstock=True,
     ctx_attr: str = "context",
 ):
+    from IPython.display import HTML  # noqa: PLC0415
+
     assert chart_def or chart_def_json
     unique_id = mk_uid() if uid is None else uid
     chart_def_json = json.dumps(chart_def) if chart_def_json is None else chart_def_json
     if highstock:
         hsscript = "http://code.highcharts.com/stock/highstock.js"
+        hstag = "'StockChart', "
     else:
         hsscript = "http://code.highcharts.com/highcharts.js"
+        hstag = ""
     context = dict(
         chart_def_json=chart_def_json,
         chart_def=chart_def,
@@ -44,24 +46,19 @@ def highcharts_old(
         height=height,
         unique_id=unique_id,
         hsscript=hsscript,
-        hstag="'StockChart', " if highstock else "",
+        hstag=hstag,
     )
     html = (
-        """
-    <script src="%(hsscript)s"></script>
-    <script src="http://code.highcharts.com/modules/exporting.src.js"></script>
-
-    <div id="chart_%(unique_id)s"
-        style="min-width: %(min_width)spx; height: %(height)ipx; margin: 0 auto"
-        >Re-run cell if chart is not shown ...</div>
-    <script>
-        do_chart_%(unique_id)s = function() {
-            $('#chart_%(unique_id)s').highcharts(%(hstag)s%(chart_def_json)s);
-        }
-        setTimeout("do_chart_%(unique_id)s()", 50)
-    </script>
-    """
-        % context
+        f"""\n<script src="{hsscript}"></script>\n"""
+        """<script src="http://code.highcharts.com/modules/exporting.src.js"></script>\n"""
+        f"""<div id="chart_{unique_id}" style="min-width: {min_width}px; height: {height}px; margin: 0 auto>"""
+        "Re-run cell if chart is not shown ...</div>\n"
+        "<script>\n"
+        f"""do_chart_{unique_id} = function() {{\n"""
+        f"""    $('#chart_{unique_id}').highcharts({hstag}{chart_def_json});\n"""
+        "}\n"
+        f"""setTimeout("do_chart_{unique_id}()", 50)\n"""
+        f"</script>\n"
     )
     res = HTML(html)
     setattr(res, ctx_attr, context)
@@ -69,38 +66,30 @@ def highcharts_old(
 
 
 def run_js(js, delayed=50):
-    context = dict(js=js, unique_id=mk_uid(), delayed=delayed)
+    from IPython.display import HTML  # noqa: PLC0415
+
+    unique_id = mk_uid()
     if not delayed:
-        html = (
-            """
-        <script>
-        %(js)s
-        </script>
-        """
-            % context
-        )
-    else:
-        html = (
-            """
-        <script>
-            tmp_run_%(unique_id)s = function() {
-                %(js)s
-            }
-            setTimeout("tmp_run_%(unique_id)s()", %(delayed)d)
-        </script>
-        """
-            % context
-        )
+        return HTML(f"\n<script>\n{js}\n</script>\n")
+
+    html = (
+        "\n<script>\n"
+        f"tmp_run_{unique_id} = function() {{\n"
+        f"    {js}\n"
+        "}"
+        f"""setTimeout("tmp_run_{unique_id}()", {delayed})\n"""
+        "</script>\n"
+    )
     return HTML(html)
 
 
 def display_highcharts(chart_def=None, width=1800, height=800, *, highstock=True, **kwargs):
     if highstock:
-        from highcharts import Highstock
+        from highcharts import Highstock  # noqa: PLC0415
 
         chart = Highstock()
     else:
-        from highcharts import Highchart
+        from highcharts import Highchart  # noqa: PLC0415
 
         chart = Highchart()
     chart_def = chart_def.copy()
@@ -199,7 +188,9 @@ def mk_chart_def(
             zip_idx = True
 
         if zip_idx:
-            series.extend(dict(name=column, data=zip(idx, list(df[column]))) for column in df.columns)
+            series.extend(
+                {"name": column, "data": list(zip(idx, list(df[column]), strict=True))} for column in df.columns
+            )
         else:
             series.extend(dict(name=column, data=list(df[column])) for column in df.columns)
 

@@ -90,7 +90,7 @@ def _print(something):
 
 def _ipdbg(_a_function_thingie, *ar, **kwa):
     """Run with ipdb post-mortem on exception"""
-    import ipdb  # noqa: T100
+    import ipdb  # noqa: T100,PLC0415
 
     try:
         return _a_function_thingie(*ar, **kwa)
@@ -104,7 +104,7 @@ def _ipdbg(_a_function_thingie, *ar, **kwa):
 
 def _ipdbt(_a_function_thingie, *ar, **kwa):
     """Run with ipdb trace and post-mortem on exception"""
-    import ipdb  # noqa: T100
+    import ipdb  # noqa: T100,PLC0415
 
     ipdb.set_trace()  # noqa: T100
     try:
@@ -119,7 +119,7 @@ def _ipdbt(_a_function_thingie, *ar, **kwa):
 
 def _pdbg(_a_function_thingie, *ar, **kwa):
     """Run with pdb post-mortem on exception"""
-    import pdb  # noqa: T100
+    import pdb  # noqa: T100,PLC0415
 
     try:
         return _a_function_thingie(*ar, **kwa)
@@ -133,7 +133,7 @@ def _pdbg(_a_function_thingie, *ar, **kwa):
 
 def _pdbt(_a_function_thingie, *ar, **kwa):
     """Run with pdb trace and post-mortem on exception"""
-    import pdb  # noqa: T100
+    import pdb  # noqa: T100,PLC0415
 
     pdb.set_trace()  # noqa: T100
     try:
@@ -149,9 +149,9 @@ def _pdbt(_a_function_thingie, *ar, **kwa):
 def _uprint(obj, *, ret=False):
     pretty: Callable[[Any], str]
     try:
-        from IPython.lib.pretty import pretty
+        from IPython.lib.pretty import pretty  # noqa: PLC0415
     except Exception:
-        from pprint import pformat as pretty
+        from pprint import pformat as pretty  # noqa: PLC0415
     obj_repr = pretty(obj)
     print(obj_repr)  # noqa: T201 (print)
     if ret:
@@ -188,7 +188,7 @@ def _mrosources(cls, attname, *, raw=False, colorize=False):
     meths = [DotDict(val, src=getsrc(val.meth)) for val in meths]
 
     if colorize:
-        from pyaux.base import colorize as colorfunc
+        from pyaux.base import colorize as colorfunc  # noqa: PLC0415
 
         colorfunc_kwa = dict(fmt="py")
         if isinstance(colorize, dict):

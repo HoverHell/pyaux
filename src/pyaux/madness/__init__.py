@@ -12,12 +12,10 @@ from typing import Any
 
 from .. import aio
 from ..aio import _await
-from . import (
-    datadiff as madness_datadiff,
-    oneliny as madness_oneliny,
-    reprstuff as madness_reprstuff,
-    stuffstuff as madness_stuffstuff,
-)
+from . import datadiff as madness_datadiff
+from . import oneliny as madness_oneliny
+from . import reprstuff as madness_reprstuff
+from . import stuffstuff as madness_stuffstuff
 from .datadiff import (
     _diff_datadiff_data,
     _diff_pre_diff,

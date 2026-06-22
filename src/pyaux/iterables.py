@@ -35,7 +35,7 @@ def window(seq, size=2, fill=0, *, fill_left=False, fill_right=False):
     if len(result) == size:  # `<=` if okay to return seq if len(seq) < size
         yield result
     for elem in it:
-        result = result[1:] + (elem,)
+        result = (*result[1:], elem)
         yield result
 
 
@@ -157,7 +157,7 @@ class IterStat:
 
     @property
     def std(self):
-        from .base import _sqrt
+        from .base import _sqrt  # noqa: PLC0415
 
         return _sqrt(self.variance)
 
@@ -322,7 +322,6 @@ def prefetch_first(iterable, count=1, *, require=False):
                     dict(requested=count, found=len(prefetched), data=prefetched),
                 ) from exc
 
-    # pylint: disable=dangerous-default-value
     def gen(iterable=iterable, prefetched=prefetched):
         if prefetched:
             for item in prefetched[:-1]:

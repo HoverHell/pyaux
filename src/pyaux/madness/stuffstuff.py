@@ -84,7 +84,7 @@ def displaydf(df, *ar, **kwa):
     :param cutlinks: automatically converts all URLs in the resulting HTML
     to shortened values leading to the same addresses.
     """
-    from IPython.display import HTML, display
+    from IPython.display import HTML, display  # noqa: PLC0415
 
     kwa.setdefault("float_format", lambda v: f"{v:.6f}")
     columns = kwa.pop("columns", None)

@@ -205,7 +205,7 @@ def get_json():
     try:
         import simplejson as json
     except Exception:
-        import json
+        import json  # type: ignore[no-redef]
     return json
 
 
@@ -372,7 +372,7 @@ def make_outs_func(params):
 
             # magic '8'
             width = shutil.get_terminal_size().columns - 8
-        except Exception:  # pylint: disable=broad-except
+        except Exception:
             pass
 
         outs_func = functools.partial(

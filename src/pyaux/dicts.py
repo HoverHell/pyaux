@@ -203,7 +203,7 @@ def dict_is_subset(smaller_obj, larger_obj, *, recurse_iterables=False, require_
         # smaller_value_iter, larger_value_iter
         svi = iter(smaller_obj)
         lvi = iter(larger_obj)
-        for sval, lval in zip(svi, lvi):
+        for sval, lval in zip(svi, lvi, strict=False):
             if not dict_is_subset(sval, lval, **kwa):
                 return False
         if require_structure_match and (not iterator_is_over(svi) or not iterator_is_over(lvi)):  # noqa: SIM103
@@ -291,7 +291,7 @@ class DotDictExt(dict):
 
     def __getattr__(self, name):
         if name.startswith("__"):  # NOTE: two underscores.
-            return super().__getattr__(name)
+            return super().__getattr__(name)  # type: ignore[misc]
         try:
             return self[name]
         except KeyError as exc:
@@ -335,7 +335,7 @@ class Dotdictify(dict):
     __getattr__ = __getitem__
 
 
-_repr_running = {}
+_repr_running: dict[tuple[int, int], int] = {}
 
 
 class ODReprMixin:
@@ -348,13 +348,13 @@ class ODReprMixin:
         """The usual (default) representation of an ordereddict"""
         if not self:
             return f"{self.__class__.__name__}()"
-        return f"{self.__class__.__name__}({self.items()!r})"
+        return f"{self.__class__.__name__}({self.items()!r})"  # type: ignore[attr-defined]
 
     def __drepr__(self):
         """A slightly more visual-oriented representation of an ordereddict"""
         if not self:
             return f"{self.__class__.__name__}()"
-        items_s = ", ".join(f"{key!r}: {val!r}" for key, val in self.items())
+        items_s = ", ".join(f"{key!r}: {val!r}" for key, val in self.items())  # type: ignore[attr-defined]
         return f"{self.__class__.__name__}({items_s})"
 
     def __repr__(self, fn=__drepr__):
@@ -363,10 +363,7 @@ class ODReprMixin:
         represent infinitely-recursive dictionaries of this type.
         """
         # NOTE: version variety; might be a _get_ident or something else.
-        try:
-            from thread import get_ident as _get_ident
-        except ImportError:
-            from threading import get_ident as _get_ident
+        from threading import get_ident as _get_ident  # noqa: PLC0415
 
         call_key = (id(self), _get_ident())
         if call_key in _repr_running:
@@ -383,9 +380,9 @@ class ODReprMixin:
 # https://pypi.python.org/pypi/ordereddict
 # or /usr/lib/python2.7/collections.py
 # with modifications
-class OrderedDict(ODReprMixin, dict, MutableMapping):
-    __end = None
-    __map = None
+class OrderedDict(ODReprMixin, dict, MutableMapping):  # noqa: PLW1641 Object does not implement `__hash__` method
+    __end: list[Any] | None = None
+    __map: dict[Any, Any] | None = None
 
     def __init__(self, *args, **kwds):
         if len(args) > 1:
@@ -402,6 +399,7 @@ class OrderedDict(ODReprMixin, dict, MutableMapping):
         self.update(*args, **kwds)
 
     def clear(self):
+        end: list[Any]
         self.__end = end = []
         # sentinel node for doubly linked list
         end += [None, end, end]
@@ -412,17 +410,19 @@ class OrderedDict(ODReprMixin, dict, MutableMapping):
     def __setitem__(self, key, value):
         if key not in self:
             end = self.__end
-            curr = end[1]
-            curr[2] = end[1] = self.__map[key] = [key, curr, end]
+            curr = end[1]  # type: ignore[index]
+            curr[2] = end[1] = self.__map[key] = [key, curr, end]  # type: ignore[index]
         dict.__setitem__(self, key, value)
 
     def __delitem__(self, key):
         dict.__delitem__(self, key)
-        key, prev, next_ = self.__map.pop(key)
+        key, prev, next_ = self.__map.pop(key)  # type: ignore[union-attr]
         prev[2] = next_
         next_[1] = prev
 
     def __iter__(self):
+        if self.__end is None:
+            return
         end = self.__end
         curr = end[2]
         while curr is not end:
@@ -430,6 +430,8 @@ class OrderedDict(ODReprMixin, dict, MutableMapping):
             curr = curr[2]
 
     def __reversed__(self):
+        if self.__end is None:
+            return
         end = self.__end
         curr = end[1]
         while curr is not end:
@@ -459,8 +461,8 @@ class OrderedDict(ODReprMixin, dict, MutableMapping):
     setdefault = MutableMapping.setdefault
     update = MutableMapping.update
     pop = MutableMapping.pop
-    values = MutableMapping.values
-    items = MutableMapping.items
+    values = MutableMapping.values  # type: ignore[assignment]
+    items = MutableMapping.items  # type: ignore[assignment]
 
     # Will be provided in any version from whichever is available.
     iterkeys = getattr(MutableMapping, "iterkeys", None) or MutableMapping.keys
@@ -481,7 +483,7 @@ class OrderedDict(ODReprMixin, dict, MutableMapping):
         if isinstance(other, OrderedDict):
             if len(self) != len(other):
                 return False
-            return all(p == q for p, q in zip(self.items(), other.items()))
+            return all(p == q for p, q in zip(self.items(), other.items(), strict=True))
         return dict.__eq__(self, other)
 
     def __ne__(self, other):
@@ -525,7 +527,7 @@ class MultiValueDict(dict):
 
     @classmethod
     def make_from_items(cls, items):
-        key_to_list_mapping = {}
+        key_to_list_mapping: dict[Any, list[Any]] = {}
         for key, val in items:
             key_to_list_mapping.setdefault(key, []).append(val)
         return cls(key_to_list_mapping)
@@ -703,7 +705,7 @@ def _is_multivaluedict(val, *, deep=False):
 def _lists_group(items):
     """items -> key_to_list_mapping"""
     # Pretty much `pyaux.base.group()`
-    result = {}
+    result: dict[Any, list[Any]] = {}
     for key, val in items:
         try:
             list_ = result[key]
@@ -717,8 +719,8 @@ def _lists_group(items):
 
 def _lists_group_ordered(items):
     """items -> key_to_list_mapping keeping some order"""
-    order = []
-    lists = {}
+    order: list[tuple[Any, list[Any]]] = []
+    lists: dict[Any, list[Any]] = {}
     for key, val in items:
         try:
             list_ = lists[key]
@@ -738,7 +740,7 @@ def _lists_ungroup(key_to_list_mapping):
     return [(key, val) for key, vals in key_to_list_mapping for val in vals]
 
 
-class MVODCommon(ODReprMixin):
+class MVODCommon(ODReprMixin):  # noqa: PLW1641 Object does not implement `__hash__` method
     _data_internal: tuple[Any, ...] = ()
 
     # Conveniences
@@ -756,7 +758,7 @@ class MVODCommon(ODReprMixin):
         for i, item in enumerate(data):
             lv = len(item)  # Paranoidally avoid calling it twice.
             if lv != 2:
-                raise ValueError(("dictionary update sequence element #%d has length %r; 2 is required") % (i, lv))
+                raise ValueError(f"dictionary update sequence element #{i} has length {lv}; 2 is required")
             key, val = item
             res.append((key, val))
         return tuple(res)
@@ -773,7 +775,7 @@ class MVODCommon(ODReprMixin):
         if isinstance(arg, MVOD):  # support init / update from antother MVOD
             arg = arg._data
         elif _is_multivaluedict(arg):  # Other `MultiValueDict`s
-            arg = self._lists_ungroup(arg.lists())
+            arg = self._lists_ungroup(arg.lists())  # type: ignore[union-attr]
         elif isinstance(arg, dict):
             arg = getattr(arg, "iteritems", arg.items)()
         if kwds:
@@ -817,7 +819,7 @@ class MVODCommon(ODReprMixin):
         self._data_checked = ()
 
     def __copy__(self):
-        return self.__class__(self._data)
+        return self.__class__(self._data)  # type: ignore[call-arg]
 
     def __deepcopy__(self, memo=None):
         if memo is None:
@@ -879,18 +881,18 @@ class MVODCommon(ODReprMixin):
         if len(args) > 1:
             raise TypeError(f"pop expected at most 2 arguments, got {1 + len(args)!r}")
         try:
-            value = self[key]
+            value = self[key]  # type: ignore[index]
         except KeyError:
             if args:
                 return args[0]
             raise
-        del self[key]
+        del self[key]  # type: ignore[attr-defined]
         return value
 
     def setdefault(self, key, failobj=None):
         if key not in self:
-            self[key] = failobj
-        return self[key]
+            self[key] = failobj  # type: ignore[index]
+        return self[key]  # type: ignore[index]
 
     def popitem(self, *, last=True):
         if not self:
@@ -906,7 +908,7 @@ class MVODCommon(ODReprMixin):
 
     @classmethod
     def fromkeys(cls, iterable, value=None):
-        return cls([(k, value) for k in iterable])
+        return cls([(k, value) for k in iterable])  # type: ignore[call-arg]
 
     def __eq__(self, other):
         """
@@ -917,7 +919,7 @@ class MVODCommon(ODReprMixin):
         """
         if isinstance(other, (MVODCommon, OrderedDict)):
             # Quicker pre-check:
-            if not dict.__eq__(self, other):
+            if not dict.__eq__(self, other):  # type: ignore[operator]
                 return False
 
             # In the end it comes down to items.
@@ -939,7 +941,7 @@ class MVODCommon(ODReprMixin):
     # some other methods?
 
 
-class MVOD(MVODCommon, dict):
+class MVOD(MVODCommon, dict):  # type: ignore[misc]
     """
     MultiValuedOrderedDict: A not-very-optimized (most write operations
     are at least O(N) with the re-hashing cost) somewhat-trivial verison.
@@ -1049,7 +1051,7 @@ class MVOD(MVODCommon, dict):
         return default
 
 
-class MVLOD(MVODCommon, MultiValueDict):
+class MVLOD(MVODCommon, MultiValueDict):  # type: ignore[misc]
     """
     A Multi-Value Ordered Dict with slow modification and fast
     value-list access.
@@ -1239,7 +1241,7 @@ class DODD(DefaultDotDictMixin, OrderedDict):
     """
 
 
-class MVDODD(DefaultDotDictMixin, MVOD):
+class MVDODD(DefaultDotDictMixin, MVOD):  # type: ignore[misc]
     pass
 
 

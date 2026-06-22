@@ -42,7 +42,7 @@ MS_BACKGROUND_INTENSITY = 0x0080  # background color is intensified.
 def add_coloring_to_emit_windows(fn):
     # add methods we need to the class
     def _set_color(self, code):
-        import ctypes
+        import ctypes  # noqa: PLC0415
 
         # Constants from the Windows API
         self.STD_OUTPUT_HANDLE = -11
@@ -104,7 +104,7 @@ def add_coloring_to_emit_ansi(fn):
 
 def init():
     """Monkey-patch to add color support to logging.StreamHandler"""
-    import platform
+    import platform  # noqa: PLC0415
 
     if platform.system() == "Windows":
         # Windows does not support ANSI escapes and we are using API calls

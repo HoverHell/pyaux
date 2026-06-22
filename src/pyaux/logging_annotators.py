@@ -93,7 +93,7 @@ def get_celery_task_attributes():
     result = dict(task_name=None, task_id=None, meta=None, meta_meta=None)
     try:
         # See celery.app.log.TaskFormatter
-        import celery
+        import celery  # noqa: PLC0415
 
         task = celery.current_task
         if not task:
@@ -121,7 +121,9 @@ class CeleryProcessNameAnnotator(Annotator):
     def get_value(self, *args, **kwargs):
         # see celery.utils.log
         try:
-            from billiard import current_process  # type: ignore[attr-defined]
+            from billiard import (  # type: ignore[attr-defined]  # noqa: PLC0415
+                current_process,
+            )
 
             result = current_process()._name
             if self.skip_main_process and result == "MainProcess":

@@ -10,6 +10,7 @@ src: http://code.activestate.com/recipes/65287-automatically-start-the-debugger-
 from __future__ import annotations
 
 import sys
+import traceback
 
 
 def info(exc_type, exc, tb):
@@ -18,9 +19,7 @@ def info(exc_type, exc, tb):
         # device, so we call the default hook
         sys.__excepthook__(exc_type, exc, tb)
     else:
-        import traceback
-
-        import ipdb  # noqa: T100
+        import ipdb  # noqa: T100,PLC0415
 
         # we are NOT in interactive mode, print the exception...
         traceback.print_exception(exc_type, exc, tb)

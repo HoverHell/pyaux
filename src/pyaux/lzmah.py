@@ -7,6 +7,7 @@ Also can be used as a script for compressing a file.
 from __future__ import annotations
 
 import contextlib
+import json
 import sys
 from pathlib import Path
 from typing import BinaryIO
@@ -56,12 +57,11 @@ def unjsllzma_i(fi, cm: contextlib.ExitStack, parse_fn=None, handle_fail=None, b
 
     if parse_fn is None:
         try:
-            import orjson
+            import orjson  # noqa: PLC0415
 
             parse_fn = orjson.loads
         except ImportError:
             sys.stderr.write("Error importing (preferred) `orjson`\n")
-            import json
 
             parse_fn = json.loads
 

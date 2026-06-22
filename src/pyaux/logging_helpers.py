@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import socket
 from logging import handlers
 
 from .base import to_bytes
@@ -77,11 +78,9 @@ class TaggedSysLogHandler(TaggedSysLogHandlerBase):
     def __init__(self, *args, **kwargs):
         self._sbdbuf_size = kwargs.pop("sbdbuf_size", self._sndbuf_size)
         super().__init__(*args, **kwargs)
-        socket = getattr(self, "socket", None)
-        if socket is not None:
-            self.configure_socket(socket)
+        sock = getattr(self, "socket", None)
+        if sock is not None:
+            self.configure_socket(sock)
 
     def configure_socket(self, sock):
-        import socket
-
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, self._sndbuf_size)

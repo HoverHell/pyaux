@@ -5,17 +5,13 @@
 NOTE: python3.5+ only (only tested on python3.7).
 """
 
-# pylint: disable=too-many-branches
-# pylint: disable=too-many-statements
-# pylint: disable=fixme
 from __future__ import annotations
 
 import copy
 import re
 import sre_compile
 import sre_parse
-
-# pylint: disable=no-name-in-module
+import sys
 from sre_constants import (
     ANY,
     AT,
@@ -87,10 +83,7 @@ def rast_to_pattern(rast, _parent_type=None, **kwargs):
 
     Partial implementation (to be completed as needed).
 
-    >>> rex = (
-    ...     r"[abc]?(?:^|a{4,}?)[^IO](b\ (?P<zxcv>c|d)+)*"
-    ...     r"($|...|[0-9…][^a-z])(?P<qwer>a-imsx:zxcv)(?a-xsmi:zxcv)"
-    ... )
+    >>> rex = r"[abc]?(?:^|a{4,}?)[^IO](b\ (?P<zxcv>c|d)+)*" r"($|...|[0-9…][^a-z])(?P<qwer>a-imsx:zxcv)(?a-xsmi:zxcv)"
     >>> rast_to_pattern(sre_parse.parse(rex))[:44]
     '[abc]?(?:^|a{4,}?)[^IO](b\\ (?P<zxcv>[cd])+)*'
     >>> rast_to_pattern(sre_parse.parse(rex))[44:]
@@ -739,8 +732,6 @@ def find_matching_subregexes(pattern, string, *, flags=0, verbose=False):
 
 
 def main():
-    import sys
-
     rex = sys.argv[1]
     string = sys.argv[2]
     sys.stdout.write(f"Regex: {rex!r}, string: {string!r}\n")

@@ -10,6 +10,8 @@ Example CLI usage:
 from __future__ import annotations
 
 import datetime
+import os
+import select
 import subprocess
 import sys
 import time
@@ -44,11 +46,10 @@ class NonzeroExit(Exception):
 
 
 def set_fd_nonblocking(fdesc):
-    import fcntl
-    from os import O_NONBLOCK
+    import fcntl  # noqa: PLC0415
 
     flags = fcntl.fcntl(fdesc, fcntl.F_GETFL)
-    fcntl.fcntl(fdesc, fcntl.F_SETFL, flags | O_NONBLOCK)
+    fcntl.fcntl(fdesc, fcntl.F_SETFL, flags | os.O_NONBLOCK)
     return fdesc
 
 
@@ -71,8 +72,6 @@ def poll_fds(
     Note that for precise timestamps in the result you need to minimize the
     output processing time.
     """
-    import select
-
     start_time = time.monotonic()
     end_time = None
     if total_timeout:
@@ -143,8 +142,6 @@ def main():
     """A simple form of 'annotate-output'"""
     # cmd = ('ping', '-c', '4', '-i', '0.2', '1.1.1.1')
     # cmd = ('sh', '-c', 'date -Ins; printf "zxcv"; sleep 5; printf "qwer\n"; date -Ins')
-    import sys
-
     cmd = sys.argv[1:]
     run_cmd(*cmd, nonblocking=True)
 
