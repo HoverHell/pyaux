@@ -14,7 +14,7 @@ import unicodedata
 import urllib.parse
 from collections.abc import Callable, Hashable, Iterable, Iterator
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Literal, cast
 
 if TYPE_CHECKING:
     from decimal import Decimal
@@ -69,11 +69,6 @@ __all__ = (
     "to_text",
     "try_parse",
 )
-
-
-TKey = TypeVar("TKey", bound=Hashable)
-TVal = TypeVar("TVal")
-TRet = TypeVar("TRet")
 
 
 def repr_call(args, kwargs):
@@ -618,7 +613,9 @@ def chunks(lst, size):
         yield lst[idx : idx + size]
 
 
-def groupby(lst: Iterable[tuple[TKey, TVal]], res_type: Callable[[], dict] = dict) -> dict[TKey, list[TVal]]:
+def groupby[TKey: Hashable, TVal](
+    lst: Iterable[tuple[TKey, TVal]], res_type: Callable[[], dict] = dict
+) -> dict[TKey, list[TVal]]:
     """
     Groups `[(key, value), ...]` iterable into `{key: [value, ...], ...}` dict.
 
@@ -637,7 +634,7 @@ def groupby(lst: Iterable[tuple[TKey, TVal]], res_type: Callable[[], dict] = dic
 group = groupby  # compat alias
 
 
-def groupbykey(
+def groupbykey[TVal, TKey: Hashable](
     lst: Iterable[TVal], key: Callable[[TVal], TKey] = cast("Callable[[Any], Any]", lambda v: v[0])
 ) -> dict[TKey, list[TVal]]:
     """
@@ -808,7 +805,7 @@ def configurable_wrapper(wrapper_func):
     return configurable_wrapper_func
 
 
-def simple_memoize_argless(func: Callable[..., TRet], *, cache_attr: str = "_cache") -> Callable[..., TRet]:
+def simple_memoize_argless[TRet](func: Callable[..., TRet], *, cache_attr: str = "_cache") -> Callable[..., TRet]:
     """
     A very simple memoizer that saves the first call result permanently
     (ignoring the argument values).

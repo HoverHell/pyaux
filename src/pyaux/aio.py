@@ -5,22 +5,20 @@ from __future__ import annotations
 import asyncio
 import types
 from concurrent.futures import Future
-from typing import TYPE_CHECKING, Any, TypeVar, overload
+from typing import TYPE_CHECKING, Any, overload
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
 
 __all__ = ("_await",)
 
-TRet = TypeVar("TRet")
+
+@overload
+def _await[TRet](coro: types.CoroutineType[TRet, None, None]) -> TRet: ...
 
 
 @overload
-def _await(coro: types.CoroutineType[TRet, None, None]) -> TRet: ...
-
-
-@overload
-def _await(awaitable: Callable[..., Awaitable[TRet]], *args: Any, **kwargs: Any) -> TRet: ...
+def _await[TRet](awaitable: Callable[..., Awaitable[TRet]], *args: Any, **kwargs: Any) -> TRet: ...
 
 
 def _await(*args: Any, **kwargs: Any) -> Any:

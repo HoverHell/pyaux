@@ -1,0 +1,5 @@
+include:
+  - project: "hoverhell/hydev"
+    # ref: "master"
+    ref: "919617890bf49a6aeb63dcaa80a46ba2bece0890"
+    file: "tools/gitlab/ci_hydev.yaml"

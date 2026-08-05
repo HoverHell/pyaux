@@ -1,6 +1,6 @@
 [project]
 name = "pyaux"
-version = "5.0.0"
+version = "5.1.0"
 description = "A collection of small useful helpers"
 readme = "README.rst"
 authors = [{name = "HoverHell", email = "hoverhell@gmail.com"}]
@@ -15,7 +15,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
-requires-python = ">=3.11"
+requires-python = ">=3.12,<4"
 dependencies = []
 
 [project.optional-dependencies]
@@ -79,6 +79,9 @@ exclude = [
 
 [tool.hydev]
 uv = true
+
+[tool.ruff]
+target-version = "py312"
 
 [[tool.mypy.overrides]]
 module = [
