@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import argparse
-import datetime
+import datetime as dt
 import logging
 import os
 import re
@@ -209,7 +209,7 @@ def prepare(params: argparse.Namespace) -> int:
     if not current_version_match:
         raise ValueError(f"History did not have a regex match for {HISTORY_VERSION_TAG!r}")
     current_version = current_version_match.group(1)
-    today = datetime.datetime.now(datetime.UTC).date().isoformat()
+    today = dt.datetime.now(dt.UTC).date().isoformat()
     version_parts = current_version.split(".")
 
     new_version = os.environ.get("NEW_VERSION")

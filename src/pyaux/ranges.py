@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import datetime
+import datetime as dt
 from decimal import Decimal
 
 __all__ = (
@@ -96,10 +96,10 @@ def date_xrange(start, end, inc=None, *, include_end=False, precise=False):
     if inc is None:
         inc = 1  # default: 1 day
 
-    if not isinstance(inc, datetime.timedelta):
+    if not isinstance(inc, dt.timedelta):
         # NOTE: days, by default
         inc_days = inc
-        inc = datetime.timedelta(inc)
+        inc = dt.timedelta(inc)
     else:
         inc_days = inc.total_seconds() / 86400  # py2.7 required
 
@@ -120,7 +120,7 @@ def date_xrange(start, end, inc=None, *, include_end=False, precise=False):
         yield current
         if precise:
             idx += 1
-            current = start + datetime.timedelta(inc_days * idx)
+            current = start + dt.timedelta(inc_days * idx)
         else:
             current = current + inc
 

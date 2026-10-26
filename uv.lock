@@ -1471,7 +1471,7 @@ wheels = [
 
 [[package]]
 name = "pyaux"
-version = "5.1.0"
+version = "5.1.1"
 source = { editable = "." }
 
 [package.optional-dependencies]

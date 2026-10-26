@@ -9,7 +9,7 @@ Example CLI usage:
 
 from __future__ import annotations
 
-import datetime
+import datetime as dt
 import os
 import select
 import subprocess
@@ -20,7 +20,7 @@ import time
 def _out_cb_default_common(tag, line, timestamp=None, encoding="utf-8", errors="replace"):
     # timestamp_dt = datetime.datetime.fromtimestamp(timestamp)
     # # Less precise, more convenient.
-    timestamp_dt = datetime.datetime.now(datetime.UTC)
+    timestamp_dt = dt.datetime.now(dt.UTC)
     line = line.decode(encoding, errors=errors)
     if line.endswith("\n"):
         line = line[:-1]

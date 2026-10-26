@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import copy
-import datetime
+import datetime as dt
 import json
 import random
 import string
@@ -177,12 +177,12 @@ def mk_chart_def(
         idx = df.index
 
         if timestamp_in_idx == "auto":
-            timestamp_in_idx = isinstance(idx[0], datetime.date)
+            timestamp_in_idx = isinstance(idx[0], dt.date)
 
         if timestamp_in_idx:
             res["xAxis"]["type"] = "datetime"
 
-        df = df.applymap(lambda val: dt_to_hc(val) if isinstance(val, (datetime.date, datetime.datetime)) else val)
+        df = df.applymap(lambda val: dt_to_hc(val) if isinstance(val, (dt.date, dt.datetime)) else val)
         if timestamp_in_idx:
             idx = [dt_to_hc(val) for val in idx]
             zip_idx = True
